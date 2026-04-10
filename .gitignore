@@ -5,6 +5,7 @@ node_modules/
 # Build output
 dist/
 release/
+flowdeck-*.tgz
 
 # Package manager logs
 pnpm-debug.log*
