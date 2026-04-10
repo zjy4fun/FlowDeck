@@ -1,7 +1,8 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron';
+import { homedir } from 'os';
 
-const cwd = process.cwd();
-const defaultTabTitle = cwd.split(/[\\/]/).filter(Boolean).pop() || cwd;
+const cwd = homedir();
+const defaultTabTitle = '~';
 
 contextBridge.exposeInMainWorld('flowdeck', {
   platform: process.platform,
@@ -41,5 +42,17 @@ contextBridge.exposeInMainWorld('flowdeck', {
     ) => handler(payload);
     ipcRenderer.on('flowdeck:terminal-exit', listener);
     return () => ipcRenderer.removeListener('flowdeck:terminal-exit', listener);
+  },
+
+  onMenuNewTab: (handler: () => void) => {
+    const listener = () => handler();
+    ipcRenderer.on('flowdeck:menu-new-tab', listener);
+    return () => ipcRenderer.removeListener('flowdeck:menu-new-tab', listener);
+  },
+
+  onMenuCloseTab: (handler: () => void) => {
+    const listener = () => handler();
+    ipcRenderer.on('flowdeck:menu-close-tab', listener);
+    return () => ipcRenderer.removeListener('flowdeck:menu-close-tab', listener);
   },
 });

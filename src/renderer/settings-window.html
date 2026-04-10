@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Settings</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #151515;
+        --text: #f4f1e8;
+        --muted: #8a8a8a;
+        --border: rgba(255, 255, 255, 0.08);
+        --input-bg: rgba(255, 255, 255, 0.04);
+      }
+
+      * { box-sizing: border-box; margin: 0; }
+
+      html, body {
+        height: 100%;
+        background: var(--bg);
+        color: var(--text);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+        font-size: 13px;
+      }
+
+      body {
+        padding: 24px;
+        -webkit-app-region: drag;
+      }
+
+      h1 {
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 24px;
+        color: rgba(255, 255, 255, 0.9);
+      }
+
+      .settings-grid {
+        display: grid;
+        gap: 18px;
+        -webkit-app-region: no-drag;
+      }
+
+      .field {
+        display: grid;
+        gap: 6px;
+      }
+
+      .field-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .field label {
+        font-size: 13px;
+        color: rgba(255, 255, 255, 0.82);
+        font-weight: 500;
+      }
+
+      .field .value-display {
+        font-size: 12px;
+        color: var(--muted);
+        font-variant-numeric: tabular-nums;
+      }
+
+      .dual-input {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 64px;
+        gap: 8px;
+        align-items: center;
+      }
+
+      input[type="range"] {
+        width: 100%;
+        margin: 0;
+      }
+
+      input[type="number"],
+      input[type="text"] {
+        width: 100%;
+        height: 28px;
+        padding: 0 8px;
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        background: var(--input-bg);
+        color: var(--text);
+        font: inherit;
+        outline: none;
+      }
+
+      input[type="number"]:focus,
+      input[type="text"]:focus {
+        border-color: rgba(255, 255, 255, 0.2);
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Settings</h1>
+    <div class="settings-grid">
+      <div class="field">
+        <div class="field-header">
+          <label for="font-size-input">Font size</label>
+        </div>
+        <input id="font-size-input" type="number" min="10" max="24" step="1" value="13" />
+      </div>
+
+      <div class="field">
+        <div class="field-header">
+          <label for="default-directory-input">Default directory</label>
+        </div>
+        <input id="default-directory-input" type="text" value="~" spellcheck="false" />
+      </div>
+
+      <div class="field">
+        <div class="field-header">
+          <label for="max-sessions-input">Max sessions</label>
+        </div>
+        <input id="max-sessions-input" type="number" min="1" max="20" step="1" value="8" />
+      </div>
+
+      <div class="field">
+        <div class="field-header">
+          <label for="pane-width-range">Pane width</label>
+          <span class="value-display" id="pane-width-value">720px</span>
+        </div>
+        <div class="dual-input">
+          <input id="pane-width-range" type="range" min="520" max="1000" step="10" value="720" />
+          <input id="pane-width-input" type="number" min="520" max="1000" step="10" value="720" />
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="field-header">
+          <label for="pane-opacity-range">Pane depth</label>
+          <span class="value-display" id="pane-opacity-value">0.92</span>
+        </div>
+        <div class="dual-input">
+          <input id="pane-opacity-range" type="range" min="0.85" max="1" step="0.01" value="0.92" />
+          <input id="pane-opacity-input" type="number" min="0.85" max="1" step="0.01" value="0.92" />
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const bridge = window.flowdeck;
+      if (!bridge) throw new Error('flowdeck bridge not available');
+
+      const els = {
+        fontSizeInput: document.getElementById('font-size-input'),
+        defaultDirectoryInput: document.getElementById('default-directory-input'),
+        maxSessionsInput: document.getElementById('max-sessions-input'),
+        paneWidthRange: document.getElementById('pane-width-range'),
+        paneWidthInput: document.getElementById('pane-width-input'),
+        paneWidthValue: document.getElementById('pane-width-value'),
+        paneOpacityRange: document.getElementById('pane-opacity-range'),
+        paneOpacityInput: document.getElementById('pane-opacity-input'),
+        paneOpacityValue: document.getElementById('pane-opacity-value'),
+      };
+
+      let settings = null;
+      let saveTimer = null;
+
+      function persist() {
+        if (saveTimer) clearTimeout(saveTimer);
+        saveTimer = setTimeout(() => {
+          saveTimer = null;
+          if (settings) bridge.saveSettings({ ...settings });
+        }, 300);
+      }
+
+      function applyToInputs() {
+        if (!settings) return;
+        els.fontSizeInput.value = String(settings.fontSize);
+        els.defaultDirectoryInput.value = settings.defaultOpenDirectory;
+        els.maxSessionsInput.value = String(settings.maxSessions);
+        els.paneWidthRange.value = String(settings.paneWidth);
+        els.paneWidthInput.value = String(settings.paneWidth);
+        els.paneWidthValue.textContent = settings.paneWidth + 'px';
+        els.paneOpacityRange.value = settings.paneOpacity.toFixed(2);
+        els.paneOpacityInput.value = settings.paneOpacity.toFixed(2);
+        els.paneOpacityValue.textContent = settings.paneOpacity.toFixed(2);
+      }
+
+      function clamp(val, min, max) {
+        return Math.max(min, Math.min(max, val));
+      }
+
+      els.fontSizeInput.addEventListener('change', () => {
+        const v = Number(els.fontSizeInput.value);
+        if (!Number.isFinite(v)) { applyToInputs(); return; }
+        settings.fontSize = clamp(Math.round(v), 10, 24);
+        applyToInputs(); persist();
+      });
+
+      els.defaultDirectoryInput.addEventListener('change', () => {
+        settings.defaultOpenDirectory = els.defaultDirectoryInput.value.trim() || bridge.defaultCwd;
+        applyToInputs(); persist();
+      });
+
+      els.maxSessionsInput.addEventListener('change', () => {
+        const v = Number(els.maxSessionsInput.value);
+        if (!Number.isFinite(v)) { applyToInputs(); return; }
+        settings.maxSessions = clamp(Math.round(v), 1, 20);
+        applyToInputs(); persist();
+      });
+
+      function handlePaneWidth(val) {
+        const v = Number(val);
+        if (!Number.isFinite(v)) { applyToInputs(); return; }
+        settings.paneWidth = clamp(Math.round(v / 10) * 10, 520, 1000);
+        applyToInputs(); persist();
+      }
+      els.paneWidthRange.addEventListener('input', () => handlePaneWidth(els.paneWidthRange.value));
+      els.paneWidthInput.addEventListener('change', () => handlePaneWidth(els.paneWidthInput.value));
+
+      function handlePaneOpacity(val) {
+        const v = Number(val);
+        if (!Number.isFinite(v)) { applyToInputs(); return; }
+        settings.paneOpacity = clamp(Number(v.toFixed(2)), 0.85, 1);
+        applyToInputs(); persist();
+      }
+      els.paneOpacityRange.addEventListener('input', () => handlePaneOpacity(els.paneOpacityRange.value));
+      els.paneOpacityInput.addEventListener('change', () => handlePaneOpacity(els.paneOpacityInput.value));
+
+      // Load settings on open
+      bridge.loadSettings().then((saved) => {
+        settings = saved || {
+          fontSize: 13,
+          paneOpacity: 0.92,
+          paneWidth: 720,
+          defaultOpenDirectory: bridge.defaultCwd,
+          maxSessions: 8,
+        };
+        applyToInputs();
+      });
+    </script>
+  </body>
+</html>

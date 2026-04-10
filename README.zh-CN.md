@@ -1,5 +1,7 @@
 # FlowDeck
 
+![FlowDeck icon](./assets/brand/flowdeck-icon.svg)
+
 面向 agentic coding 的专注型桌面终端工作区，基于 Electron、TypeScript、xterm.js 和 `node-pty` 构建。
 
 [English README](./README.md)
@@ -7,6 +9,10 @@
 ## 项目简介
 
 FlowDeck 是一个以专注、多窗格协作为核心的桌面终端工作区。它使用轻量的 Electron 外壳承载真实 PTY 终端会话，在保持界面紧凑的同时，提供可实际使用的 shell 体验。
+
+## 品牌资源
+
+品牌资源位于 [`assets/brand/`](./assets/brand/)。当前标识采用重叠窗格的抽象图形，表达多会话协作和一个被聚焦的活跃工作区。
 
 ## 核心特性
 
@@ -82,6 +88,80 @@ pnpm dist
 ```
 
 当前发布流程只保留 macOS 打包产物。
+
+## 版本管理与发版
+
+FlowDeck 使用 `bumpp` 管理版本号和发版标签。
+
+### 仅更新版本号
+
+```bash
+pnpm release:dry
+```
+
+### 更新版本号并发布版本标签
+
+```bash
+pnpm release
+```
+
+这条命令会自动完成：
+
+1. 更新项目版本号
+2. 创建 git commit
+3. 创建 `v*` 格式的 git tag
+4. 将 commit 和 tag 推送到 GitHub
+
+当 tag 被推送到 GitHub 后，发布流水线会自动：
+
+- 构建 macOS 安装包
+- 上传 `.dmg` 和 `.zip`
+- 创建或更新该 tag 对应的 GitHub Release
+
+## macOS 安装说明
+
+如果你从本地 DMG 安装 FlowDeck 时被 macOS 拦截，通常是 Gatekeeper、未公证签名，或者系统权限弹窗导致的。
+
+### “FlowDeck 已损坏”或“无法打开”
+
+如果应用是从互联网下载的，macOS 可能给它打上了隔离属性。可以先移除隔离标记，再重新打开：
+
+```bash
+xattr -dr com.apple.quarantine /Applications/FlowDeck.app
+```
+
+也可以在 Finder 里右键应用，选择“打开”，然后在弹窗里手动确认一次。
+
+### “无法验证开发者”
+
+这通常表示当前构建没有使用 Apple Developer 身份进行签名或公证。若只是本机测试，可以这样处理：
+
+1. 打开 `系统设置` -> `隐私与安全性`
+2. 在页面下方找到应用被阻止的提示
+3. 点击 `仍要打开`
+
+或者在终端里执行一次：
+
+```bash
+open /Applications/FlowDeck.app
+```
+
+### 终端 / Shell 权限问题
+
+FlowDeck 通过 `node-pty` 启动真实 shell 会话。如果终端无法启动，或者访问受保护目录失败，可以检查：
+
+- `系统设置` -> `隐私与安全性` -> `文件与文件夹`
+- 如果需要访问更多受保护目录，再检查 `完全磁盘访问权限`
+
+修改权限后，建议彻底退出并重新打开 FlowDeck。
+
+### 面向分发版本的建议
+
+如果希望最终分发给普通用户时不再出现这些警告，后续应补齐：
+
+- 使用有效的 Apple Developer ID 进行代码签名
+- 提交 Apple notarization
+- 在分发前完成 staple
 
 ## 验证
 

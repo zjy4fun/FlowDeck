@@ -5,6 +5,12 @@ import { bridge } from './bridge';
 
 let saveTimer: number | null = null;
 
+function getPaneToneOpacity(paneOpacity: number): number {
+  // Keep non-focused panes readable while preserving visual hierarchy.
+  const normalized = Math.max(0.85, Math.min(1, paneOpacity));
+  return Number((0.12 + (1 - normalized) * 1.07).toFixed(2));
+}
+
 function persistSettings(): void {
   if (saveTimer !== null) window.clearTimeout(saveTimer);
   saveTimer = window.setTimeout(() => {
@@ -23,9 +29,15 @@ export function applySettingsToDom(): void {
 
   root.style.setProperty('--app-font-size', `${settings.fontSize}px`);
   root.style.setProperty('--pane-opacity', settings.paneOpacity.toFixed(2));
+  root.style.setProperty(
+    '--pane-tone-opacity',
+    getPaneToneOpacity(settings.paneOpacity).toFixed(2),
+  );
   root.style.setProperty('--pane-width', `${settings.paneWidth}px`);
 
   dom.fontSizeInput.value = String(settings.fontSize);
+  dom.defaultDirectoryInput.value = settings.defaultOpenDirectory;
+  dom.maxSessionsInput.value = String(settings.maxSessions);
   dom.paneWidthRange.value = String(settings.paneWidth);
   dom.paneWidthInput.value = String(settings.paneWidth);
   dom.paneWidthValue.textContent = `${settings.paneWidth}px`;
@@ -65,6 +77,24 @@ function updateFontSize(
   render(true);
 }
 
+function updateDefaultOpenDirectory(value: string): void {
+  const next = value.trim() || bridge.defaultCwd;
+  state.settings.defaultOpenDirectory = next;
+  applySettingsToDom();
+  persistSettings();
+}
+
+function updateMaxSessions(value: string): void {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) {
+    applySettingsToDom();
+    return;
+  }
+  state.settings.maxSessions = Math.max(1, Math.min(20, Math.round(parsed)));
+  applySettingsToDom();
+  persistSettings();
+}
+
 function updatePaneWidth(
   value: string,
   render: (refit: boolean) => void,
@@ -90,7 +120,7 @@ function updatePaneOpacity(value: string): void {
     return;
   }
   state.settings.paneOpacity = Math.max(
-    0.55,
+    0.85,
     Math.min(1, Number(parsed.toFixed(2))),
   );
   applySettingsToDom();
@@ -104,6 +134,14 @@ export function initSettingsListeners(
 ): void {
   dom.fontSizeInput.addEventListener('change', () => {
     updateFontSize(dom.fontSizeInput.value, render);
+  });
+
+  dom.defaultDirectoryInput.addEventListener('change', () => {
+    updateDefaultOpenDirectory(dom.defaultDirectoryInput.value);
+  });
+
+  dom.maxSessionsInput.addEventListener('change', () => {
+    updateMaxSessions(dom.maxSessionsInput.value);
   });
 
   dom.paneWidthRange.addEventListener('input', () => {

@@ -51,5 +51,6 @@ await Promise.all([
 
 // Copy static HTML
 cpSync('src/renderer/index.html', 'dist/renderer/index.html');
+cpSync('src/renderer/settings-window.html', 'dist/renderer/settings-window.html');
 
 console.log('Build complete.');

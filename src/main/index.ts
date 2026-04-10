@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, Menu } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
 import { registerPtyHandlers, destroyAllSessions } from './pty-manager';
@@ -28,6 +28,141 @@ function registerSettingsHandlers(): void {
   ipcMain.handle('flowdeck:settings-save', (_event, settings) => saveSettings(settings));
 }
 
+let settingsWindow: BrowserWindow | null = null;
+
+function openSettingsWindow(): void {
+  if (settingsWindow && !settingsWindow.isDestroyed()) {
+    settingsWindow.focus();
+    return;
+  }
+
+  settingsWindow = new BrowserWindow({
+    width: 480,
+    height: 420,
+    resizable: false,
+    minimizable: false,
+    maximizable: false,
+    backgroundColor: '#151515',
+    title: 'Settings',
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: false,
+      preload: path.join(__dirname, '..', 'preload', 'index.js'),
+    },
+  });
+
+  settingsWindow.loadFile(
+    path.join(__dirname, '..', 'renderer', 'settings-window.html'),
+  );
+
+  settingsWindow.on('closed', () => {
+    settingsWindow = null;
+  });
+}
+
+function sendToFocusedWindow(channel: string): void {
+  const win = BrowserWindow.getFocusedWindow();
+  if (win && !win.isDestroyed()) {
+    win.webContents.send(channel);
+  }
+}
+
+function buildAppMenu(): void {
+  const isMac = process.platform === 'darwin';
+
+  const template: Electron.MenuItemConstructorOptions[] = [
+    ...(isMac
+      ? [
+          {
+            label: app.name,
+            submenu: [
+              { role: 'about' as const },
+              { type: 'separator' as const },
+              {
+                label: 'Settings...',
+                accelerator: 'Cmd+,',
+                click: () => openSettingsWindow(),
+              },
+              { type: 'separator' as const },
+              { role: 'hide' as const },
+              { role: 'hideOthers' as const },
+              { role: 'unhide' as const },
+              { type: 'separator' as const },
+              { role: 'quit' as const },
+            ],
+          },
+        ]
+      : []),
+    {
+      label: 'Shell',
+      submenu: [
+        {
+          label: 'New Tab',
+          accelerator: isMac ? 'Cmd+T' : 'Ctrl+T',
+          click: () => sendToFocusedWindow('flowdeck:menu-new-tab'),
+        },
+        {
+          label: 'Close Tab',
+          accelerator: isMac ? 'Cmd+W' : 'Ctrl+W',
+          click: () => sendToFocusedWindow('flowdeck:menu-close-tab'),
+        },
+      ],
+    },
+    {
+      label: 'Edit',
+      submenu: [
+        { role: 'undo' },
+        { role: 'redo' },
+        { type: 'separator' },
+        { role: 'cut' },
+        { role: 'copy' },
+        { role: 'paste' },
+        { role: 'selectAll' },
+      ],
+    },
+    {
+      label: 'View',
+      submenu: [
+        { role: 'reload' },
+        { role: 'forceReload' },
+        { role: 'toggleDevTools' },
+        { type: 'separator' },
+        { role: 'togglefullscreen' },
+      ],
+    },
+    {
+      label: 'Window',
+      submenu: [
+        { role: 'minimize' },
+        { role: 'zoom' },
+        ...(isMac
+          ? [
+              { type: 'separator' as const },
+              { role: 'front' as const },
+            ]
+          : [{ role: 'close' as const }]),
+      ],
+    },
+    ...(!isMac
+      ? [
+          {
+            label: 'Settings',
+            submenu: [
+              {
+                label: 'Preferences...',
+                accelerator: 'Ctrl+,',
+                click: () => openSettingsWindow(),
+              },
+            ],
+          },
+        ]
+      : []),
+  ];
+
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+}
+
 function createWindow(): void {
   const win = new BrowserWindow({
     width: 1600,
@@ -35,7 +170,7 @@ function createWindow(): void {
     minWidth: 960,
     minHeight: 640,
     backgroundColor: '#111111',
-    autoHideMenuBar: true,
+    autoHideMenuBar: false,
     show: !isCaptureMode,
     webPreferences: {
       contextIsolation: true,
@@ -51,6 +186,19 @@ function createWindow(): void {
 
   win.webContents.on('preload-error', (_e, preloadPath, err) => {
     console.error(`preload-error ${preloadPath}`, err);
+  });
+
+  // Prevent Cmd+W from closing the window — let the renderer handle it as "close tab"
+  win.webContents.on('before-input-event', (_event, input) => {
+    if (
+      input.type === 'keyDown' &&
+      input.key.toLowerCase() === 'w' &&
+      input.meta &&
+      !input.control &&
+      !input.alt
+    ) {
+      _event.preventDefault();
+    }
   });
 
   win.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
@@ -83,6 +231,7 @@ app.whenReady().then(() => {
   ensurePtyHelper();
   registerPtyHandlers();
   registerSettingsHandlers();
+  buildAppMenu();
   createWindow();
 
   app.on('activate', () => {

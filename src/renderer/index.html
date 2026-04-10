@@ -23,6 +23,16 @@
           </label>
           <input class="settings-number" id="font-size-input" type="number" min="10" max="24" step="1" value="13" />
 
+          <label class="settings-row" for="default-directory-input">
+            <span>Default directory</span>
+          </label>
+          <input id="default-directory-input" type="text" value="~" spellcheck="false" />
+
+          <label class="settings-row" for="max-sessions-input">
+            <span>Max sessions</span>
+          </label>
+          <input class="settings-number" id="max-sessions-input" type="number" min="1" max="20" step="1" value="8" />
+
           <label class="settings-row" for="pane-width-range">
             <span>Pane width</span>
             <span id="pane-width-value">720px</span>
@@ -33,12 +43,12 @@
           </div>
 
           <label class="settings-row" for="pane-opacity-range">
-            <span>Pane opacity</span>
-            <span id="pane-opacity-value">1.00</span>
+            <span>Pane depth</span>
+            <span id="pane-opacity-value">0.92</span>
           </label>
           <div class="settings-dual">
-            <input id="pane-opacity-range" type="range" min="0.55" max="1" step="0.01" value="0.8" />
-            <input class="settings-number" id="pane-opacity-input" type="number" min="0.55" max="1" step="0.01" value="0.8" />
+            <input id="pane-opacity-range" type="range" min="0.85" max="1" step="0.01" value="0.92" />
+            <input class="settings-number" id="pane-opacity-input" type="number" min="0.85" max="1" step="0.01" value="0.92" />
           </div>
         </section>
       </header>

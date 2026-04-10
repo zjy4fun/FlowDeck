@@ -6,20 +6,25 @@ export interface PersistedSettings {
   fontSize: number;
   paneOpacity: number;
   paneWidth: number;
+  defaultOpenDirectory: string;
+  maxSessions: number;
 }
 
 const SETTINGS_FILE = 'settings.json';
 
 const DEFAULTS: PersistedSettings = {
   fontSize: 13,
-  paneOpacity: 0.8,
+  paneOpacity: 0.92,
   paneWidth: 720,
+  defaultOpenDirectory: app.getPath('home'),
+  maxSessions: 8,
 };
 
 const LIMITS = {
   fontSize: { min: 10, max: 24 },
-  paneOpacity: { min: 0.55, max: 1 },
+  paneOpacity: { min: 0.85, max: 1 },
   paneWidth: { min: 520, max: 1000 },
+  maxSessions: { min: 1, max: 20 },
 } as const;
 
 function clamp(value: number, min: number, max: number): number {
@@ -43,6 +48,11 @@ function sanitizeSetting(
 
 function sanitizePersistedSettings(parsed: unknown): PersistedSettings {
   const source = isRecord(parsed) ? parsed : {};
+  const defaultOpenDirectory =
+    typeof source.defaultOpenDirectory === 'string' &&
+    source.defaultOpenDirectory.trim().length > 0
+      ? source.defaultOpenDirectory.trim()
+      : DEFAULTS.defaultOpenDirectory;
 
   return {
     fontSize: sanitizeSetting(
@@ -65,6 +75,14 @@ function sanitizePersistedSettings(parsed: unknown): PersistedSettings {
       LIMITS.paneWidth.min,
       LIMITS.paneWidth.max,
       (v) => Math.round(v / 10) * 10,
+    ),
+    defaultOpenDirectory,
+    maxSessions: sanitizeSetting(
+      source.maxSessions,
+      DEFAULTS.maxSessions,
+      LIMITS.maxSessions.min,
+      LIMITS.maxSessions.max,
+      (v) => Math.round(v),
     ),
   };
 }

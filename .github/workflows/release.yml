@@ -58,9 +58,12 @@ jobs:
       - name: List release files
         run: ls -lhR artifacts/
 
-      - name: Create GitHub Release
+      - name: Create or update GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           draft: false
           generate_release_notes: true
-          files: artifacts/*
+          overwrite_files: true
+          files: |
+            artifacts/*.dmg
+            artifacts/*.zip

@@ -1,5 +1,11 @@
 import type { PaneNode } from './types';
-import { state, dom, paneNodeMap, getFocusedIndex } from './state';
+import {
+  state,
+  dom,
+  paneNodeMap,
+  getFocusedIndex,
+  getFocusedPaneWidth,
+} from './state';
 import {
   createPaneNode,
   createTerminalTheme,
@@ -17,6 +23,17 @@ export interface PaneCallbacks {
 
 let callbacks: PaneCallbacks;
 
+const MIN_PREVIEW_WIDTH = 96;
+const MIN_FOCUSED_WIDTH = 420;
+type ResizeEdge = 'left' | 'right';
+
+interface PaneLayout {
+  left: number;
+  width: number;
+  right: number;
+  isFocused: boolean;
+}
+
 export function initPanes(paneCallbacks: PaneCallbacks): void {
   callbacks = paneCallbacks;
 }
@@ -25,9 +42,13 @@ export function initPanes(paneCallbacks: PaneCallbacks): void {
 
 function getPreviewWidth(stageWidth: number, count: number): number {
   if (count <= 1) return 0;
-  const pw = state.settings.paneWidth;
-  if (stageWidth >= pw * count) return pw;
-  return (stageWidth - pw) / (count - 1);
+  const baseWidth = state.settings.paneWidth;
+  const focusedWidth = getFocusedPaneWidth();
+  if (stageWidth >= baseWidth * count) return baseWidth;
+  return Math.max(
+    MIN_PREVIEW_WIDTH,
+    (stageWidth - focusedWidth) / (count - 1),
+  );
 }
 
 function getPaneLeft(
@@ -35,13 +56,97 @@ function getPaneLeft(
   previewWidth: number,
   focusedIndex: number,
 ): number {
-  const pw = state.settings.paneWidth;
-  if (previewWidth >= pw) return index * pw;
+  const baseWidth = state.settings.paneWidth;
+  const focusedWidth = getFocusedPaneWidth();
+  if (previewWidth >= baseWidth) return index * baseWidth;
 
   const focusedLeft = focusedIndex * previewWidth;
   if (index < focusedIndex) return index * previewWidth;
   if (index === focusedIndex) return focusedLeft;
-  return focusedLeft + pw + (index - focusedIndex - 1) * previewWidth;
+  return focusedLeft + focusedWidth + (index - focusedIndex - 1) * previewWidth;
+}
+
+function getMaxFocusedWidth(): number {
+  const stageWidth = dom.stage.clientWidth;
+  const remainingCount = Math.max(0, state.panes.length - 1);
+  if (remainingCount === 0) return stageWidth;
+  return Math.max(
+    MIN_FOCUSED_WIDTH,
+    stageWidth - remainingCount * MIN_PREVIEW_WIDTH,
+  );
+}
+
+function updateFocusedPaneWidth(width: number): void {
+  state.transientPaneWidth = Math.max(
+    MIN_FOCUSED_WIDTH,
+    Math.min(getMaxFocusedWidth(), Math.round(width)),
+  );
+  renderPanes(true);
+}
+
+function setResizeHandleActive(
+  paneId: string,
+  edge: ResizeEdge,
+  active: boolean,
+): void {
+  const node = paneNodeMap.get(paneId);
+  if (!node) return;
+  node.root.classList.toggle('is-resizing', active);
+  node.leftResizeHandle.classList.toggle(
+    'is-active',
+    active && edge === 'left',
+  );
+  node.rightResizeHandle.classList.toggle(
+    'is-active',
+    active && edge === 'right',
+  );
+}
+
+function endPaneResize(): void {
+  const resizeState = state.paneResizeState;
+  if (!resizeState) return;
+  setResizeHandleActive(resizeState.paneId, resizeState.edge, false);
+  document.body.classList.remove('is-resizing-pane');
+  state.paneResizeState = null;
+  window.removeEventListener('pointermove', handlePaneResizeMove);
+  window.removeEventListener('pointerup', handlePaneResizeEnd);
+  window.removeEventListener('pointercancel', handlePaneResizeEnd);
+}
+
+function handlePaneResizeMove(event: PointerEvent): void {
+  const resizeState = state.paneResizeState;
+  if (!resizeState || event.pointerId !== resizeState.pointerId) return;
+  const direction = resizeState.edge === 'right' ? 1 : -1;
+  const delta = (event.clientX - resizeState.startX) * direction;
+  updateFocusedPaneWidth(resizeState.startWidth + delta);
+}
+
+function handlePaneResizeEnd(event: PointerEvent): void {
+  const resizeState = state.paneResizeState;
+  if (!resizeState || event.pointerId !== resizeState.pointerId) return;
+  endPaneResize();
+}
+
+function beginPaneResize(
+  paneId: string,
+  edge: ResizeEdge,
+  event: PointerEvent,
+): void {
+  if (paneId !== state.focusedPaneId || event.button !== 0) return;
+  event.preventDefault();
+  event.stopPropagation();
+  state.paneResizeState = {
+    paneId,
+    pointerId: event.pointerId,
+    edge,
+    startX: event.clientX,
+    startWidth: getFocusedPaneWidth(),
+  };
+  setResizeHandleActive(paneId, edge, true);
+  document.body.classList.add('is-resizing-pane');
+  window.addEventListener('pointermove', handlePaneResizeMove);
+  window.addEventListener('pointerup', handlePaneResizeEnd);
+  window.addEventListener('pointercancel', handlePaneResizeEnd);
 }
 
 /* ── Pane node lifecycle ── */
@@ -67,6 +172,12 @@ function ensurePaneNodes(): void {
       node.root.addEventListener('click', () => {
         callbacks.onPaneClick(pane.id);
       });
+      node.leftResizeHandle.addEventListener('pointerdown', (event) => {
+        beginPaneResize(pane.id, 'left', event);
+      });
+      node.rightResizeHandle.addEventListener('pointerdown', (event) => {
+        beginPaneResize(pane.id, 'right', event);
+      });
 
       paneNodeMap.set(pane.id, node);
       dom.stage.append(node.root);
@@ -88,20 +199,37 @@ export function renderPanes(refit = false): void {
 
   ensurePaneNodes();
 
+  const layouts = state.panes.map((_, index): PaneLayout => {
+    const isFocused = index === focusedIndex;
+    const width = isFocused ? getFocusedPaneWidth() : state.settings.paneWidth;
+    const left = getPaneLeft(index, previewWidth, focusedIndex);
+    return {
+      left,
+      width,
+      right: left + width,
+      isFocused,
+    };
+  });
+
   state.panes.forEach((pane, index) => {
     const node = paneNodeMap.get(pane.id) as PaneNode;
-    const left = getPaneLeft(index, previewWidth, focusedIndex);
-    const isFocused = index === focusedIndex;
+    const layout = layouts[index] as PaneLayout;
 
-    node.root.classList.toggle('is-focused', isFocused);
+    node.root.classList.toggle('is-focused', layout.isFocused);
     node.root.classList.toggle(
       'is-navigation-target',
-      isFocused && state.isNavigationMode,
+      layout.isFocused && state.isNavigationMode,
     );
     node.root.style.setProperty('--pane-accent', pane.accent);
-    node.root.style.left = `${left}px`;
+    node.root.style.left = `${layout.left}px`;
+    node.root.style.width = `${layout.width}px`;
     node.root.style.zIndex = String(index + 1);
     node.root.style.height = `${stageHeight}px`;
+
+    const occludedWidth = layout.isFocused
+      ? 0
+      : getOccludedWidthFromRightEdge(layouts, index);
+    node.root.style.setProperty('--pane-occluded-width', `${occludedWidth}px`);
 
     // Sync accent color if changed
     if (node.accent !== pane.accent) {
@@ -113,4 +241,28 @@ export function renderPanes(refit = false): void {
       fitTerminal(node, true);
     }
   });
+}
+
+function getOccludedWidthFromRightEdge(
+  layouts: PaneLayout[],
+  index: number,
+): number {
+  const current = layouts[index] as PaneLayout;
+  let maxOccludedWidth = 0;
+
+  for (let i = index + 1; i < layouts.length; i += 1) {
+    const above = layouts[i] as PaneLayout;
+
+    // Only panes that extend past the current pane's right edge can cover the right-edge region.
+    if (above.right <= current.right) continue;
+    if (above.left >= current.right) continue;
+
+    const overlapStart = Math.max(current.left, above.left);
+    const occludedWidth = current.right - overlapStart;
+    if (occludedWidth > maxOccludedWidth) {
+      maxOccludedWidth = occludedWidth;
+    }
+  }
+
+  return Math.max(0, Math.min(current.width, Math.round(maxOccludedWidth)));
 }

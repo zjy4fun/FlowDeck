@@ -1,4 +1,5 @@
 import { ipcMain, type WebContents } from 'electron';
+import { homedir } from 'os';
 import * as pty from 'node-pty';
 
 interface TerminalSession {
@@ -44,7 +45,7 @@ export function registerPtyHandlers(): void {
       name: 'xterm-256color',
       cols: Math.max(20, cols || 80),
       rows: Math.max(8, rows || 24),
-      cwd: cwd || process.cwd(),
+      cwd: cwd || homedir(),
       env: {
         ...process.env,
         COLORTERM: 'truecolor',

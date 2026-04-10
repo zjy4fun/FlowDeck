@@ -9,7 +9,7 @@ import { bridge } from './bridge';
 
 export function createTerminalTheme(accent: string) {
   return {
-    background: '#11111100',
+    background: '#111111',
     foreground: '#d9d4c7',
     cursor: accent,
     cursorAccent: '#111111',
@@ -69,14 +69,29 @@ export function createPaneNode(
   const terminalHost = document.createElement('div');
   terminalHost.className = 'terminal-host';
 
+  const leftResizeHandle = document.createElement('div');
+  leftResizeHandle.className = 'pane-resize-handle is-left';
+  leftResizeHandle.setAttribute('aria-hidden', 'true');
+
+  const rightResizeHandle = document.createElement('div');
+  rightResizeHandle.className = 'pane-resize-handle is-right';
+  rightResizeHandle.setAttribute('aria-hidden', 'true');
+
+  const occlusionShield = document.createElement('div');
+  occlusionShield.className = 'pane-occlusion-shield';
+  occlusionShield.setAttribute('aria-hidden', 'true');
+
   surface.append(terminalHost);
   body.append(surface);
+  body.append(occlusionShield);
+  body.append(leftResizeHandle);
+  body.append(rightResizeHandle);
   shell.append(body);
   paneEl.append(shell);
 
   // xterm.js instance
   const terminal = new Terminal({
-    allowTransparency: true,
+    allowTransparency: false,
     convertEol: true,
     cursorBlink: true,
     disableStdin: false,
@@ -99,6 +114,9 @@ export function createPaneNode(
     cwd: pane.cwd,
     root: paneEl,
     terminalHost,
+    occlusionShield,
+    leftResizeHandle,
+    rightResizeHandle,
     terminal,
     fitAddon,
     webglAddon,

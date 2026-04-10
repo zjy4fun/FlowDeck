@@ -1,5 +1,7 @@
 # FlowDeck
 
+![FlowDeck icon](./assets/brand/flowdeck-icon.svg)
+
 Focus-first desktop terminal workspace for agentic coding, built with Electron, TypeScript, xterm.js, and `node-pty`.
 
 [中文文档](./README.zh-CN.md)
@@ -7,6 +9,10 @@ Focus-first desktop terminal workspace for agentic coding, built with Electron, 
 ## Overview
 
 FlowDeck is a desktop terminal workspace designed for focused, pane-based coding sessions. It combines a compact Electron shell with PTY-backed terminals so the UI stays lightweight while still running real shell sessions.
+
+## Brand
+
+Brand assets live in [`assets/brand/`](./assets/brand/). The current identity uses overlapping pane shapes to represent stacked terminal sessions and a focused active workspace.
 
 ## Highlights
 
@@ -82,6 +88,80 @@ pnpm dist
 ```
 
 The current release workflow only packages macOS artifacts.
+
+## Versioning and Releases
+
+FlowDeck uses `bumpp` to manage version bumps and release tags.
+
+### Bump version only
+
+```bash
+pnpm release:dry
+```
+
+### Bump version and publish a release tag
+
+```bash
+pnpm release
+```
+
+This does the following:
+
+1. updates the project version
+2. creates a git commit
+3. creates a `v*` git tag
+4. pushes the commit and tag to GitHub
+
+After the tag reaches GitHub, the release workflow automatically:
+
+- builds the macOS package
+- uploads the `.dmg` and `.zip` files
+- creates or updates the GitHub Release for that tag
+
+## macOS Install Notes
+
+If you install FlowDeck from a local DMG and macOS blocks the app, that is usually caused by Gatekeeper, missing notarization, or local permission prompts.
+
+### "FlowDeck is damaged" or "can't be opened"
+
+If the app was downloaded from the internet and macOS quarantined it, remove the quarantine attribute and try again:
+
+```bash
+xattr -dr com.apple.quarantine /Applications/FlowDeck.app
+```
+
+You can also right-click the app in Finder, choose `Open`, and confirm the dialog once.
+
+### "Developer cannot be verified"
+
+This means the build is not signed or notarized with an Apple Developer identity. For local testing, use one of these options:
+
+1. Open `System Settings` -> `Privacy & Security`
+2. Find the blocked app message near the bottom
+3. Click `Open Anyway`
+
+Or launch once from Terminal:
+
+```bash
+open /Applications/FlowDeck.app
+```
+
+### Terminal / shell access issues
+
+FlowDeck uses `node-pty` to start real shell sessions. If terminals fail to launch or cannot access protected folders, check:
+
+- `System Settings` -> `Privacy & Security` -> `Files and Folders`
+- `System Settings` -> `Privacy & Security` -> `Full Disk Access` if you need access to protected directories
+
+After changing permissions, fully quit and reopen FlowDeck.
+
+### For distributable releases
+
+To avoid these warnings for end users, the macOS build should eventually be:
+
+- code signed with a valid Apple Developer ID
+- notarized by Apple
+- stapled before distribution
 
 ## Verification
 

@@ -12,10 +12,13 @@
     "start": "node scripts/build.mjs && electron .",
     "capture": "node scripts/build.mjs && FLOWDECK_CAPTURE=1 electron .",
     "pack": "node scripts/build.mjs && electron-builder --dir",
-    "dist": "node scripts/build.mjs && electron-builder"
+    "dist": "node scripts/build.mjs && electron-builder",
+    "release": "bumpp --all --commit --tag --push",
+    "release:dry": "bumpp --all"
   },
   "devDependencies": {
     "@types/node": "^25.6.0",
+    "bumpp": "^11.0.1",
     "electron": "^36.0.0",
     "electron-builder": "^26.0.0",
     "esbuild": "^0.25.0",

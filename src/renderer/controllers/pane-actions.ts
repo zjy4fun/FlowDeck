@@ -1,0 +1,175 @@
+import { bridge } from '../bridge';
+import {
+  state,
+  paneNodeMap,
+  getDirectoryLabel,
+  ACCENT_PALETTE,
+} from '../state';
+import type { PaneActionsDeps } from '../types';
+
+export interface PaneActionsController {
+  focusPane: (paneId: string, focusTerminal?: boolean) => void;
+  addPane: () => void;
+  closePane: (index: number) => void;
+  handleTitleChange: (paneId: string, title: string) => void;
+  handleCwdChange: (paneId: string, cwd: string) => void;
+}
+
+/**
+ * Try to extract an absolute path from a terminal title string.
+ * Common formats from shells:
+ *   "user@host: ~/projects/foo"   (zsh default)
+ *   "~/projects/foo"
+ *   "/Users/someone/projects/foo"
+ *   "dirname — zsh"
+ */
+function extractCwdFromTitle(title: string): string | null {
+  // Strip trailing shell indicator like " — zsh", " - bash", " — fish"
+  const cleaned = title.replace(/\s*[—–-]\s*(zsh|bash|fish|sh|ksh|csh|tcsh|nu|pwsh|powershell)\s*$/i, '').trim();
+
+  // Try to find a path after ":" (e.g. "user@host: ~/foo")
+  const colonIndex = cleaned.indexOf(':');
+  const candidate = colonIndex !== -1 ? cleaned.slice(colonIndex + 1).trim() : cleaned;
+
+  // Must look like a path (starts with / or ~)
+  if (candidate.startsWith('/') || candidate.startsWith('~')) {
+    // Expand ~ to the home directory using the bridge default cwd as a heuristic
+    if (candidate.startsWith('~')) {
+      // Derive home from defaultCwd (e.g. /Users/z) — go up until we match ~
+      const home = bridge.defaultCwd;
+      return candidate.replace(/^~/, home);
+    }
+    return candidate;
+  }
+
+  return null;
+}
+
+export function createPaneActionsController(
+  deps: PaneActionsDeps,
+): PaneActionsController {
+  function clearResizeUiState(): void {
+    document.body.classList.remove('is-resizing-pane');
+    for (const node of paneNodeMap.values()) {
+      node.root.classList.remove('is-resizing');
+      node.leftResizeHandle.classList.remove('is-active');
+      node.rightResizeHandle.classList.remove('is-active');
+    }
+  }
+
+  function focusPane(paneId: string, focusTerminal = true): void {
+    if (state.focusedPaneId !== paneId) {
+      state.transientPaneWidth = null;
+      state.paneResizeState = null;
+      clearResizeUiState();
+    }
+    state.focusedPaneId = paneId;
+    state.isNavigationMode = false;
+    deps.render();
+
+    if (focusTerminal) {
+      const node = paneNodeMap.get(paneId);
+      if (node) {
+        requestAnimationFrame(() => node.terminal.focus());
+      }
+    }
+  }
+
+  function addPane(): void {
+    if (state.panes.length >= state.settings.maxSessions) {
+      throw new Error(`Session limit reached (${state.settings.maxSessions})`);
+    }
+
+    const accent =
+      ACCENT_PALETTE[(state.nextPaneNumber - 1) % ACCENT_PALETTE.length];
+    const cwd = state.settings.defaultOpenDirectory;
+    const newPane = {
+      id: `p${state.nextPaneNumber}`,
+      title: null,
+      terminalTitle: getDirectoryLabel(cwd),
+      cwd,
+      accent,
+    };
+
+    state.nextPaneNumber += 1;
+    state.panes = [...state.panes, newPane];
+    state.focusedPaneId = newPane.id;
+    deps.render(true);
+  }
+
+  function closePane(index: number): void {
+    if (state.panes.length === 1) return;
+
+    const closing = state.panes[index];
+    if (!closing) return;
+
+    if (closing.id === state.renamingPaneId) state.renamingPaneId = null;
+    if (closing.id === state.dragState?.paneId) deps.endTabDrag();
+    if (closing.id === state.pendingTabFocus?.paneId) deps.clearPendingTabFocus();
+    if (closing.id === state.paneResizeState?.paneId) {
+      state.paneResizeState = null;
+      state.transientPaneWidth = null;
+      clearResizeUiState();
+    }
+
+    bridge.destroyTerminal({ paneId: closing.id });
+
+    const remaining = state.panes.filter((_, i) => i !== index);
+    if (closing.id === state.focusedPaneId) {
+      const fallback = Math.max(0, index - 1);
+      state.focusedPaneId =
+        remaining[fallback]?.id ?? remaining[0]?.id ?? null;
+    }
+    state.panes = remaining;
+    deps.render(true);
+  }
+
+  function handleTitleChange(paneId: string, title: string): void {
+    state.panes = state.panes.map((pane) =>
+      pane.id === paneId ? { ...pane, terminalTitle: title } : pane,
+    );
+
+    // Try to extract a cwd from the terminal title (e.g. "user@host: ~/path"
+    // or just "~/path" or "/absolute/path") so tabs update on directory change
+    // even when the shell doesn't emit OSC 7/1337/633.
+    const cwdFromTitle = extractCwdFromTitle(title);
+    if (cwdFromTitle) {
+      handleCwdChange(paneId, cwdFromTitle);
+      return;
+    }
+
+    const pane = state.panes.find((item) => item.id === paneId);
+    if (pane && pane.title === null) {
+      deps.renderTabs();
+    }
+  }
+
+  function handleCwdChange(paneId: string, cwd: string): void {
+    const nextCwd = cwd.trim();
+    if (!nextCwd) return;
+
+    const prevPane = state.panes.find((pane) => pane.id === paneId);
+    if (!prevPane || prevPane.cwd === nextCwd) return;
+
+    state.panes = state.panes.map((pane) =>
+      pane.id === paneId ? { ...pane, cwd: nextCwd } : pane,
+    );
+
+    const node = paneNodeMap.get(paneId);
+    if (node) {
+      node.cwd = nextCwd;
+    }
+
+    if (prevPane.title === null) {
+      deps.renderTabs();
+    }
+  }
+
+  return {
+    focusPane,
+    addPane,
+    closePane,
+    handleTitleChange,
+    handleCwdChange,
+  };
+}

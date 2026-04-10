@@ -19,6 +19,9 @@ export interface PaneNode {
   cwd: string;
   root: HTMLElement;
   terminalHost: HTMLElement;
+  occlusionShield: HTMLElement;
+  leftResizeHandle: HTMLElement;
+  rightResizeHandle: HTMLElement;
   terminal: Terminal;
   fitAddon: FitAddon;
   webglAddon: WebglAddon | null;
@@ -46,12 +49,50 @@ export interface PendingTabFocus {
   timerId: number;
 }
 
+export interface PaneResizeState {
+  paneId: string;
+  pointerId: number;
+  edge: 'left' | 'right';
+  startX: number;
+  startWidth: number;
+}
+
+/* ── Internal renderer controller types ── */
+
+export type RenderFn = (refit?: boolean) => void;
+export type CleanupFn = () => void;
+
+export interface PaneActionsDeps {
+  render: RenderFn;
+  renderTabs: () => void;
+  clearPendingTabFocus: CleanupFn;
+  endTabDrag: CleanupFn;
+}
+
+export interface NavigationDeps {
+  addPane: () => void;
+  closePane: (index: number) => void;
+  focusPane: (paneId: string, focusTerminal?: boolean) => void;
+  render: RenderFn;
+}
+
+export interface LifecycleDeps {
+  addPane: () => void;
+  closePane: (index: number) => void;
+  handleCwdChange: (paneId: string, cwd: string) => void;
+  handleGlobalKeydown: (event: KeyboardEvent) => void;
+  render: RenderFn;
+  reportError: (error: unknown) => void;
+}
+
 /* ── Persisted settings ── */
 
 export interface AppSettings {
   fontSize: number;
   paneOpacity: number;
   paneWidth: number;
+  defaultOpenDirectory: string;
+  maxSessions: number;
 }
 
 /* ── Preload bridge API ── */
@@ -88,4 +129,7 @@ export interface FlowDeckBridge {
   onTerminalExit: (
     handler: (payload: { paneId: string; exitCode: number }) => void,
   ) => () => void;
+
+  onMenuNewTab: (handler: () => void) => () => void;
+  onMenuCloseTab: (handler: () => void) => () => void;
 }

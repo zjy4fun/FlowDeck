@@ -3,6 +3,7 @@ import type {
   PaneNode,
   DragState,
   PendingTabFocus,
+  PaneResizeState,
   AppSettings,
 } from './types';
 import { bridge } from './bridge';
@@ -24,16 +25,26 @@ export const ACCENT_PALETTE = [
 
 const DEFAULT_SETTINGS: AppSettings = {
   fontSize: 13,
-  paneOpacity: 0.8,
+  paneOpacity: 0.92,
   paneWidth: 720,
+  defaultOpenDirectory: bridge.defaultCwd,
+  maxSessions: 8,
 };
 
+export function getDirectoryLabel(cwd: string): string {
+  if (cwd === bridge.defaultCwd) return bridge.defaultTabTitle;
+  return cwd.split(/[\\/]/).filter(Boolean).pop() || cwd;
+}
+
 function createInitialPanes(): PaneData[] {
-  return [
-    { id: 'p1', title: null, terminalTitle: bridge.defaultTabTitle, cwd: bridge.defaultCwd, accent: '#ff6b57' },
-    { id: 'p2', title: null, terminalTitle: bridge.defaultTabTitle, cwd: bridge.defaultCwd, accent: '#ff9f1c' },
-    { id: 'p3', title: null, terminalTitle: bridge.defaultTabTitle, cwd: bridge.defaultCwd, accent: '#ffd166' },
-  ];
+  const initialCount = Math.min(3, DEFAULT_SETTINGS.maxSessions);
+  return Array.from({ length: initialCount }, (_, index) => ({
+    id: `p${index + 1}`,
+    title: null,
+    terminalTitle: getDirectoryLabel(DEFAULT_SETTINGS.defaultOpenDirectory),
+    cwd: DEFAULT_SETTINGS.defaultOpenDirectory,
+    accent: ACCENT_PALETTE[index % ACCENT_PALETTE.length],
+  }));
 }
 
 /* ── Mutable application state ── */
@@ -44,6 +55,8 @@ export const state = {
   nextPaneNumber: 4,
   renamingPaneId: null as string | null,
   dragState: null as DragState | null,
+  paneResizeState: null as PaneResizeState | null,
+  transientPaneWidth: null as number | null,
   isNavigationMode: false,
   pendingTabFocus: null as PendingTabFocus | null,
   settings: { ...DEFAULT_SETTINGS },
@@ -64,6 +77,8 @@ export let dom = {
   settingsButton: null! as HTMLButtonElement,
   settingsPanel: null! as HTMLElement,
   fontSizeInput: null! as HTMLInputElement,
+  defaultDirectoryInput: null! as HTMLInputElement,
+  maxSessionsInput: null! as HTMLInputElement,
   paneWidthRange: null! as HTMLInputElement,
   paneWidthInput: null! as HTMLInputElement,
   paneWidthValue: null! as HTMLElement,
@@ -82,6 +97,8 @@ export function initDom(): void {
     settingsButton: document.getElementById('tabs-settings') as HTMLButtonElement,
     settingsPanel: document.getElementById('settings-panel')!,
     fontSizeInput: document.getElementById('font-size-input') as HTMLInputElement,
+    defaultDirectoryInput: document.getElementById('default-directory-input') as HTMLInputElement,
+    maxSessionsInput: document.getElementById('max-sessions-input') as HTMLInputElement,
     paneWidthRange: document.getElementById('pane-width-range') as HTMLInputElement,
     paneWidthInput: document.getElementById('pane-width-input') as HTMLInputElement,
     paneWidthValue: document.getElementById('pane-width-value')!,
@@ -94,7 +111,7 @@ export function initDom(): void {
 /* ── Helpers ── */
 
 export function getPaneLabel(pane: PaneData): string {
-  return pane.title ?? pane.terminalTitle ?? '';
+  return pane.title ?? getDirectoryLabel(pane.cwd) ?? pane.terminalTitle ?? '';
 }
 
 export function getFocusedIndex(): number {
@@ -103,4 +120,8 @@ export function getFocusedIndex(): number {
 
   state.focusedPaneId = state.panes[0]?.id ?? null;
   return state.panes.length > 0 ? 0 : -1;
+}
+
+export function getFocusedPaneWidth(): number {
+  return state.transientPaneWidth ?? state.settings.paneWidth;
 }
