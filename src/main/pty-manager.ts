@@ -1,4 +1,5 @@
 import { ipcMain, type WebContents } from 'electron';
+import * as fs from 'fs';
 import { homedir } from 'os';
 import * as path from 'path';
 import * as pty from 'node-pty';
@@ -10,8 +11,20 @@ interface TerminalSession {
 
 const sessions = new Map<string, TerminalSession>();
 
+function resolveIntegrationDir(): string {
+  const bundledDir = path.join(__dirname, 'shell-integration');
+  const unpackedDir = bundledDir.replace(
+    `${path.sep}app.asar${path.sep}`,
+    `${path.sep}app.asar.unpacked${path.sep}`,
+  );
+  if (fs.existsSync(unpackedDir)) {
+    return unpackedDir;
+  }
+  return bundledDir;
+}
+
 function getShellConfig(): { shell: string; args: string[]; env: Record<string, string> } {
-  const integrationDir = path.join(__dirname, 'shell-integration');
+  const integrationDir = resolveIntegrationDir();
   const extraEnv: Record<string, string> = { TERM_PROGRAM: 'FlowDeck' };
 
   if (process.platform === 'win32') {
@@ -22,14 +35,21 @@ function getShellConfig(): { shell: string; args: string[]; env: Record<string, 
   const shellName = path.basename(shell);
 
   if (shellName === 'zsh') {
-    extraEnv.FLOWDECK_ORIGINAL_ZDOTDIR = process.env.ZDOTDIR || '';
-    extraEnv.ZDOTDIR = path.join(integrationDir, 'zsh');
+    const zshDir = path.join(integrationDir, 'zsh');
+    const zshEnvPath = path.join(zshDir, '.zshenv');
+    if (fs.existsSync(zshEnvPath)) {
+      extraEnv.FLOWDECK_ORIGINAL_ZDOTDIR = process.env.ZDOTDIR || '';
+      extraEnv.ZDOTDIR = zshDir;
+    }
     return { shell, args: ['-il'], env: extraEnv };
   }
 
   if (shellName === 'bash') {
     const rcFile = path.join(integrationDir, 'bash-integration.bash');
-    return { shell, args: ['--rcfile', rcFile, '-i'], env: extraEnv };
+    if (fs.existsSync(rcFile)) {
+      return { shell, args: ['--rcfile', rcFile, '-i'], env: extraEnv };
+    }
+    return { shell, args: ['-il'], env: extraEnv };
   }
 
   return { shell, args: ['-il'], env: extraEnv };

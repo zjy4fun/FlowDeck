@@ -17,6 +17,8 @@ asar: true
 # node-pty contains native binaries that cannot be loaded from asar.
 asarUnpack:
   - node_modules/node-pty/**/*
+  - dist/main/shell-integration/**/*
+  - dist/main/shell-integration/zsh/.zshenv
 
 # ── macOS ──
 mac:
