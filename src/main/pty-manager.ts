@@ -11,6 +11,12 @@ interface TerminalSession {
 
 const sessions = new Map<string, TerminalSession>();
 
+function isFlowdeckIntegrationZdotdir(value: string): boolean {
+  if (!value) return false;
+  const normalized = value.replace(/\\/g, '/');
+  return normalized.includes('/shell-integration/zsh');
+}
+
 function resolveIntegrationDir(): string {
   const bundledDir = path.join(__dirname, 'shell-integration');
   const unpackedDir = bundledDir.replace(
@@ -38,7 +44,10 @@ function getShellConfig(): { shell: string; args: string[]; env: Record<string, 
     const zshDir = path.join(integrationDir, 'zsh');
     const zshEnvPath = path.join(zshDir, '.zshenv');
     if (fs.existsSync(zshEnvPath)) {
-      extraEnv.FLOWDECK_ORIGINAL_ZDOTDIR = process.env.ZDOTDIR || '';
+      const originalZdotdir = process.env.ZDOTDIR || '';
+      extraEnv.FLOWDECK_ORIGINAL_ZDOTDIR = isFlowdeckIntegrationZdotdir(originalZdotdir)
+        ? ''
+        : originalZdotdir;
       extraEnv.ZDOTDIR = zshDir;
     }
     return { shell, args: ['-il'], env: extraEnv };

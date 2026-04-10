@@ -3,11 +3,18 @@
 
 # ── Restore original ZDOTDIR ──
 if [ -n "$FLOWDECK_ORIGINAL_ZDOTDIR" ]; then
-  ZDOTDIR="$FLOWDECK_ORIGINAL_ZDOTDIR"
-  unset FLOWDECK_ORIGINAL_ZDOTDIR
+  case "$FLOWDECK_ORIGINAL_ZDOTDIR" in
+    */shell-integration/zsh|*/shell-integration/zsh/*)
+      unset ZDOTDIR
+      ;;
+    *)
+      ZDOTDIR="$FLOWDECK_ORIGINAL_ZDOTDIR"
+      ;;
+  esac
 else
   unset ZDOTDIR
 fi
+unset FLOWDECK_ORIGINAL_ZDOTDIR
 
 # Source the user's real .zshenv
 if [ -r "${ZDOTDIR:-$HOME}/.zshenv" ]; then
