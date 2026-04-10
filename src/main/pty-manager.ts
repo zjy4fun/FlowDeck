@@ -1,5 +1,6 @@
 import { ipcMain, type WebContents } from 'electron';
 import { homedir } from 'os';
+import * as path from 'path';
 import * as pty from 'node-pty';
 
 interface TerminalSession {
@@ -9,11 +10,29 @@ interface TerminalSession {
 
 const sessions = new Map<string, TerminalSession>();
 
-function getShellConfig(): { shell: string; args: string[] } {
+function getShellConfig(): { shell: string; args: string[]; env: Record<string, string> } {
+  const integrationDir = path.join(__dirname, 'shell-integration');
+  const extraEnv: Record<string, string> = { TERM_PROGRAM: 'FlowDeck' };
+
   if (process.platform === 'win32') {
-    return { shell: 'powershell.exe', args: [] };
+    return { shell: 'powershell.exe', args: [], env: extraEnv };
   }
-  return { shell: process.env.SHELL || '/bin/zsh', args: ['-il'] };
+
+  const shell = process.env.SHELL || '/bin/zsh';
+  const shellName = path.basename(shell);
+
+  if (shellName === 'zsh') {
+    extraEnv.FLOWDECK_ORIGINAL_ZDOTDIR = process.env.ZDOTDIR || '';
+    extraEnv.ZDOTDIR = path.join(integrationDir, 'zsh');
+    return { shell, args: ['-il'], env: extraEnv };
+  }
+
+  if (shellName === 'bash') {
+    const rcFile = path.join(integrationDir, 'bash-integration.bash');
+    return { shell, args: ['--rcfile', rcFile, '-i'], env: extraEnv };
+  }
+
+  return { shell, args: ['-il'], env: extraEnv };
 }
 
 function destroySession(paneId: string): void {
@@ -38,7 +57,7 @@ export function registerPtyHandlers(): void {
     const { paneId, cols, rows, cwd } = payload;
     destroySession(paneId);
 
-    const { shell, args } = getShellConfig();
+    const { shell, args, env: extraEnv } = getShellConfig();
     const webContents: WebContents = event.sender;
 
     const terminal = pty.spawn(shell, args, {
@@ -50,6 +69,7 @@ export function registerPtyHandlers(): void {
         ...process.env,
         COLORTERM: 'truecolor',
         TERM: 'xterm-256color',
+        ...extraEnv,
       },
     });
 

@@ -53,4 +53,7 @@ await Promise.all([
 cpSync('src/renderer/index.html', 'dist/renderer/index.html');
 cpSync('src/renderer/settings-window.html', 'dist/renderer/settings-window.html');
 
+// Copy shell integration scripts
+cpSync('src/main/shell-integration', 'dist/main/shell-integration', { recursive: true });
+
 console.log('Build complete.');
