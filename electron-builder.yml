@@ -1,0 +1,29 @@
+appId: com.flowdeck.app
+productName: FlowDeck
+copyright: Copyright (C) 2026 liyunyang
+
+directories:
+  output: release
+
+# Only ship the compiled output and package manifest.
+# electron-builder automatically includes production node_modules
+# (needed for the node-pty native addon).
+files:
+  - dist/**/*
+  - package.json
+
+asar: true
+
+# node-pty contains native binaries that cannot be loaded from asar.
+asarUnpack:
+  - node_modules/node-pty/**/*
+
+# ── macOS ──
+mac:
+  category: public.app-category.developer-tools
+  target:
+    - dmg
+    - zip
+
+publish:
+  provider: github

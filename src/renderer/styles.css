@@ -1,0 +1,394 @@
+@import '../../node_modules/@xterm/xterm/css/xterm.css';
+
+:root {
+  color-scheme: dark;
+  --bg: #151515;
+  --panel: #1d1d1d;
+  --panel-border: #2b2b2b;
+  --panel-muted: #8a8a8a;
+  --text: #f4f1e8;
+  --app-font-size: 13px;
+  --pane-opacity: 0.8;
+  --pane-width: 720px;
+  --tabs-height: 34px;
+  --status-height: 20px;
+  --stage-padding: 0px;
+  --pane-height-offset: calc(
+    var(--tabs-height) + var(--status-height) + (var(--stage-padding) * 2)
+  );
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+}
+
+html,
+body {
+  min-height: 100%;
+  background:
+    radial-gradient(circle at top left, rgba(255, 196, 93, 0.08), transparent 28%),
+    radial-gradient(circle at top right, rgba(0, 181, 173, 0.08), transparent 24%),
+    linear-gradient(180deg, #171717 0%, #101010 100%);
+  color: var(--text);
+  font-family: Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: var(--app-font-size);
+}
+
+body {
+  overflow: hidden;
+}
+
+.app-shell {
+  display: grid;
+  grid-template-rows: var(--tabs-height) 1fr var(--status-height);
+  height: 100vh;
+}
+
+/* ── Tabs ── */
+
+.tabs-panel {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.tabs-list {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.tab {
+  position: relative;
+  display: inline-flex;
+  align-items: stretch;
+  flex: 0 0 148px;
+  width: 148px;
+  min-width: 0;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--panel-muted);
+  transition:
+    background 120ms ease,
+    color 120ms ease,
+    transform 120ms ease;
+}
+
+.tab.is-focused {
+  color: var(--text);
+  background: color-mix(in srgb, var(--pane-accent) 10%, #1b1b1b);
+  box-shadow: inset 0 1px 0 0 var(--pane-accent);
+}
+
+.tab.is-dragging {
+  z-index: 20;
+  transition: none;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.tab.insert-before::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -1px;
+  width: 2px;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.tab-main,
+.tab-close,
+.tabs-add,
+.tabs-settings {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+}
+
+.tab-main {
+  min-height: 33px;
+  min-width: 0;
+  width: 100%;
+  justify-content: center;
+  padding: 0 28px 0 22px;
+  color: inherit;
+  font-size: var(--app-font-size);
+  touch-action: none;
+}
+
+.tab-close {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 24px;
+  flex: 0 0 24px;
+  height: 100%;
+  padding: 0;
+  color: rgba(255, 255, 255, 0.5);
+  transition:
+    color 120ms ease,
+    background 120ms ease;
+}
+
+.tab-close:hover {
+  color: rgba(255, 255, 255, 0.88);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.tab-close:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.tab-swatch {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  width: 9px;
+  height: 9px;
+  flex: 0 0 auto;
+  transform: translateY(-50%);
+  background: var(--pane-accent);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4);
+}
+
+.tab-label {
+  min-width: 0;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tab-input {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  display: block;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  text-align: center;
+  font: inherit;
+  outline: none;
+}
+
+.tab-input::selection {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+/* ── Tab actions ── */
+
+.tabs-actions {
+  display: inline-flex;
+  align-items: stretch;
+}
+
+.tabs-add,
+.tabs-settings {
+  width: 34px;
+  height: 33px;
+  flex: 0 0 auto;
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 18px;
+  line-height: 1;
+  transition:
+    background 120ms ease,
+    color 120ms ease;
+}
+
+.tabs-add:hover,
+.tabs-settings:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* ── Settings panel ── */
+
+.settings-panel {
+  position: absolute;
+  top: calc(100% + 1px);
+  right: 0;
+  display: grid;
+  gap: 8px;
+  width: 220px;
+  padding: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #171717;
+  z-index: 50;
+}
+
+.settings-panel.is-hidden {
+  display: none;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: var(--app-font-size);
+}
+
+.settings-dual {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 56px;
+  gap: 8px;
+  align-items: center;
+}
+
+.settings-panel input[type="range"] {
+  width: 100%;
+  margin: 0;
+}
+
+.settings-number {
+  width: 100%;
+  height: 24px;
+  padding: 0 6px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  font: inherit;
+}
+
+/* ── Stage / panes ── */
+
+.stage-wrap {
+  min-height: 0;
+  padding: var(--stage-padding);
+}
+
+.stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0)),
+    rgba(255, 255, 255, 0.02);
+}
+
+.pane {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: var(--pane-width);
+  border: 2px solid var(--pane-accent);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02)),
+    color-mix(in srgb, var(--pane-accent) 10%, #101010);
+  box-shadow:
+    0 18px 44px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  opacity: var(--pane-opacity);
+  overflow: hidden;
+  cursor: pointer;
+  transition:
+    left 150ms cubic-bezier(0.2, 0.85, 0.32, 1),
+    box-shadow 120ms ease;
+  will-change: left;
+}
+
+.pane-shell {
+  height: 100%;
+}
+
+.pane-body {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.pane-surface {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.pane.is-focused {
+  opacity: 1;
+  box-shadow:
+    0 24px 54px rgba(0, 0, 0, 0.42),
+    0 0 0 1px color-mix(in srgb, var(--pane-accent) 22%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.pane.is-navigation-target {
+  opacity: 1;
+  border-width: 4px;
+  box-shadow:
+    0 24px 54px rgba(0, 0, 0, 0.42),
+    0 0 0 3px color-mix(in srgb, var(--pane-accent) 44%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* ── Status bar ── */
+
+.status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.65);
+  font-size: var(--app-font-size);
+}
+
+#status-label {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#status-label.is-navigation-mode {
+  color: #ffd166;
+  font-weight: 700;
+}
+
+.status-hint {
+  flex: 0 0 auto;
+  color: rgba(255, 255, 255, 0.45);
+  white-space: nowrap;
+}
+
+/* ── Drag state ── */
+
+body.is-dragging-tabs {
+  user-select: none;
+  cursor: grabbing;
+}
+
+/* ── Terminal host ── */
+
+.terminal-host {
+  width: 100%;
+  height: 100%;
+  padding: 0 6px;
+}
+
+.terminal-host .xterm {
+  height: 100%;
+}
+
+.terminal-host .xterm-viewport {
+  overflow: hidden !important;
+}

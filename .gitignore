@@ -1,0 +1,10 @@
+node_modules/
+dist/
+release/
+artifacts/*
+!artifacts/readme-demo.gif
+origin_assets/*
+!origin_assets/.gitkeep
+!origin_assets/README.md
+.DS_Store
+spec/

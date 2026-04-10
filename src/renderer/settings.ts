@@ -1,0 +1,154 @@
+import { state, dom } from './state';
+import { bridge } from './bridge';
+
+/* ── Debounced persistence ── */
+
+let saveTimer: number | null = null;
+
+function persistSettings(): void {
+  if (saveTimer !== null) window.clearTimeout(saveTimer);
+  saveTimer = window.setTimeout(() => {
+    saveTimer = null;
+    bridge.saveSettings({ ...state.settings }).catch((err) => {
+      console.error('Failed to persist settings:', err);
+    });
+  }, 500);
+}
+
+/* ── Apply current settings to CSS variables and input elements ── */
+
+export function applySettingsToDom(): void {
+  const { settings } = state;
+  const root = document.documentElement;
+
+  root.style.setProperty('--app-font-size', `${settings.fontSize}px`);
+  root.style.setProperty('--pane-opacity', settings.paneOpacity.toFixed(2));
+  root.style.setProperty('--pane-width', `${settings.paneWidth}px`);
+
+  dom.fontSizeInput.value = String(settings.fontSize);
+  dom.paneWidthRange.value = String(settings.paneWidth);
+  dom.paneWidthInput.value = String(settings.paneWidth);
+  dom.paneWidthValue.textContent = `${settings.paneWidth}px`;
+  dom.paneOpacityRange.value = settings.paneOpacity.toFixed(2);
+  dom.paneOpacityInput.value = settings.paneOpacity.toFixed(2);
+  dom.paneOpacityValue.textContent = settings.paneOpacity.toFixed(2);
+}
+
+/* ── Load persisted settings from main process ── */
+
+export async function loadPersistedSettings(): Promise<void> {
+  try {
+    const saved = await bridge.loadSettings();
+    if (saved) {
+      state.settings = { ...state.settings, ...saved };
+    }
+  } catch {
+    // Use defaults on failure
+  }
+  applySettingsToDom();
+}
+
+/* ── Setting updaters ── */
+
+function updateFontSize(
+  value: string,
+  render: (refit: boolean) => void,
+): void {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) {
+    applySettingsToDom();
+    return;
+  }
+  state.settings.fontSize = Math.max(10, Math.min(24, Math.round(parsed)));
+  applySettingsToDom();
+  persistSettings();
+  render(true);
+}
+
+function updatePaneWidth(
+  value: string,
+  render: (refit: boolean) => void,
+): void {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) {
+    applySettingsToDom();
+    return;
+  }
+  state.settings.paneWidth = Math.max(
+    520,
+    Math.min(1000, Math.round(parsed / 10) * 10),
+  );
+  applySettingsToDom();
+  persistSettings();
+  render(true);
+}
+
+function updatePaneOpacity(value: string): void {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) {
+    applySettingsToDom();
+    return;
+  }
+  state.settings.paneOpacity = Math.max(
+    0.55,
+    Math.min(1, Number(parsed.toFixed(2))),
+  );
+  applySettingsToDom();
+  persistSettings();
+}
+
+/* ── Wire up settings panel event listeners ── */
+
+export function initSettingsListeners(
+  render: (refit: boolean) => void,
+): void {
+  dom.fontSizeInput.addEventListener('change', () => {
+    updateFontSize(dom.fontSizeInput.value, render);
+  });
+
+  dom.paneWidthRange.addEventListener('input', () => {
+    updatePaneWidth(dom.paneWidthRange.value, render);
+  });
+
+  dom.paneWidthInput.addEventListener('change', () => {
+    updatePaneWidth(dom.paneWidthInput.value, render);
+  });
+
+  dom.paneOpacityRange.addEventListener('input', () => {
+    updatePaneOpacity(dom.paneOpacityRange.value);
+  });
+
+  dom.paneOpacityInput.addEventListener('change', () => {
+    updatePaneOpacity(dom.paneOpacityInput.value);
+  });
+
+  // Toggle panel visibility
+  dom.settingsButton.addEventListener('click', (e) => {
+    e.stopPropagation();
+    dom.settingsPanel.classList.toggle('is-hidden');
+  });
+
+  dom.settingsPanel.addEventListener('click', (e) => {
+    e.stopPropagation();
+  });
+
+  // Close panel on outside click or Escape
+  window.addEventListener('pointerdown', (e) => {
+    if (
+      !dom.settingsPanel.classList.contains('is-hidden') &&
+      !dom.settingsPanel.contains(e.target as Node) &&
+      !dom.settingsButton.contains(e.target as Node)
+    ) {
+      dom.settingsPanel.classList.add('is-hidden');
+    }
+  });
+
+  window.addEventListener('keydown', (e) => {
+    if (
+      e.key === 'Escape' &&
+      !dom.settingsPanel.classList.contains('is-hidden')
+    ) {
+      dom.settingsPanel.classList.add('is-hidden');
+    }
+  });
+}
