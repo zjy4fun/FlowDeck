@@ -138,6 +138,12 @@ export function initLifecycle(deps: LifecycleDeps): CleanupFn {
   });
   cleanups.push(removeMenuCloseTab);
 
+  // Reload settings when changed from another window (e.g. settings window)
+  const removeSettingsChanged = bridge.onSettingsChanged(() => {
+    deps.reloadSettings().then(() => deps.render(true)).catch(console.error);
+  });
+  cleanups.push(removeSettingsChanged);
+
   window.addEventListener('keydown', deps.handleGlobalKeydown, true);
   cleanups.push(() => {
     window.removeEventListener('keydown', deps.handleGlobalKeydown, true);

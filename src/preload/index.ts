@@ -55,4 +55,10 @@ contextBridge.exposeInMainWorld('flowdeck', {
     ipcRenderer.on('flowdeck:menu-close-tab', listener);
     return () => ipcRenderer.removeListener('flowdeck:menu-close-tab', listener);
   },
+
+  onSettingsChanged: (handler: () => void) => {
+    const listener = () => handler();
+    ipcRenderer.on('flowdeck:settings-changed', listener);
+    return () => ipcRenderer.removeListener('flowdeck:settings-changed', listener);
+  },
 });

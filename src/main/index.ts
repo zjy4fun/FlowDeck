@@ -25,7 +25,16 @@ function ensurePtyHelper(): void {
 
 function registerSettingsHandlers(): void {
   ipcMain.handle('flowdeck:settings-load', () => loadSettings());
-  ipcMain.handle('flowdeck:settings-save', (_event, settings) => saveSettings(settings));
+  ipcMain.handle('flowdeck:settings-save', (event, settings) => {
+    saveSettings(settings);
+    // Notify all other windows that settings changed
+    const senderWebContents = event.sender;
+    for (const win of BrowserWindow.getAllWindows()) {
+      if (!win.isDestroyed() && win.webContents !== senderWebContents) {
+        win.webContents.send('flowdeck:settings-changed');
+      }
+    }
+  });
 }
 
 let settingsWindow: BrowserWindow | null = null;

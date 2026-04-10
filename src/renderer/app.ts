@@ -100,6 +100,7 @@ export async function startApp(): Promise<void> {
     closePane: paneActions.closePane,
     handleCwdChange: paneActions.handleCwdChange,
     handleGlobalKeydown: navigation.handleGlobalKeydown,
+    reloadSettings: loadPersistedSettings,
     render,
     reportError,
   });

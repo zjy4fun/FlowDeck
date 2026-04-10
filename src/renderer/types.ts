@@ -81,6 +81,7 @@ export interface LifecycleDeps {
   closePane: (index: number) => void;
   handleCwdChange: (paneId: string, cwd: string) => void;
   handleGlobalKeydown: (event: KeyboardEvent) => void;
+  reloadSettings: () => Promise<void>;
   render: RenderFn;
   reportError: (error: unknown) => void;
 }
@@ -132,4 +133,5 @@ export interface FlowDeckBridge {
 
   onMenuNewTab: (handler: () => void) => () => void;
   onMenuCloseTab: (handler: () => void) => () => void;
+  onSettingsChanged: (handler: () => void) => () => void;
 }

@@ -21,6 +21,7 @@ function createUnavailableBridge(): FlowDeckBridge {
     onTerminalExit: () => () => {},
     onMenuNewTab: () => () => {},
     onMenuCloseTab: () => () => {},
+    onSettingsChanged: () => () => {},
   };
 }
 
