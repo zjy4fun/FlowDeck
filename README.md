@@ -10,6 +10,15 @@ Focus-first desktop terminal workspace for agentic coding, built with Electron, 
 
 FlowDeck is a desktop terminal workspace designed for focused, pane-based coding sessions. It combines a compact Electron shell with PTY-backed terminals so the UI stays lightweight while still running real shell sessions.
 
+## Platform Support
+
+FlowDeck is currently supported on macOS only.
+
+- Local development and runtime support are validated on macOS.
+- CI build and type-check validation run on macOS runners.
+- Release artifacts are provided as macOS `.dmg` and `.zip` packages.
+- Linux and Windows are not supported at this time.
+
 ## Brand
 
 Brand assets live in [`assets/brand/`](./assets/brand/). The current identity uses overlapping pane shapes to represent stacked terminal sessions and a focused active workspace.
@@ -88,6 +97,7 @@ pnpm dist
 ```
 
 The current release workflow only packages macOS artifacts.
+CI validation is also pinned to macOS.
 
 ## Versioning and Releases
 

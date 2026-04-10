@@ -10,6 +10,15 @@
 
 FlowDeck 是一个以专注、多窗格协作为核心的桌面终端工作区。它使用轻量的 Electron 外壳承载真实 PTY 终端会话，在保持界面紧凑的同时，提供可实际使用的 shell 体验。
 
+## 平台支持
+
+FlowDeck 当前仅支持 macOS。
+
+- 本地开发与运行验证以 macOS 为准。
+- CI 构建与类型检查在 macOS runner 上执行。
+- 发版产物仅提供 macOS `.dmg` 与 `.zip`。
+- 暂不支持 Linux 与 Windows。
+
 ## 品牌资源
 
 品牌资源位于 [`assets/brand/`](./assets/brand/)。当前标识采用重叠窗格的抽象图形，表达多会话协作和一个被聚焦的活跃工作区。
@@ -88,6 +97,7 @@ pnpm dist
 ```
 
 当前发布流程只保留 macOS 打包产物。
+CI 校验同样固定在 macOS。
 
 ## 版本管理与发版
 

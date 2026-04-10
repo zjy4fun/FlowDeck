@@ -8,7 +8,8 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    # FlowDeck is currently officially supported on macOS only.
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
 
