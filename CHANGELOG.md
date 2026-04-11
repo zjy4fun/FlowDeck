@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.3.5
+
+- Fix asar hot-update: use original-fs to bypass Electron's asar interception
+
 ## v0.3.4
 
 - Test hot-update mechanism

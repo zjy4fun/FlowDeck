@@ -1,11 +1,11 @@
 import { app, dialog, net } from 'electron';
+// Use original-fs to bypass Electron's asar interception on .asar paths
+import * as originalFs from 'original-fs';
 import * as fs from 'fs';
 import * as path from 'path';
 
 const REPO = 'zjy4fun/FlowDeck';
 const ASAR_ASSET_NAME = 'app.asar';
-
-let isManualCheck = false;
 
 function getPendingUpdateDir(): string {
   return path.join(app.getPath('userData'), 'pending-update');
@@ -23,22 +23,22 @@ export function applyPendingUpdate(): boolean {
   if (!app.isPackaged) return false;
 
   const staged = getStagedAsarPath();
-  if (!fs.existsSync(staged)) return false;
+  if (!originalFs.existsSync(staged)) return false;
 
   const target = path.join(process.resourcesPath, 'app.asar');
+  const backup = path.join(process.resourcesPath, 'app.asar.backup');
 
   try {
     // Backup current asar
-    const backup = path.join(process.resourcesPath, 'app.asar.backup');
-    fs.copyFileSync(target, backup);
+    originalFs.copyFileSync(target, backup);
 
     // Swap in new asar
-    fs.copyFileSync(staged, target);
-    fs.unlinkSync(staged);
+    originalFs.copyFileSync(staged, target);
+    originalFs.unlinkSync(staged);
 
-    // Clean up backup on success
+    // Clean up backup
     try {
-      fs.unlinkSync(backup);
+      originalFs.unlinkSync(backup);
     } catch {
       /* ignore */
     }
@@ -50,18 +50,17 @@ export function applyPendingUpdate(): boolean {
   } catch (err) {
     console.error('Failed to apply pending update:', err);
     // Try to restore backup
-    const backup = path.join(process.resourcesPath, 'app.asar.backup');
-    if (fs.existsSync(backup)) {
+    if (originalFs.existsSync(backup)) {
       try {
-        fs.copyFileSync(backup, target);
-        fs.unlinkSync(backup);
+        originalFs.copyFileSync(backup, target);
+        originalFs.unlinkSync(backup);
       } catch {
         /* ignore */
       }
     }
     // Remove broken staged file
     try {
-      fs.unlinkSync(staged);
+      originalFs.unlinkSync(staged);
     } catch {
       /* ignore */
     }
@@ -128,18 +127,6 @@ async function downloadAsset(url: string, dest: string): Promise<void> {
     request.setHeader('Accept', 'application/octet-stream');
 
     request.on('response', (response) => {
-      // Follow redirects (GitHub redirects to S3)
-      if (
-        (response.statusCode === 301 || response.statusCode === 302) &&
-        response.headers.location
-      ) {
-        const redirectUrl = Array.isArray(response.headers.location)
-          ? response.headers.location[0]
-          : response.headers.location;
-        downloadAsset(redirectUrl, dest).then(resolve, reject);
-        return;
-      }
-
       if (response.statusCode !== 200) {
         reject(new Error(`Download failed with status ${response.statusCode}`));
         return;
@@ -151,7 +138,8 @@ async function downloadAsset(url: string, dest: string): Promise<void> {
       });
       response.on('end', () => {
         try {
-          fs.writeFileSync(dest, Buffer.concat(chunks));
+          // Use original-fs to write .asar file without Electron interception
+          originalFs.writeFileSync(dest, Buffer.concat(chunks));
           resolve();
         } catch (e) {
           reject(e);
@@ -226,7 +214,6 @@ export function initAutoUpdater(): void {
 }
 
 export function checkForUpdatesManual(): void {
-  isManualCheck = true;
   checkAndDownload(true).catch((err) => {
     dialog.showMessageBox({
       type: 'error',
