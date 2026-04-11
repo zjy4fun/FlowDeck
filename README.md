@@ -8,6 +8,10 @@ Focus-first desktop terminal workspace for agentic coding, built with Electron, 
 
 [中文文档](./README.zh-CN.md)
 
+## Demo
+
+![FlowDeck demo](./assets/readme/flowdeck-demo.gif)
+
 ## Overview
 
 FlowDeck is a desktop terminal workspace designed for focused, pane-based coding sessions. It combines a compact Electron shell with PTY-backed terminals so the UI stays lightweight while still running real shell sessions.

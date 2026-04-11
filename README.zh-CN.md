@@ -8,6 +8,10 @@
 
 [English README](./README.md)
 
+## 演示
+
+![FlowDeck 演示](./assets/readme/flowdeck-demo.gif)
+
 ## 项目简介
 
 FlowDeck 是一个以专注、多窗格协作为核心的桌面终端工作区。它使用轻量的 Electron 外壳承载真实 PTY 终端会话，在保持界面紧凑的同时，提供可实际使用的 shell 体验。
