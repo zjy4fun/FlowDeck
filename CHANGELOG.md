@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.3.9
+
+- Make single-session layout fill the entire stage width
+
 ## v0.3.8
 
 - Add usage quota tracking in status bar with periodic refresh
