@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, Menu } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, Menu, type OpenDialogOptions } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
 import { registerPtyHandlers, destroyAllSessions } from './pty-manager';
@@ -272,11 +272,14 @@ app.on('before-quit', () => {
 });
 
 ipcMain.handle('flowdeck:select-directory', async (event) => {
-  const win = BrowserWindow.fromWebContents(event.sender) ?? undefined;
-  const result = await dialog.showOpenDialog(win, {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  const openDialogOptions: OpenDialogOptions = {
     title: 'Select Directory',
     properties: ['openDirectory', 'createDirectory'],
-  });
+  };
+  const result = win
+    ? await dialog.showOpenDialog(win, openDialogOptions)
+    : await dialog.showOpenDialog(openDialogOptions);
   if (result.canceled || result.filePaths.length === 0) {
     return null;
   }
