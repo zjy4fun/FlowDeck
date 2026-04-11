@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.3.1
+
+- Add auto-update support with electron-updater
+- Add "Check for Updates" menu item
+- Silent update check on app launch, auto-download and prompt to restart
+
 ## v0.3.0
 
 - Update UI theme to warm dark palette (Dracula-inspired)

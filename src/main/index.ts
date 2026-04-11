@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { registerPtyHandlers, destroyAllSessions } from './pty-manager';
 import { loadSettings, saveSettings } from './settings-store';
+import { initAutoUpdater, checkForUpdatesManual } from './updater';
 
 const isCaptureMode = process.env.FLOWDECK_CAPTURE === '1';
 
@@ -93,6 +94,10 @@ function buildAppMenu(): void {
                 accelerator: 'Cmd+,',
                 click: () => openSettingsWindow(),
               },
+              {
+                label: 'Check for Updates...',
+                click: () => checkForUpdatesManual(),
+              },
               { type: 'separator' as const },
               { role: 'hide' as const },
               { role: 'hideOthers' as const },
@@ -171,6 +176,11 @@ function buildAppMenu(): void {
                 accelerator: 'Ctrl+,',
                 click: () => openSettingsWindow(),
               },
+              { type: 'separator' as const },
+              {
+                label: 'Check for Updates...',
+                click: () => checkForUpdatesManual(),
+              },
             ],
           },
         ]
@@ -238,6 +248,7 @@ app.whenReady().then(() => {
   registerPtyHandlers();
   registerSettingsHandlers();
   buildAppMenu();
+  initAutoUpdater();
   createWindow();
 
   app.on('activate', () => {
