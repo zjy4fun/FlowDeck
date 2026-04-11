@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.3.10
+
+- Handle GitHub API 403/429 during update checks with a releases-page fallback
+
 ## v0.3.9
 
 - Make single-session layout fill the entire stage width
