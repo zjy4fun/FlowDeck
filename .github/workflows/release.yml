@@ -33,6 +33,11 @@ jobs:
       - name: Package with electron-builder
         run: pnpm exec electron-builder --mac --publish never
 
+      - name: Extract app.asar for hot-update
+        run: |
+          ASAR_SOURCE=$(find release -name "app.asar" -path "*/Resources/*" | head -1)
+          cp "$ASAR_SOURCE" release/app.asar
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -41,6 +46,7 @@ jobs:
             release/*.dmg
             release/*.zip
             release/*.yml
+            release/app.asar
           if-no-files-found: error
           retention-days: 5
 
@@ -128,3 +134,4 @@ jobs:
             artifacts/*.zip
             artifacts/*.exe
             artifacts/*.yml
+            artifacts/app.asar

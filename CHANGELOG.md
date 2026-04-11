@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.3.3
+
+- Replace electron-updater with custom asar hot-update mechanism
+- Only download app.asar (~11MB) instead of full installer (~100MB)
+- No macOS code signing required for hot updates
+- Release workflow now extracts and uploads app.asar as release asset
+
 ## v0.3.2
 
 - Fix release workflow to include auto-update metadata files (latest-mac.yml, latest.yml)

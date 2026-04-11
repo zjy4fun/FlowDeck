@@ -15,7 +15,7 @@ await Promise.all([
     platform: 'node',
     target: 'node20',
     outfile: 'dist/main/index.js',
-    external: ['electron', 'node-pty', 'electron-updater'],
+    external: ['electron', 'node-pty'],
     format: 'cjs',
   }),
 

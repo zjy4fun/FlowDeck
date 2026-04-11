@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { registerPtyHandlers, destroyAllSessions } from './pty-manager';
 import { loadSettings, saveSettings } from './settings-store';
-import { initAutoUpdater, checkForUpdatesManual } from './updater';
+import { applyPendingUpdate, initAutoUpdater, checkForUpdatesManual } from './updater';
 
 const isCaptureMode = process.env.FLOWDECK_CAPTURE === '1';
 
@@ -244,6 +244,9 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
+  // Apply staged asar update before anything else (will relaunch if found)
+  if (applyPendingUpdate()) return;
+
   ensurePtyHelper();
   registerPtyHandlers();
   registerSettingsHandlers();
