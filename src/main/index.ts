@@ -3,7 +3,12 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { registerPtyHandlers, destroyAllSessions } from './pty-manager';
 import { loadSettings, saveSettings } from './settings-store';
-import { applyPendingUpdate, initAutoUpdater, checkForUpdatesManual } from './updater';
+import {
+  applyPendingUpdate,
+  initAutoUpdater,
+  checkForUpdatesManual,
+  registerUpdaterIpcHandlers,
+} from './updater';
 
 const isCaptureMode = process.env.FLOWDECK_CAPTURE === '1';
 
@@ -250,6 +255,7 @@ app.whenReady().then(() => {
   ensurePtyHelper();
   registerPtyHandlers();
   registerSettingsHandlers();
+  registerUpdaterIpcHandlers();
   buildAppMenu();
   initAutoUpdater();
   createWindow();
@@ -263,6 +269,18 @@ app.whenReady().then(() => {
 
 app.on('before-quit', () => {
   destroyAllSessions();
+});
+
+ipcMain.handle('flowdeck:select-directory', async (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender) ?? undefined;
+  const result = await dialog.showOpenDialog(win, {
+    title: 'Select Directory',
+    properties: ['openDirectory', 'createDirectory'],
+  });
+  if (result.canceled || result.filePaths.length === 0) {
+    return null;
+  }
+  return result.filePaths[0];
 });
 
 ipcMain.handle('flowdeck:confirm-quit', (event) => {

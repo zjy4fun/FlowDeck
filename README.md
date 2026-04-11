@@ -170,6 +170,12 @@ FlowDeck uses `node-pty` to start real shell sessions. If terminals fail to laun
 
 After changing permissions, fully quit and reopen FlowDeck.
 
+### GUI app startup from terminal fails (Electron SIGABRT / abort trap)
+
+If GUI apps launched inside FlowDeck's terminal fail immediately (for example Electron projects crashing at startup with `SIGABRT` on macOS), the host session is likely sandboxed/restricted.
+
+To match iTerm behavior, start FlowDeck itself from a normal desktop session (Finder, Launchpad, Terminal, or iTerm), not from a sandboxed runtime/CI wrapper.
+
 ### For distributable releases
 
 To avoid these warnings for end users, the macOS build should eventually be:

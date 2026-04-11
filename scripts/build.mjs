@@ -52,6 +52,7 @@ await Promise.all([
 // Copy static HTML
 cpSync('src/renderer/index.html', 'dist/renderer/index.html');
 cpSync('src/renderer/settings-window.html', 'dist/renderer/settings-window.html');
+cpSync('src/renderer/update-window.html', 'dist/renderer/update-window.html');
 
 // Copy shell integration scripts
 cpSync('src/main/shell-integration', 'dist/main/shell-integration', { recursive: true });

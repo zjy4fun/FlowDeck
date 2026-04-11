@@ -221,10 +221,20 @@ export function renderPanes(refit = false): void {
       layout.isFocused && state.isNavigationMode,
     );
     node.root.style.setProperty('--pane-accent', pane.accent);
-    node.root.style.left = `${layout.left}px`;
-    node.root.style.width = `${layout.width}px`;
+    const nextLeft = `${layout.left}px`;
+    const nextWidth = `${layout.width}px`;
+    const nextHeight = `${stageHeight}px`;
+    const hasSizeChange =
+      node.root.style.width !== nextWidth || node.root.style.height !== nextHeight;
+
+    node.root.style.left = nextLeft;
+    node.root.style.width = nextWidth;
     node.root.style.zIndex = String(index + 1);
-    node.root.style.height = `${stageHeight}px`;
+    node.root.style.height = nextHeight;
+
+    if (hasSizeChange) {
+      node.needsFit = true;
+    }
 
     const occludedWidth = layout.isFocused
       ? 0

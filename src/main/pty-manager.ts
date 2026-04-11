@@ -10,6 +10,46 @@ interface TerminalSession {
 }
 
 const sessions = new Map<string, TerminalSession>();
+const warnedWebContentsIds = new Set<number>();
+
+function buildSpawnEnv(extraEnv: Record<string, string>): Record<string, string> {
+  const env: Record<string, string> = {};
+  for (const [key, value] of Object.entries(process.env)) {
+    if (!value) continue;
+    // Keep terminal sessions closer to normal terminal apps and avoid
+    // inheriting host-specific orchestration flags.
+    if (key.startsWith('CODEX_')) continue;
+    env[key] = value;
+  }
+  return {
+    ...env,
+    COLORTERM: 'truecolor',
+    TERM: 'xterm-256color',
+    ...extraEnv,
+  };
+}
+
+function buildRestrictedHostNotice(): string | null {
+  if (process.platform !== 'darwin') return null;
+
+  const reasons: string[] = [];
+  if (process.env.CODEX_SANDBOX) {
+    reasons.push(`CODEX_SANDBOX=${process.env.CODEX_SANDBOX}`);
+  }
+  if (process.env.APP_SANDBOX_CONTAINER_ID) {
+    reasons.push('APP_SANDBOX_CONTAINER_ID');
+  }
+  if (reasons.length === 0) return null;
+
+  const prefix = '\x1b[38;5;214m[FlowDeck notice]\x1b[0m';
+  return [
+    '',
+    `${prefix} Restricted host environment detected: ${reasons.join(', ')}.`,
+    `${prefix} GUI apps launched from this terminal may fail at startup (for example Electron SIGABRT on macOS).`,
+    `${prefix} For iTerm-like behavior, start FlowDeck outside the sandbox (Finder, Launchpad, Terminal, or iTerm).`,
+    '',
+  ].join('\r\n');
+}
 
 function isFlowdeckIntegrationZdotdir(value: string): boolean {
   if (!value) return false;
@@ -94,12 +134,7 @@ export function registerPtyHandlers(): void {
       cols: Math.max(20, cols || 80),
       rows: Math.max(8, rows || 24),
       cwd: cwd || homedir(),
-      env: {
-        ...process.env,
-        COLORTERM: 'truecolor',
-        TERM: 'xterm-256color',
-        ...extraEnv,
-      },
+      env: buildSpawnEnv(extraEnv),
     });
 
     terminal.onData((data) => {
@@ -116,6 +151,23 @@ export function registerPtyHandlers(): void {
     });
 
     sessions.set(paneId, { pty: terminal, webContentsId: webContents.id });
+
+    const restrictedHostNotice = buildRestrictedHostNotice();
+    if (
+      restrictedHostNotice &&
+      !webContents.isDestroyed() &&
+      !warnedWebContentsIds.has(webContents.id)
+    ) {
+      warnedWebContentsIds.add(webContents.id);
+      webContents.once('destroyed', () => {
+        warnedWebContentsIds.delete(webContents.id);
+      });
+      webContents.send('flowdeck:terminal-data', {
+        paneId,
+        data: restrictedHostNotice,
+      });
+    }
+
     return { paneId };
   });
 

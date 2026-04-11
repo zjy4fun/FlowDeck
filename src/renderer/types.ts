@@ -96,6 +96,21 @@ export interface AppSettings {
   maxSessions: number;
 }
 
+export type UpdateWindowAction = 'cancel' | 'restart' | 'close';
+
+export interface UpdateWindowState {
+  title: string;
+  detail: string;
+  downloadedBytes: number;
+  totalBytes: number;
+  progress: number;
+  showProgress: boolean;
+  primaryAction: UpdateWindowAction;
+  primaryLabel: string;
+  secondaryAction?: UpdateWindowAction;
+  secondaryLabel?: string;
+}
+
 /* ── Preload bridge API ── */
 
 export interface FlowDeckBridge {
@@ -121,6 +136,7 @@ export interface FlowDeckBridge {
   destroyTerminal: (payload: { paneId: string }) => Promise<void>;
 
   getFilePath: (file: File) => string;
+  selectDirectory: () => Promise<string | null>;
 
   loadSettings: () => Promise<AppSettings | null>;
   saveSettings: (settings: AppSettings) => Promise<void>;
@@ -137,4 +153,10 @@ export interface FlowDeckBridge {
   onMenuCloseTab: (handler: () => void) => () => void;
   confirmQuit: () => Promise<boolean>;
   onSettingsChanged: (handler: () => void) => () => void;
+  onUpdateWindowState: (
+    handler: (state: UpdateWindowState) => void,
+  ) => () => void;
+  cancelUpdateDownload: () => Promise<void>;
+  restartForUpdate: () => Promise<void>;
+  closeUpdateWindow: () => Promise<void>;
 }

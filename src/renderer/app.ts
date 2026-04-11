@@ -68,6 +68,14 @@ export async function startApp(): Promise<void> {
     endTabDrag,
   });
 
+  const addPaneFromSelectedDirectory = async (): Promise<void> => {
+    try {
+      await paneActions.addPaneFromSelectedDirectory();
+    } catch (error) {
+      reportError(error);
+    }
+  };
+
   const navigation = createNavigationController({
     addPane: paneActions.addPane,
     closePane: paneActions.closePane,
@@ -78,6 +86,7 @@ export async function startApp(): Promise<void> {
   initTabs({
     focusPane: paneActions.focusPane,
     closePane: paneActions.closePane,
+    addPaneFromSelectedDirectory,
     render: () => render(),
   });
 

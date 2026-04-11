@@ -16,6 +16,7 @@ function createUnavailableBridge(): FlowDeckBridge {
     resizeTerminal: fail,
     destroyTerminal: fail,
     getFilePath: () => '',
+    selectDirectory: fail,
     loadSettings: fail,
     saveSettings: fail,
     onTerminalData: () => () => {},
@@ -24,6 +25,10 @@ function createUnavailableBridge(): FlowDeckBridge {
     onMenuCloseTab: () => () => {},
     confirmQuit: () => Promise.resolve(true),
     onSettingsChanged: () => () => {},
+    onUpdateWindowState: () => () => {},
+    cancelUpdateDownload: () => Promise.resolve(),
+    restartForUpdate: () => Promise.resolve(),
+    closeUpdateWindow: () => Promise.resolve(),
   };
 }
 

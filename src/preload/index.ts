@@ -57,6 +57,8 @@ contextBridge.exposeInMainWorld('flowdeck', {
   },
 
   getFilePath: (file: File) => webUtils.getPathForFile(file),
+  selectDirectory: () =>
+    ipcRenderer.invoke('flowdeck:select-directory') as Promise<string | null>,
 
   confirmQuit: () => ipcRenderer.invoke('flowdeck:confirm-quit') as Promise<boolean>,
 
@@ -65,4 +67,16 @@ contextBridge.exposeInMainWorld('flowdeck', {
     ipcRenderer.on('flowdeck:settings-changed', listener);
     return () => ipcRenderer.removeListener('flowdeck:settings-changed', listener);
   },
+
+  onUpdateWindowState: (handler: (payload: unknown) => void) => {
+    const listener = (_event: IpcRendererEvent, payload: unknown) => handler(payload);
+    ipcRenderer.on('flowdeck:update-state', listener);
+    return () => ipcRenderer.removeListener('flowdeck:update-state', listener);
+  },
+  cancelUpdateDownload: () =>
+    ipcRenderer.invoke('flowdeck:update-cancel') as Promise<void>,
+  restartForUpdate: () =>
+    ipcRenderer.invoke('flowdeck:update-restart') as Promise<void>,
+  closeUpdateWindow: () =>
+    ipcRenderer.invoke('flowdeck:update-close-window') as Promise<void>,
 });

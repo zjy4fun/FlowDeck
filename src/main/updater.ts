@@ -1,4 +1,4 @@
-import { app, dialog, net } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, net } from 'electron';
 // Use original-fs to bypass Electron's asar interception on .asar paths
 import * as originalFs from 'original-fs';
 import * as fs from 'fs';
@@ -6,6 +6,40 @@ import * as path from 'path';
 
 const REPO = 'zjy4fun/FlowDeck';
 const ASAR_ASSET_NAME = 'app.asar';
+const UPDATE_WINDOW_CHANNEL = 'flowdeck:update-state';
+
+type UpdateWindowAction = 'cancel' | 'restart' | 'close';
+
+interface UpdateWindowState {
+  title: string;
+  detail: string;
+  downloadedBytes: number;
+  totalBytes: number;
+  progress: number;
+  showProgress: boolean;
+  primaryAction: UpdateWindowAction;
+  primaryLabel: string;
+  secondaryAction?: UpdateWindowAction;
+  secondaryLabel?: string;
+}
+
+interface DownloadAssetOptions {
+  expectedBytes: number;
+  onProgress: (downloadedBytes: number, totalBytes: number) => void;
+  onCancelableChange: (cancel: (() => void) | null) => void;
+}
+
+class UpdateCancelledError extends Error {
+  constructor() {
+    super('Update download canceled');
+    this.name = 'UpdateCancelledError';
+  }
+}
+
+let updateWindow: BrowserWindow | null = null;
+let updateWindowState: UpdateWindowState | null = null;
+let cancelActiveDownload: (() => void) | null = null;
+let updaterIpcRegistered = false;
 
 function getPendingUpdateDir(): string {
   return path.join(app.getPath('userData'), 'pending-update');
@@ -115,10 +149,135 @@ async function fetchLatestRelease(): Promise<GitHubRelease> {
   });
 }
 
-async function downloadAsset(url: string, dest: string): Promise<void> {
+function normalizeByteCount(raw: number): number {
+  if (!Number.isFinite(raw) || raw <= 0) return 0;
+  return Math.round(raw);
+}
+
+function parseContentLength(
+  header: string | string[] | undefined,
+): number {
+  const value = Array.isArray(header) ? header[0] : header;
+  if (!value) return 0;
+  const parsed = Number(value);
+  return normalizeByteCount(parsed);
+}
+
+function clampProgress(progress: number): number {
+  if (!Number.isFinite(progress)) return 0;
+  if (progress < 0) return 0;
+  if (progress > 1) return 1;
+  return progress;
+}
+
+function createUpdateWindow(): BrowserWindow {
+  if (updateWindow && !updateWindow.isDestroyed()) return updateWindow;
+
+  const win = new BrowserWindow({
+    width: 800,
+    height: 286,
+    resizable: false,
+    minimizable: false,
+    maximizable: false,
+    backgroundColor: '#ececec',
+    title: `Updating ${app.name}`,
+    titleBarStyle: 'hiddenInset',
+    trafficLightPosition: { x: 14, y: 12 },
+    show: false,
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: false,
+      preload: path.join(__dirname, '..', 'preload', 'index.js'),
+    },
+  });
+
+  win.once('ready-to-show', () => {
+    if (!win.isDestroyed()) win.show();
+  });
+
+  win.webContents.on('did-finish-load', () => {
+    if (updateWindowState && !win.isDestroyed()) {
+      win.webContents.send(UPDATE_WINDOW_CHANNEL, updateWindowState);
+    }
+  });
+
+  win.on('closed', () => {
+    updateWindow = null;
+    if (cancelActiveDownload) {
+      const cancel = cancelActiveDownload;
+      cancelActiveDownload = null;
+      cancel();
+    }
+  });
+
+  win.loadFile(
+    path.join(__dirname, '..', 'renderer', 'update-window.html'),
+  ).catch((err) => {
+    console.error('Failed to load update window:', err);
+  });
+
+  updateWindow = win;
+  return win;
+}
+
+function closeUpdateWindow(): void {
+  if (!updateWindow || updateWindow.isDestroyed()) {
+    updateWindow = null;
+    return;
+  }
+  updateWindow.close();
+}
+
+function pushUpdateWindowState(state: UpdateWindowState): void {
+  updateWindowState = state;
+  const win = createUpdateWindow();
+  if (!win.isDestroyed() && !win.webContents.isLoadingMainFrame()) {
+    win.webContents.send(UPDATE_WINDOW_CHANNEL, state);
+  }
+}
+
+function createDownloadingState(
+  version: string,
+  downloadedBytes: number,
+  totalBytes: number,
+): UpdateWindowState {
+  const safeTotal = Math.max(
+    normalizeByteCount(totalBytes),
+    normalizeByteCount(downloadedBytes),
+    1,
+  );
+  const safeDownloaded = Math.min(
+    normalizeByteCount(downloadedBytes),
+    safeTotal,
+  );
+
+  return {
+    title: 'Downloading update...',
+    detail: `${app.name} ${version}`,
+    downloadedBytes: safeDownloaded,
+    totalBytes: safeTotal,
+    progress: clampProgress(safeDownloaded / safeTotal),
+    showProgress: true,
+    primaryAction: 'cancel',
+    primaryLabel: 'Cancel',
+  };
+}
+
+async function downloadAsset(
+  url: string,
+  dest: string,
+  options: DownloadAssetOptions,
+): Promise<void> {
   const dir = path.dirname(dest);
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
+  }
+
+  try {
+    originalFs.unlinkSync(dest);
+  } catch {
+    /* ignore */
   }
 
   return new Promise((resolve, reject) => {
@@ -126,27 +285,78 @@ async function downloadAsset(url: string, dest: string): Promise<void> {
     request.setHeader('User-Agent', `FlowDeck/${app.getVersion()}`);
     request.setHeader('Accept', 'application/octet-stream');
 
+    let settled = false;
+    const finish = (error?: unknown): void => {
+      if (settled) return;
+      settled = true;
+      options.onCancelableChange(null);
+      if (error) {
+        reject(error);
+        return;
+      }
+      resolve();
+    };
+
+    const cancel = (): void => {
+      if (settled) return;
+      try {
+        request.abort();
+      } catch {
+        /* ignore */
+      }
+      finish(new UpdateCancelledError());
+    };
+
+    options.onCancelableChange(cancel);
+
     request.on('response', (response) => {
       if (response.statusCode !== 200) {
-        reject(new Error(`Download failed with status ${response.statusCode}`));
+        finish(new Error(`Download failed with status ${response.statusCode}`));
         return;
       }
 
+      const reportedTotalBytes = parseContentLength(response.headers['content-length']);
+      const fallbackTotalBytes = normalizeByteCount(options.expectedBytes);
+      const totalBytes = reportedTotalBytes || fallbackTotalBytes;
+
       const chunks: Buffer[] = [];
+      let downloadedBytes = 0;
+      options.onProgress(0, totalBytes);
+
       response.on('data', (chunk) => {
-        chunks.push(Buffer.from(chunk));
+        if (settled) return;
+        const nextChunk = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+        chunks.push(nextChunk);
+        downloadedBytes += nextChunk.length;
+        options.onProgress(downloadedBytes, totalBytes);
       });
+
+      response.on('aborted', () => {
+        finish(new UpdateCancelledError());
+      });
+
+      response.on('error', (err) => {
+        finish(err);
+      });
+
       response.on('end', () => {
+        if (settled) return;
         try {
           // Use original-fs to write .asar file without Electron interception
           originalFs.writeFileSync(dest, Buffer.concat(chunks));
-          resolve();
+          const finalBytes = totalBytes || downloadedBytes;
+          options.onProgress(finalBytes, finalBytes);
+          finish();
         } catch (e) {
-          reject(e);
+          finish(e);
         }
       });
     });
-    request.on('error', reject);
+
+    request.on('error', (err) => {
+      finish(err);
+    });
+
     request.end();
   });
 }
@@ -179,16 +389,74 @@ async function checkAndDownload(manual: boolean): Promise<void> {
     return;
   }
 
-  if (manual) {
-    dialog.showMessageBox({
-      type: 'info',
-      title: 'Update Available',
-      message: `Downloading version ${remoteVersion}...`,
-    });
+  const staged = getStagedAsarPath();
+  const shouldShowProgressWindow = manual;
+
+  if (shouldShowProgressWindow) {
+    pushUpdateWindowState(
+      createDownloadingState(remoteVersion, 0, asarAsset.size),
+    );
   }
 
-  const staged = getStagedAsarPath();
-  await downloadAsset(asarAsset.browser_download_url, staged);
+  try {
+    await downloadAsset(asarAsset.browser_download_url, staged, {
+      expectedBytes: asarAsset.size,
+      onCancelableChange: (cancel) => {
+        cancelActiveDownload = cancel;
+      },
+      onProgress: (downloadedBytes, totalBytes) => {
+        if (!shouldShowProgressWindow) return;
+        pushUpdateWindowState(
+          createDownloadingState(
+            remoteVersion,
+            downloadedBytes,
+            totalBytes || asarAsset.size,
+          ),
+        );
+      },
+    });
+  } catch (err) {
+    if (err instanceof UpdateCancelledError) {
+      if (shouldShowProgressWindow) {
+        closeUpdateWindow();
+      }
+      return;
+    }
+
+    if (shouldShowProgressWindow) {
+      pushUpdateWindowState({
+        title: 'Update failed',
+        detail: err instanceof Error ? err.message : 'Unknown error',
+        downloadedBytes: 0,
+        totalBytes: 1,
+        progress: 0,
+        showProgress: false,
+        primaryAction: 'close',
+        primaryLabel: 'Close',
+      });
+      return;
+    }
+
+    throw err;
+  } finally {
+    cancelActiveDownload = null;
+  }
+
+  if (shouldShowProgressWindow) {
+    pushUpdateWindowState({
+      title: 'Update ready',
+      detail: `Version ${remoteVersion} has been downloaded. Restart to apply it now.`,
+      downloadedBytes: Math.max(asarAsset.size, 1),
+      totalBytes: Math.max(asarAsset.size, 1),
+      progress: 1,
+      showProgress: true,
+      primaryAction: 'restart',
+      primaryLabel: 'Restart Now',
+      secondaryAction: 'close',
+      secondaryLabel: 'Later',
+    });
+    return;
+  }
 
   const result = await dialog.showMessageBox({
     type: 'info',
@@ -203,6 +471,29 @@ async function checkAndDownload(manual: boolean): Promise<void> {
     app.relaunch();
     app.exit(0);
   }
+}
+
+export function registerUpdaterIpcHandlers(): void {
+  if (updaterIpcRegistered) return;
+  updaterIpcRegistered = true;
+
+  ipcMain.handle('flowdeck:update-cancel', () => {
+    if (cancelActiveDownload) {
+      const cancel = cancelActiveDownload;
+      cancelActiveDownload = null;
+      cancel();
+    }
+    closeUpdateWindow();
+  });
+
+  ipcMain.handle('flowdeck:update-restart', () => {
+    app.relaunch();
+    app.exit(0);
+  });
+
+  ipcMain.handle('flowdeck:update-close-window', () => {
+    closeUpdateWindow();
+  });
 }
 
 export function initAutoUpdater(): void {

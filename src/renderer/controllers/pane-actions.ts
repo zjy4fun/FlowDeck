@@ -9,7 +9,8 @@ import type { PaneActionsDeps } from '../types';
 
 export interface PaneActionsController {
   focusPane: (paneId: string, focusTerminal?: boolean) => void;
-  addPane: () => void;
+  addPane: (cwdOverride?: string) => void;
+  addPaneFromSelectedDirectory: () => Promise<void>;
   closePane: (index: number) => void | Promise<void>;
   handleTitleChange: (paneId: string, title: string) => void;
   handleCwdChange: (paneId: string, cwd: string) => void;
@@ -75,14 +76,14 @@ export function createPaneActionsController(
     }
   }
 
-  function addPane(): void {
+  function addPane(cwdOverride?: string): void {
     if (state.panes.length >= state.settings.maxSessions) {
       throw new Error(`Session limit reached (${state.settings.maxSessions})`);
     }
 
     const accent =
       ACCENT_PALETTE[(state.nextPaneNumber - 1) % ACCENT_PALETTE.length];
-    const cwd = state.settings.defaultOpenDirectory;
+    const cwd = cwdOverride?.trim() || state.settings.defaultOpenDirectory;
     const newPane = {
       id: `p${state.nextPaneNumber}`,
       title: null,
@@ -95,6 +96,12 @@ export function createPaneActionsController(
     state.panes = [...state.panes, newPane];
     state.focusedPaneId = newPane.id;
     deps.render(true);
+  }
+
+  async function addPaneFromSelectedDirectory(): Promise<void> {
+    const selectedDirectory = await bridge.selectDirectory();
+    if (!selectedDirectory) return;
+    addPane(selectedDirectory);
   }
 
   async function closePane(index: number): Promise<void> {
@@ -181,6 +188,7 @@ export function createPaneActionsController(
   return {
     focusPane,
     addPane,
+    addPaneFromSelectedDirectory,
     closePane,
     handleTitleChange,
     handleCwdChange,

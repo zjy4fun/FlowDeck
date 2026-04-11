@@ -6,6 +6,7 @@ import { state, dom, getFocusedIndex, getPaneLabel } from './state';
 export interface TabActions {
   focusPane: (paneId: string) => void;
   closePane: (index: number) => void | Promise<void>;
+  addPaneFromSelectedDirectory: () => void | Promise<void>;
   render: () => void;
 }
 
@@ -237,6 +238,19 @@ function createTabElement(
   return tab;
 }
 
+function createAddPaneButton(): HTMLButtonElement {
+  const addButton = document.createElement('button');
+  addButton.type = 'button';
+  addButton.className = 'tab-add-slot';
+  addButton.textContent = '+';
+  addButton.setAttribute('aria-label', 'Add tab from directory');
+  addButton.addEventListener('click', () => {
+    clearPendingTabFocus();
+    void actions.addPaneFromSelectedDirectory();
+  });
+  return addButton;
+}
+
 /* ── Render ── */
 
 export function renderTabs(): void {
@@ -244,25 +258,26 @@ export function renderTabs(): void {
   const draggedId = state.dragState?.paneId ?? null;
   let slot = 0;
 
-  dom.tabsList.replaceChildren(
-    ...state.panes.map((pane, index) => {
-      const isDragging =
-        pane.id === draggedId && (state.dragState?.hasMoved ?? false);
-      const insertBefore =
-        !isDragging &&
-        (state.dragState?.hasMoved ?? false) &&
-        state.dragState?.dropIndex === slot;
+  const tabElements = state.panes.map((pane, index) => {
+    const isDragging =
+      pane.id === draggedId && (state.dragState?.hasMoved ?? false);
+    const insertBefore =
+      !isDragging &&
+      (state.dragState?.hasMoved ?? false) &&
+      state.dragState?.dropIndex === slot;
 
-      const meta: DragMeta = {
-        isDragging,
-        insertBefore: Boolean(insertBefore),
-        offsetX: isDragging
-          ? state.dragState!.currentX - state.dragState!.startX
-          : 0,
-      };
+    const meta: DragMeta = {
+      isDragging,
+      insertBefore: Boolean(insertBefore),
+      offsetX: isDragging
+        ? state.dragState!.currentX - state.dragState!.startX
+        : 0,
+    };
 
-      if (!isDragging) slot += 1;
-      return createTabElement(pane, index, focusedIndex, meta);
-    }),
-  );
+    if (!isDragging) slot += 1;
+    return createTabElement(pane, index, focusedIndex, meta);
+  });
+
+  tabElements.push(createAddPaneButton());
+  dom.tabsList.replaceChildren(...tabElements);
 }

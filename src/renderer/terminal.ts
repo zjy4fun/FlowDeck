@@ -7,29 +7,43 @@ import { bridge } from './bridge';
 
 /* ── Theme ── */
 
+function getCursorAccentColor(cursorColor: string): string {
+  const hex = cursorColor.replace('#', '');
+  if (!/^[0-9a-fA-F]{6}$/.test(hex)) return '#c6d0f5';
+
+  const red = parseInt(hex.slice(0, 2), 16);
+  const green = parseInt(hex.slice(2, 4), 16);
+  const blue = parseInt(hex.slice(4, 6), 16);
+  const luminance = (0.2126 * red + 0.7152 * green + 0.0722 * blue) / 255;
+
+  return luminance > 0.58 ? '#232634' : '#c6d0f5';
+}
+
 export function createTerminalTheme(accent: string) {
   return {
-    background: '#282a36',
-    foreground: '#d9d4c7',
+    // Ghostty-like dark palette (based on Catppuccin Frappe)
+    background: '#303446',
+    foreground: '#c6d0f5',
     cursor: accent,
-    cursorAccent: '#282a36',
-    selectionBackground: `${accent}44`,
-    black: '#282a36',
-    red: '#ff6b57',
-    green: '#98c379',
-    yellow: '#e5c07b',
-    blue: '#61afef',
-    magenta: '#c678dd',
-    cyan: '#56b6c2',
-    white: '#d9d4c7',
-    brightBlack: '#5a6374',
-    brightRed: '#ff8578',
-    brightGreen: '#b0d98b',
-    brightYellow: '#f0d58a',
-    brightBlue: '#7eb7ff',
-    brightMagenta: '#d9a5e8',
-    brightCyan: '#7fd8e6',
-    brightWhite: '#ffffff',
+    cursorAccent: getCursorAccentColor(accent),
+    selectionBackground: '#44495d',
+    selectionForeground: '#c6d0f5',
+    black: '#51576d',
+    red: '#e78284',
+    green: '#a6d189',
+    yellow: '#e5c890',
+    blue: '#8caaee',
+    magenta: '#f4b8e4',
+    cyan: '#81c8be',
+    white: '#a5adce',
+    brightBlack: '#626880',
+    brightRed: '#e78284',
+    brightGreen: '#a6d189',
+    brightYellow: '#e5c890',
+    brightBlue: '#8caaee',
+    brightMagenta: '#f4b8e4',
+    brightCyan: '#81c8be',
+    brightWhite: '#b5bfe2',
   };
 }
 
@@ -95,7 +109,7 @@ export function createPaneNode(
     convertEol: true,
     cursorBlink: true,
     disableStdin: false,
-    drawBoldTextInBrightColors: false,
+    drawBoldTextInBrightColors: true,
     fontFamily: 'Menlo, Monaco, Consolas, "Liberation Mono", monospace',
     fontSize: state.settings.fontSize,
     lineHeight: 1.2,

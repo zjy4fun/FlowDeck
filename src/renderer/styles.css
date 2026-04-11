@@ -7,9 +7,11 @@
   --panel-border: #3d3f54;
   --panel-muted: #8a8a8a;
   --text: #f4f1e8;
+  --terminal-bg: #303446;
+  --terminal-fg: #c6d0f5;
   --app-font-size: 13px;
   --pane-opacity: 0.75;
-  --pane-tone-opacity: 0.21;
+  --pane-tone-opacity: 0.14;
   --pane-width: 720px;
   --tabs-height: 34px;
   --status-height: 20px;
@@ -65,7 +67,7 @@ body {
   display: flex;
   align-items: stretch;
   align-content: flex-start;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 0;
   flex: 1 1 auto;
   min-width: 0;
@@ -90,9 +92,18 @@ body {
 }
 
 .tab.is-focused {
-  z-index: 2;
+  z-index: 3;
   color: #fffdf7;
-  background: rgba(255, 255, 255, 0.12);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--pane-accent) 18%, rgba(255, 255, 255, 0.18)),
+      color-mix(in srgb, var(--pane-accent) 10%, rgba(255, 255, 255, 0.08))
+    );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.24),
+    inset 0 0 0 1px color-mix(in srgb, var(--pane-accent) 38%, rgba(255, 255, 255, 0.08)),
+    0 1px 0 #282a36;
 }
 
 .tab.is-focused .tab-label {
@@ -101,7 +112,9 @@ body {
 }
 
 .tab.is-focused .tab-shortcut {
-  color: inherit;
+  border-color: color-mix(in srgb, var(--pane-accent) 82%, #f7f8ff);
+  background: color-mix(in srgb, var(--pane-accent) 32%, rgba(24, 26, 36, 0.92));
+  color: color-mix(in srgb, var(--pane-accent) 85%, #ffffff);
 }
 
 .tab.is-dragging {
@@ -122,6 +135,7 @@ body {
 
 .tab-main,
 .tab-close,
+.tab-add-slot,
 .tabs-add,
 .tabs-settings {
   appearance: none;
@@ -157,8 +171,20 @@ body {
 
 .tab-shortcut {
   flex: 0 0 auto;
-  color: rgba(255, 255, 255, 0.35);
-  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.4em;
+  padding: 1px 6px;
+  border: 1px solid color-mix(in srgb, var(--pane-accent) 72%, #1a1c27);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--pane-accent) 22%, rgba(16, 18, 27, 0.86));
+  color: color-mix(in srgb, var(--pane-accent) 74%, #ffffff);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
   margin-left: 8px;
 }
 
@@ -195,7 +221,8 @@ body {
 }
 
 .tabs-add,
-.tabs-settings {
+.tabs-settings,
+.tab-add-slot {
   width: 34px;
   height: 33px;
   flex: 0 0 auto;
@@ -210,7 +237,8 @@ body {
 }
 
 .tabs-add:hover,
-.tabs-settings:hover {
+.tabs-settings:hover,
+.tab-add-slot:hover {
   background: rgba(255, 255, 255, 0.08);
 }
 
@@ -289,7 +317,7 @@ body {
   border: 1px solid var(--pane-accent);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02)),
-    color-mix(in srgb, var(--pane-accent) 10%, #282a36);
+    color-mix(in srgb, var(--pane-accent) 10%, var(--terminal-bg));
   overflow: hidden;
   cursor: pointer;
   transition:
@@ -312,7 +340,7 @@ body {
 .pane-surface {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.02);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .pane-surface::after {
@@ -320,7 +348,7 @@ body {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: rgba(4, 4, 4, var(--pane-tone-opacity));
+  background: rgba(20, 23, 33, var(--pane-tone-opacity));
   transition: background 120ms ease;
 }
 
@@ -331,19 +359,17 @@ body {
   bottom: 0;
   width: var(--pane-occluded-width);
   pointer-events: none;
-  background: #21222c;
+  background: #2a2e3e;
   opacity: 0;
   transition: opacity 120ms ease;
 }
 
 .pane.is-focused {
-  box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--pane-accent) 22%, transparent),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  box-shadow: none;
 }
 
 .pane.is-focused .pane-surface::after {
-  background: rgba(4, 4, 4, 0.06);
+  background: rgba(20, 23, 33, 0.08);
 }
 
 .pane.is-navigation-target {
@@ -381,38 +407,7 @@ body {
 }
 
 .pane-resize-handle::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  background: color-mix(in srgb, var(--pane-accent) 72%, #fff);
-  box-shadow: 0 0 14px color-mix(in srgb, var(--pane-accent) 58%, transparent);
-  opacity: 0;
-  transform: scaleX(0.7);
-  transition:
-    opacity 120ms ease,
-    transform 120ms ease;
-}
-
-.pane-resize-handle.is-left::before {
-  right: 3px;
-}
-
-.pane-resize-handle.is-right::before {
-  left: 3px;
-}
-
-.pane.is-focused .pane-resize-handle:hover::before,
-.pane.is-focused .pane-resize-handle.is-active::before {
-  opacity: 1;
-  transform: scaleX(1);
-}
-
-.pane.is-focused .pane-resize-handle.is-active::before {
-  box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--pane-accent) 38%, transparent),
-    0 0 18px color-mix(in srgb, var(--pane-accent) 68%, transparent);
+  content: none;
 }
 
 .pane.is-resizing {
@@ -475,7 +470,8 @@ body.is-resizing-pane {
   width: 100%;
   height: 100%;
   padding: 0 6px;
-  background: #282a36;
+  background: var(--terminal-bg);
+  color: var(--terminal-fg);
 }
 
 .terminal-host.is-drop-target {
@@ -486,12 +482,13 @@ body.is-resizing-pane {
 
 .terminal-host .xterm {
   height: 100%;
-  background-color: #282a36 !important;
+  background-color: var(--terminal-bg) !important;
+  color: var(--terminal-fg);
 }
 
 .terminal-host .xterm-viewport {
   overflow: hidden !important;
-  background-color: #282a36 !important;
+  background-color: var(--terminal-bg) !important;
 }
 
 .terminal-host .xterm-screen {

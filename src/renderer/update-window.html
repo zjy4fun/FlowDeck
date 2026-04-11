@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Updating FlowDeck</title>
+    <style>
+      :root {
+        --bg: #ececec;
+        --text: #26272b;
+        --muted: #4a4c52;
+        --track: #d8d8d8;
+        --fill: #1f7bf0;
+        --button-bg: #d9d9d9;
+        --button-text: #2a2b2f;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        background: var(--bg);
+        color: var(--text);
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      }
+
+      body {
+        padding: 34px 38px 28px;
+        -webkit-app-region: drag;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: 128px minmax(0, 1fr);
+        column-gap: 18px;
+        align-items: start;
+      }
+
+      .icon {
+        width: 106px;
+        height: 106px;
+        border-radius: 24px;
+        background: linear-gradient(165deg, #2ad0ff 0%, #1286d7 65%, #0b5cb7 100%);
+        box-shadow:
+          inset 0 2px 0 rgba(255, 255, 255, 0.32),
+          inset 0 -4px 10px rgba(7, 26, 81, 0.25),
+          0 5px 12px rgba(0, 0, 0, 0.14);
+        position: relative;
+      }
+
+      .icon::before {
+        content: '';
+        position: absolute;
+        width: 32px;
+        height: 54px;
+        left: 37px;
+        top: 24px;
+        border-radius: 18px 18px 12px 12px;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.97) 0%, #eff6ff 100%);
+        box-shadow: inset 0 -2px 2px rgba(0, 0, 0, 0.15);
+      }
+
+      .icon::after {
+        content: '';
+        position: absolute;
+        left: 43px;
+        top: 32px;
+        width: 20px;
+        height: 27px;
+        background:
+          linear-gradient(90deg, #118ad9 0 3px, transparent 3px 8px, #118ad9 8px 11px, transparent 11px 16px, #118ad9 16px 19px, transparent 19px);
+        border-radius: 2px;
+      }
+
+      .content {
+        display: grid;
+        row-gap: 16px;
+      }
+
+      .title {
+        font-size: 42px;
+        line-height: 1.12;
+        font-weight: 700;
+        letter-spacing: -0.03em;
+        color: #2e2f33;
+      }
+
+      .progress-track {
+        width: 100%;
+        height: 18px;
+        border-radius: 999px;
+        background: var(--track);
+        overflow: hidden;
+      }
+
+      .progress-fill {
+        width: 0%;
+        height: 100%;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #1f7bf0 0%, #2e8ffc 100%);
+        transition: width 120ms linear;
+      }
+
+      .progress-text {
+        min-height: 44px;
+        font-size: 42px;
+        line-height: 1.04;
+        font-weight: 500;
+        letter-spacing: -0.02em;
+        color: #2f3035;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .detail {
+        min-height: 24px;
+        font-size: 22px;
+        line-height: 1.25;
+        color: var(--muted);
+        letter-spacing: -0.01em;
+      }
+
+      .actions {
+        margin-top: 12px;
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        -webkit-app-region: no-drag;
+      }
+
+      .button {
+        min-width: 202px;
+        height: 78px;
+        border: 0;
+        border-radius: 14px;
+        background: var(--button-bg);
+        color: var(--button-text);
+        font-size: 46px;
+        font-weight: 500;
+        letter-spacing: -0.03em;
+        cursor: pointer;
+      }
+
+      .button:hover {
+        filter: brightness(0.97);
+      }
+
+      .button:active {
+        transform: translateY(1px);
+      }
+
+      .button.hidden {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="layout">
+      <div class="icon" aria-hidden="true"></div>
+      <section class="content">
+        <h1 id="title" class="title">Downloading update...</h1>
+        <div class="progress-track" id="progress-track">
+          <div class="progress-fill" id="progress-fill"></div>
+        </div>
+        <p id="progress-text" class="progress-text">0.0 MB of 0.0 MB</p>
+        <p id="detail" class="detail"></p>
+      </section>
+    </main>
+
+    <div class="actions">
+      <button id="secondary-button" class="button hidden" type="button">Later</button>
+      <button id="primary-button" class="button" type="button">Cancel</button>
+    </div>
+
+    <script>
+      const bridge = window.flowdeck;
+      if (!bridge) {
+        throw new Error('flowdeck bridge not available');
+      }
+
+      const ACTION_CANCEL = 'cancel';
+      const ACTION_RESTART = 'restart';
+      const ACTION_CLOSE = 'close';
+
+      const state = {
+        title: 'Downloading update...',
+        detail: '',
+        downloadedBytes: 0,
+        totalBytes: 1,
+        progress: 0,
+        showProgress: true,
+        primaryAction: ACTION_CANCEL,
+        primaryLabel: 'Cancel',
+        secondaryAction: null,
+        secondaryLabel: '',
+      };
+
+      const els = {
+        title: document.getElementById('title'),
+        detail: document.getElementById('detail'),
+        progressTrack: document.getElementById('progress-track'),
+        progressFill: document.getElementById('progress-fill'),
+        progressText: document.getElementById('progress-text'),
+        primaryButton: document.getElementById('primary-button'),
+        secondaryButton: document.getElementById('secondary-button'),
+      };
+
+      function clampProgress(value) {
+        if (!Number.isFinite(value)) return 0;
+        if (value < 0) return 0;
+        if (value > 1) return 1;
+        return value;
+      }
+
+      function normalizeBytes(value) {
+        if (!Number.isFinite(value) || value <= 0) return 0;
+        return Math.round(value);
+      }
+
+      function formatMegabytes(bytes) {
+        const mb = bytes / (1024 * 1024);
+        return mb.toFixed(1) + ' MB';
+      }
+
+      function isAction(value) {
+        return value === ACTION_CANCEL || value === ACTION_RESTART || value === ACTION_CLOSE;
+      }
+
+      function applyPartialState(payload) {
+        if (!payload || typeof payload !== 'object') return;
+
+        if (typeof payload.title === 'string') state.title = payload.title;
+        if (typeof payload.detail === 'string') state.detail = payload.detail;
+        if (typeof payload.primaryLabel === 'string') state.primaryLabel = payload.primaryLabel;
+        if (typeof payload.secondaryLabel === 'string') {
+          state.secondaryLabel = payload.secondaryLabel;
+        } else if (!payload.secondaryLabel) {
+          state.secondaryLabel = '';
+        }
+
+        if (typeof payload.showProgress === 'boolean') state.showProgress = payload.showProgress;
+
+        state.downloadedBytes = normalizeBytes(
+          typeof payload.downloadedBytes === 'number' ? payload.downloadedBytes : state.downloadedBytes,
+        );
+        state.totalBytes = Math.max(
+          normalizeBytes(typeof payload.totalBytes === 'number' ? payload.totalBytes : state.totalBytes),
+          state.downloadedBytes,
+          1,
+        );
+
+        state.progress = clampProgress(
+          typeof payload.progress === 'number'
+            ? payload.progress
+            : state.downloadedBytes / state.totalBytes,
+        );
+
+        if (isAction(payload.primaryAction)) {
+          state.primaryAction = payload.primaryAction;
+        }
+
+        if (isAction(payload.secondaryAction)) {
+          state.secondaryAction = payload.secondaryAction;
+        } else {
+          state.secondaryAction = null;
+        }
+      }
+
+      function render() {
+        els.title.textContent = state.title;
+        els.detail.textContent = state.detail;
+
+        if (state.detail) {
+          els.detail.style.visibility = 'visible';
+        } else {
+          els.detail.style.visibility = 'hidden';
+        }
+
+        if (state.showProgress) {
+          els.progressTrack.style.visibility = 'visible';
+          els.progressText.style.visibility = 'visible';
+          els.progressFill.style.width = (state.progress * 100).toFixed(1) + '%';
+          els.progressText.textContent =
+            formatMegabytes(state.downloadedBytes) +
+            ' of ' +
+            formatMegabytes(Math.max(state.totalBytes, state.downloadedBytes));
+        } else {
+          els.progressTrack.style.visibility = 'hidden';
+          els.progressText.style.visibility = 'hidden';
+        }
+
+        els.primaryButton.textContent = state.primaryLabel;
+
+        if (state.secondaryAction && state.secondaryLabel) {
+          els.secondaryButton.textContent = state.secondaryLabel;
+          els.secondaryButton.classList.remove('hidden');
+        } else {
+          els.secondaryButton.classList.add('hidden');
+        }
+      }
+
+      async function runAction(action) {
+        if (!action) return;
+        try {
+          if (action === ACTION_CANCEL) {
+            await bridge.cancelUpdateDownload();
+            return;
+          }
+          if (action === ACTION_RESTART) {
+            await bridge.restartForUpdate();
+            return;
+          }
+          await bridge.closeUpdateWindow();
+        } catch (err) {
+          console.error('Update action failed:', err);
+        }
+      }
+
+      els.primaryButton.addEventListener('click', () => {
+        runAction(state.primaryAction);
+      });
+
+      els.secondaryButton.addEventListener('click', () => {
+        runAction(state.secondaryAction);
+      });
+
+      const unsubscribe = bridge.onUpdateWindowState((payload) => {
+        applyPartialState(payload);
+        render();
+      });
+
+      window.addEventListener('beforeunload', () => {
+        if (typeof unsubscribe === 'function') {
+          unsubscribe();
+        }
+      });
+
+      render();
+    </script>
+  </body>
+</html>
