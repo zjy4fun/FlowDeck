@@ -112,9 +112,8 @@ body {
 }
 
 .tab.is-focused .tab-shortcut {
-  border-color: color-mix(in srgb, var(--pane-accent) 82%, #f7f8ff);
-  background: color-mix(in srgb, var(--pane-accent) 32%, rgba(24, 26, 36, 0.92));
-  color: color-mix(in srgb, var(--pane-accent) 85%, #ffffff);
+  color: inherit;
+  opacity: 0.72;
 }
 
 .tab.is-dragging {
@@ -171,19 +170,10 @@ body {
 
 .tab-shortcut {
   flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 2.4em;
-  padding: 1px 6px;
-  border: 1px solid color-mix(in srgb, var(--pane-accent) 72%, #1a1c27);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--pane-accent) 22%, rgba(16, 18, 27, 0.86));
-  color: color-mix(in srgb, var(--pane-accent) 74%, #ffffff);
-  font-size: 11px;
-  font-weight: 700;
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 12px;
+  font-weight: 500;
   letter-spacing: 0.01em;
-  line-height: 1.2;
   font-variant-numeric: tabular-nums;
   margin-left: 8px;
 }
@@ -282,6 +272,16 @@ body {
 }
 
 .settings-number {
+  width: 100%;
+  height: 24px;
+  padding: 0 6px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  font: inherit;
+}
+
+.settings-select {
   width: 100%;
   height: 24px;
   padding: 0 6px;
@@ -435,6 +435,7 @@ body {
 }
 
 #status-label {
+  flex: 1 1 auto;
   min-width: 0;
   white-space: nowrap;
   overflow: hidden;
@@ -447,9 +448,14 @@ body {
 }
 
 .status-hint {
-  flex: 0 0 auto;
+  min-width: 0;
+  flex: 0 1 62%;
+  max-width: 62%;
+  text-align: right;
   color: rgba(255, 255, 255, 0.45);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ── Drag state ── */

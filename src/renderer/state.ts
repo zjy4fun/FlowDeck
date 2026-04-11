@@ -11,15 +11,15 @@ import { bridge } from './bridge';
 /* ── Constants ── */
 
 export const ACCENT_PALETTE = [
-  '#ff6b57',
-  '#ff9f1c',
-  '#ffd166',
+  '#5cc8ff',
   '#06d6a0',
+  '#ff9f1c',
+  '#ff6b57',
+  '#ffd166',
   '#118ab2',
   '#9b5de5',
   '#ef476f',
   '#7bd389',
-  '#5cc8ff',
   '#f4a261',
 ] as const;
 
@@ -29,6 +29,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   paneWidth: 720,
   defaultOpenDirectory: bridge.defaultCwd,
   maxSessions: 8,
+  usageProvider: 'codex',
 };
 
 export function getDirectoryLabel(cwd: string): string {
@@ -92,6 +93,7 @@ export let dom = {
   paneOpacityRange: null! as HTMLInputElement,
   paneOpacityInput: null! as HTMLInputElement,
   paneOpacityValue: null! as HTMLElement,
+  usageProviderSelect: null! as HTMLSelectElement,
 };
 
 export function initDom(): void {
@@ -112,6 +114,7 @@ export function initDom(): void {
     paneOpacityRange: document.getElementById('pane-opacity-range') as HTMLInputElement,
     paneOpacityInput: document.getElementById('pane-opacity-input') as HTMLInputElement,
     paneOpacityValue: document.getElementById('pane-opacity-value')!,
+    usageProviderSelect: document.getElementById('usage-provider-input') as HTMLSelectElement,
   };
 }
 

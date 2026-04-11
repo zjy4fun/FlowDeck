@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.3.8
+
+- Add usage quota tracking in status bar with periodic refresh
+- Add configurable usage source (`Codex` / `Claude Code`) in settings
+- Add update window flow with progress, cancellation, and restart controls
+- Improve initial session accent colors for better visual distinction
+- Update README docs for latest features and macOS/Windows release outputs
+
 ## v0.3.5
 
 - Fix asar hot-update: use original-fs to bypass Electron's asar interception

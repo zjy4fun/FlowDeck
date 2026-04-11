@@ -8,6 +8,7 @@ export interface PersistedSettings {
   paneWidth: number;
   defaultOpenDirectory: string;
   maxSessions: number;
+  usageProvider: 'codex' | 'claude-code';
 }
 
 const SETTINGS_FILE = 'settings.json';
@@ -18,6 +19,7 @@ const DEFAULTS: PersistedSettings = {
   paneWidth: 720,
   defaultOpenDirectory: app.getPath('home'),
   maxSessions: 8,
+  usageProvider: 'codex',
 };
 
 const LIMITS = {
@@ -84,6 +86,8 @@ function sanitizePersistedSettings(parsed: unknown): PersistedSettings {
       LIMITS.maxSessions.max,
       (v) => Math.round(v),
     ),
+    usageProvider:
+      source.usageProvider === 'claude-code' ? 'claude-code' : 'codex',
   };
 }
 

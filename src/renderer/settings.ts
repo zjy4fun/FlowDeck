@@ -44,6 +44,7 @@ export function applySettingsToDom(): void {
   dom.paneOpacityRange.value = settings.paneOpacity.toFixed(2);
   dom.paneOpacityInput.value = settings.paneOpacity.toFixed(2);
   dom.paneOpacityValue.textContent = settings.paneOpacity.toFixed(2);
+  dom.usageProviderSelect.value = settings.usageProvider;
 }
 
 /* ── Load persisted settings from main process ── */
@@ -127,10 +128,24 @@ function updatePaneOpacity(value: string): void {
   persistSettings();
 }
 
+function updateUsageProvider(
+  value: string,
+  onUsageProviderChanged: () => void,
+): void {
+  const nextProvider = value === 'claude-code' ? 'claude-code' : 'codex';
+  if (state.settings.usageProvider === nextProvider) return;
+
+  state.settings.usageProvider = nextProvider;
+  applySettingsToDom();
+  persistSettings();
+  onUsageProviderChanged();
+}
+
 /* ── Wire up settings panel event listeners ── */
 
 export function initSettingsListeners(
   render: (refit: boolean) => void,
+  onUsageProviderChanged: () => void,
 ): void {
   dom.fontSizeInput.addEventListener('change', () => {
     updateFontSize(dom.fontSizeInput.value, render);
@@ -162,6 +177,10 @@ export function initSettingsListeners(
 
   dom.paneOpacityInput.addEventListener('change', () => {
     updatePaneOpacity(dom.paneOpacityInput.value);
+  });
+
+  dom.usageProviderSelect.addEventListener('change', () => {
+    updateUsageProvider(dom.usageProviderSelect.value, onUsageProviderChanged);
   });
 
   // Toggle panel visibility

@@ -14,12 +14,12 @@ FlowDeck is a desktop terminal workspace designed for focused, pane-based coding
 
 ## Platform Support
 
-FlowDeck is currently supported on macOS only.
+FlowDeck currently targets macOS and Windows.
 
-- Local development and runtime support are validated on macOS.
-- CI build and type-check validation run on macOS runners.
-- Release artifacts are provided as macOS `.dmg` and `.zip` packages.
-- Linux and Windows are not supported at this time.
+- Local development and runtime validation are primarily done on macOS.
+- CI build and type-check validation run on macOS and Windows runners.
+- Release artifacts include macOS `.dmg` and `.zip`, plus Windows `.exe`.
+- Linux is not supported at this time.
 
 ## Brand
 
@@ -31,9 +31,12 @@ Brand assets live in [`assets/brand/`](./assets/brand/). The icon features three
 - Multi-pane workspace with add, close, focus, and drag-reorder interactions
 - Inline tab renaming with terminal title fallback
 - Keyboard navigation mode with `Ctrl+B`
-- Renderer settings for font size, pane width, and pane opacity
+- Better default visual separation for the first three sessions (blue, green, orange accents)
+- Renderer settings for font size, pane width, pane opacity, and usage source (`Codex` / `Claude Code`)
+- Live usage quota status in the footer with remaining budget, reset countdown, and periodic refresh
+- Built-in update window with download progress, cancel, and restart actions
 - Capture mode that writes a static snapshot to `/tmp/flowdeck-prototype.png`
-- macOS packaging via `electron-builder`
+- macOS/Windows packaging via `electron-builder`
 
 ## Tech Stack
 
@@ -55,7 +58,7 @@ Brand assets live in [`assets/brand/`](./assets/brand/). The icon features three
 
 ### Prerequisites
 
-- Node.js 20+
+- Node.js 22+
 - pnpm 10+
 
 ### Install
@@ -98,8 +101,8 @@ pnpm pack
 pnpm dist
 ```
 
-The current release workflow only packages macOS artifacts.
-CI validation is also pinned to macOS.
+The current release workflow packages macOS and Windows artifacts.
+Linux artifacts are not produced.
 
 ## Versioning and Releases
 
@@ -123,8 +126,8 @@ This does the following:
 
 After the tag reaches GitHub, the release workflow automatically:
 
-- builds the macOS package
-- uploads the `.dmg` and `.zip` files
+- builds macOS and Windows packages
+- uploads `.dmg`, `.zip`, `.exe`, `.yml`, and `app.asar` artifacts
 - creates a GitHub Release with the description from `CHANGELOG.md`
 
 ### Bump version only (dry run)
@@ -190,6 +193,7 @@ Minimum verification:
 
 ```bash
 pnpm build
+pnpm exec tsc --noEmit
 ```
 
 For UI or terminal behavior changes, also run:

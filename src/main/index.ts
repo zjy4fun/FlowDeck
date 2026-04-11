@@ -12,6 +12,36 @@ import {
 
 const isCaptureMode = process.env.FLOWDECK_CAPTURE === '1';
 
+type UsageProvider = 'codex' | 'claude-code';
+
+interface UsageQuotaSnapshot {
+  provider: UsageProvider;
+  sessionUsedPercent: number | null;
+  sessionResetsAt: number | null;
+  weeklyUsedPercent: number | null;
+  weeklyResetsAt: number | null;
+  sessionInputTokens: number | null;
+  sessionOutputTokens: number | null;
+  sessionTotalTokens: number | null;
+  queriedAt: string;
+}
+
+interface UsageWindow {
+  usedPercent: number | null;
+  resetsAt: number | null;
+}
+
+interface UsageQuotaRecord {
+  session: UsageWindow;
+  weekly: UsageWindow;
+}
+
+interface ClaudeTokenUsage {
+  inputTokens: number;
+  outputTokens: number;
+  totalTokens: number;
+}
+
 function ensurePtyHelper(): void {
   if (process.platform !== 'darwin') return;
 
@@ -27,6 +57,293 @@ function ensurePtyHelper(): void {
   } catch {
     /* helper may not exist on this arch */
   }
+}
+
+function toRecord(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  return value as Record<string, unknown>;
+}
+
+function toFiniteNumber(value: unknown): number | null {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return null;
+  return value;
+}
+
+function toPercent(value: unknown): number | null {
+  const numeric = toFiniteNumber(value);
+  if (numeric === null) return null;
+  return Math.max(0, Math.min(100, numeric));
+}
+
+function toEpochSeconds(value: unknown): number | null {
+  const numeric = toFiniteNumber(value);
+  if (numeric === null || numeric <= 0) return null;
+  return Math.floor(numeric);
+}
+
+function toNonNegativeInteger(value: unknown): number | null {
+  const numeric = toFiniteNumber(value);
+  if (numeric === null || numeric < 0) return null;
+  return Math.floor(numeric);
+}
+
+function listJsonlFilesByMtime(rootDirectory: string): string[] {
+  if (!fs.existsSync(rootDirectory)) return [];
+
+  const candidates: Array<{ filePath: string; mtimeMs: number }> = [];
+  const stack = [rootDirectory];
+
+  while (stack.length > 0) {
+    const directory = stack.pop()!;
+    let entries: fs.Dirent[];
+
+    try {
+      entries = fs.readdirSync(directory, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+
+    for (const entry of entries) {
+      const fullPath = path.join(directory, entry.name);
+
+      if (entry.isDirectory()) {
+        stack.push(fullPath);
+        continue;
+      }
+
+      if (!entry.isFile() || !entry.name.endsWith('.jsonl')) continue;
+
+      try {
+        const stats = fs.statSync(fullPath);
+        candidates.push({ filePath: fullPath, mtimeMs: stats.mtimeMs });
+      } catch {
+        /* ignore files that cannot be stat-ed */
+      }
+    }
+  }
+
+  return candidates
+    .sort((a, b) => b.mtimeMs - a.mtimeMs)
+    .map((entry) => entry.filePath);
+}
+
+function readLatestUsageRecord(
+  filePath: string,
+  extractor: (entry: Record<string, unknown>) => UsageQuotaRecord | null,
+): UsageQuotaRecord | null {
+  let content: string;
+  try {
+    content = fs.readFileSync(filePath, 'utf-8');
+  } catch {
+    return null;
+  }
+
+  const lines = content.split('\n');
+  for (let index = lines.length - 1; index >= 0; index -= 1) {
+    const line = lines[index]?.trim();
+    if (!line) continue;
+
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(line);
+    } catch {
+      continue;
+    }
+
+    const entry = toRecord(parsed);
+    if (!entry) continue;
+
+    const usage = extractor(entry);
+    if (usage) return usage;
+  }
+
+  return null;
+}
+
+function findLatestUsageRecord(
+  rootDirectory: string,
+  extractor: (entry: Record<string, unknown>) => UsageQuotaRecord | null,
+): UsageQuotaRecord | null {
+  const recentFiles = listJsonlFilesByMtime(rootDirectory);
+  for (const filePath of recentFiles) {
+    const usageRecord = readLatestUsageRecord(filePath, extractor);
+    if (usageRecord) return usageRecord;
+  }
+  return null;
+}
+
+function extractCodexUsage(entry: Record<string, unknown>): UsageQuotaRecord | null {
+  const payload = toRecord(entry.payload);
+  const rateLimits = payload ? toRecord(payload.rate_limits) : null;
+  if (!rateLimits) return null;
+
+  const primary = toRecord(rateLimits.primary);
+  const secondary = toRecord(rateLimits.secondary);
+  if (!primary && !secondary) return null;
+
+  return {
+    session: {
+      usedPercent: toPercent(primary?.used_percent),
+      resetsAt: toEpochSeconds(primary?.resets_at),
+    },
+    weekly: {
+      usedPercent: toPercent(secondary?.used_percent),
+      resetsAt: toEpochSeconds(secondary?.resets_at),
+    },
+  };
+}
+
+function extractClaudeUsage(entry: Record<string, unknown>): UsageQuotaRecord | null {
+  const directRateLimits = toRecord(entry.rate_limits);
+  const messageRateLimits = toRecord(toRecord(entry.message)?.rate_limits);
+  const messageUsageRateLimits = toRecord(
+    toRecord(toRecord(entry.message)?.usage)?.rate_limits,
+  );
+  const dataRateLimits = toRecord(toRecord(entry.data)?.rate_limits);
+
+  const rateLimits =
+    directRateLimits ??
+    messageRateLimits ??
+    messageUsageRateLimits ??
+    dataRateLimits;
+  if (!rateLimits) return null;
+
+  const fiveHour = toRecord(rateLimits.five_hour) ?? toRecord(rateLimits.primary);
+  const sevenDay = toRecord(rateLimits.seven_day) ?? toRecord(rateLimits.secondary);
+  if (!fiveHour && !sevenDay) return null;
+
+  return {
+    session: {
+      usedPercent: toPercent(fiveHour?.used_percentage ?? fiveHour?.used_percent),
+      resetsAt: toEpochSeconds(fiveHour?.resets_at),
+    },
+    weekly: {
+      usedPercent: toPercent(sevenDay?.used_percentage ?? sevenDay?.used_percent),
+      resetsAt: toEpochSeconds(sevenDay?.resets_at),
+    },
+  };
+}
+
+function extractClaudeTokenUsageFromEntry(
+  entry: Record<string, unknown>,
+): { inputTokens: number; outputTokens: number } | null {
+  const messageUsage = toRecord(toRecord(entry.message)?.usage);
+  const directUsage = toRecord(entry.usage);
+  const dataUsage = toRecord(toRecord(entry.data)?.usage);
+  const usage = messageUsage ?? directUsage ?? dataUsage;
+  if (!usage) return null;
+
+  const inputTokens = toNonNegativeInteger(usage.input_tokens);
+  const outputTokens = toNonNegativeInteger(usage.output_tokens);
+  if (inputTokens === null && outputTokens === null) return null;
+
+  return {
+    inputTokens: inputTokens ?? 0,
+    outputTokens: outputTokens ?? 0,
+  };
+}
+
+function readClaudeTokenUsage(filePath: string): ClaudeTokenUsage | null {
+  let content: string;
+  try {
+    content = fs.readFileSync(filePath, 'utf-8');
+  } catch {
+    return null;
+  }
+
+  let inputTokens = 0;
+  let outputTokens = 0;
+  let hasUsage = false;
+
+  for (const rawLine of content.split('\n')) {
+    const line = rawLine.trim();
+    if (!line) continue;
+
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(line);
+    } catch {
+      continue;
+    }
+
+    const entry = toRecord(parsed);
+    if (!entry) continue;
+
+    const tokenUsage = extractClaudeTokenUsageFromEntry(entry);
+    if (!tokenUsage) continue;
+
+    inputTokens += tokenUsage.inputTokens;
+    outputTokens += tokenUsage.outputTokens;
+    hasUsage = true;
+  }
+
+  if (!hasUsage) return null;
+
+  return {
+    inputTokens,
+    outputTokens,
+    totalTokens: inputTokens + outputTokens,
+  };
+}
+
+function findLatestClaudeTokenUsage(rootDirectory: string): ClaudeTokenUsage | null {
+  const recentFiles = listJsonlFilesByMtime(rootDirectory);
+  for (const filePath of recentFiles) {
+    const usage = readClaudeTokenUsage(filePath);
+    if (usage) return usage;
+  }
+  return null;
+}
+
+function emptyUsageQuota(provider: UsageProvider): UsageQuotaSnapshot {
+  return {
+    provider,
+    sessionUsedPercent: null,
+    sessionResetsAt: null,
+    weeklyUsedPercent: null,
+    weeklyResetsAt: null,
+    sessionInputTokens: null,
+    sessionOutputTokens: null,
+    sessionTotalTokens: null,
+    queriedAt: new Date().toISOString(),
+  };
+}
+
+function loadUsageQuotaSnapshot(provider: UsageProvider): UsageQuotaSnapshot {
+  const rootDirectory =
+    provider === 'claude-code'
+      ? path.join(app.getPath('home'), '.claude', 'projects')
+      : path.join(app.getPath('home'), '.codex', 'sessions');
+  const usageRecord = findLatestUsageRecord(
+    rootDirectory,
+    provider === 'claude-code' ? extractClaudeUsage : extractCodexUsage,
+  );
+  const tokenUsage =
+    provider === 'claude-code'
+      ? findLatestClaudeTokenUsage(rootDirectory)
+      : null;
+  if (!usageRecord && !tokenUsage) return emptyUsageQuota(provider);
+
+  return {
+    provider,
+    sessionUsedPercent: usageRecord?.session.usedPercent ?? null,
+    sessionResetsAt: usageRecord?.session.resetsAt ?? null,
+    weeklyUsedPercent: usageRecord?.weekly.usedPercent ?? null,
+    weeklyResetsAt: usageRecord?.weekly.resetsAt ?? null,
+    sessionInputTokens: tokenUsage?.inputTokens ?? null,
+    sessionOutputTokens: tokenUsage?.outputTokens ?? null,
+    sessionTotalTokens: tokenUsage?.totalTokens ?? null,
+    queriedAt: new Date().toISOString(),
+  };
+}
+
+function registerUsageQuotaHandlers(): void {
+  ipcMain.handle('flowdeck:usage-quota-load', (_event, rawProvider) => {
+    const provider: UsageProvider = rawProvider === 'claude-code'
+      ? 'claude-code'
+      : 'codex';
+    return loadUsageQuotaSnapshot(provider);
+  });
 }
 
 function registerSettingsHandlers(): void {
@@ -52,8 +369,8 @@ function openSettingsWindow(): void {
   }
 
   settingsWindow = new BrowserWindow({
-    width: 480,
-    height: 420,
+    width: 760,
+    height: 660,
     resizable: false,
     minimizable: false,
     maximizable: false,
@@ -255,6 +572,7 @@ app.whenReady().then(() => {
   ensurePtyHelper();
   registerPtyHandlers();
   registerSettingsHandlers();
+  registerUsageQuotaHandlers();
   registerUpdaterIpcHandlers();
   buildAppMenu();
   initAutoUpdater();

@@ -161,6 +161,7 @@ export function initLifecycle(deps: LifecycleDeps): CleanupFn {
     node.terminal.writeln(
       `\x1b[38;5;244m[process exited with code ${exitCode}]\x1b[0m`,
     );
+    deps.onSessionExit?.();
   });
   cleanups.push(removeExitListener);
 
@@ -196,7 +197,12 @@ export function initLifecycle(deps: LifecycleDeps): CleanupFn {
 
   // Reload settings when changed from another window (e.g. settings window)
   const removeSettingsChanged = bridge.onSettingsChanged(() => {
-    deps.reloadSettings().then(() => deps.render(true)).catch(console.error);
+    deps.reloadSettings()
+      .then(() => {
+        deps.render(true);
+        deps.onSettingsReloaded?.();
+      })
+      .catch(console.error);
   });
   cleanups.push(removeSettingsChanged);
 

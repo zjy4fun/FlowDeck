@@ -84,6 +84,8 @@ export interface LifecycleDeps {
   reloadSettings: () => Promise<void>;
   render: RenderFn;
   reportError: (error: unknown) => void;
+  onSettingsReloaded?: () => void;
+  onSessionExit?: () => void;
 }
 
 /* ── Persisted settings ── */
@@ -94,6 +96,21 @@ export interface AppSettings {
   paneWidth: number;
   defaultOpenDirectory: string;
   maxSessions: number;
+  usageProvider: UsageProvider;
+}
+
+export type UsageProvider = 'codex' | 'claude-code';
+
+export interface UsageQuotaSnapshot {
+  provider: UsageProvider;
+  sessionUsedPercent: number | null;
+  sessionResetsAt: number | null;
+  weeklyUsedPercent: number | null;
+  weeklyResetsAt: number | null;
+  sessionInputTokens: number | null;
+  sessionOutputTokens: number | null;
+  sessionTotalTokens: number | null;
+  queriedAt: string | null;
 }
 
 export type UpdateWindowAction = 'cancel' | 'restart' | 'close';
@@ -117,6 +134,7 @@ export interface FlowDeckBridge {
   platform: string;
   defaultCwd: string;
   defaultTabTitle: string;
+  loadUsageQuota: (provider: UsageProvider) => Promise<UsageQuotaSnapshot>;
 
   createTerminal: (payload: {
     paneId: string;
