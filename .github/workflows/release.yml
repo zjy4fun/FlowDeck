@@ -40,6 +40,7 @@ jobs:
           path: |
             release/*.dmg
             release/*.zip
+            release/*.yml
           if-no-files-found: error
           retention-days: 5
 
@@ -73,6 +74,7 @@ jobs:
           name: release-windows
           path: |
             release/*.exe
+            release/*.yml
           if-no-files-found: error
           retention-days: 5
 
@@ -125,3 +127,4 @@ jobs:
             artifacts/*.dmg
             artifacts/*.zip
             artifacts/*.exe
+            artifacts/*.yml

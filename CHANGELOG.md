@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.3.2
+
+- Fix release workflow to include auto-update metadata files (latest-mac.yml, latest.yml)
+
 ## v0.3.1
 
 - Add auto-update support with electron-updater
