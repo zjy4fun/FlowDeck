@@ -194,6 +194,7 @@ function ensurePaneNodes(): void {
 export function renderPanes(refit = false): void {
   const stageWidth = dom.stage.clientWidth;
   const stageHeight = dom.stage.clientHeight;
+  const isSinglePaneLayout = state.panes.length === 1;
   const previewWidth = getPreviewWidth(stageWidth, state.panes.length);
   const focusedIndex = getFocusedIndex();
 
@@ -201,8 +202,14 @@ export function renderPanes(refit = false): void {
 
   const layouts = state.panes.map((_, index): PaneLayout => {
     const isFocused = index === focusedIndex;
-    const width = isFocused ? getFocusedPaneWidth() : state.settings.paneWidth;
-    const left = getPaneLeft(index, previewWidth, focusedIndex);
+    const width = isSinglePaneLayout
+      ? stageWidth
+      : isFocused
+        ? getFocusedPaneWidth()
+        : state.settings.paneWidth;
+    const left = isSinglePaneLayout
+      ? 0
+      : getPaneLeft(index, previewWidth, focusedIndex);
     return {
       left,
       width,
