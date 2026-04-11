@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.3.4
+
+- Test hot-update mechanism
+
 ## v0.3.3
 
 - Replace electron-updater with custom asar hot-update mechanism
