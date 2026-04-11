@@ -107,6 +107,152 @@ interface GitHubRelease {
   assets: Array<{ name: string; browser_download_url: string; size: number }>;
 }
 
+class GitHubApiStatusError extends Error {
+  statusCode: number;
+
+  constructor(statusCode: number, message: string) {
+    super(message);
+    this.name = 'GitHubApiStatusError';
+    this.statusCode = statusCode;
+  }
+}
+
+function readHeaderValue(header: string | string[] | undefined): string | null {
+  if (!header) return null;
+  return Array.isArray(header) ? header[0] ?? null : header;
+}
+
+function parseReleaseTagFromUrl(rawUrl: string): string | null {
+  if (!rawUrl) return null;
+  try {
+    const url = new URL(rawUrl);
+    const match = url.pathname.match(/\/releases\/(?:tag|download)\/([^/]+)/i);
+    if (!match?.[1]) return null;
+    return decodeURIComponent(match[1]);
+  } catch {
+    return null;
+  }
+}
+
+function parseReleaseTagFromHtml(html: string): string | null {
+  if (!html) return null;
+  const match = html.match(/\/releases\/tag\/(v[0-9][0-9A-Za-z._-]*)/i);
+  if (!match?.[1]) return null;
+  return decodeURIComponent(match[1]);
+}
+
+function parseGitHubApiErrorMessage(statusCode: number, body: string): string {
+  let details = '';
+  try {
+    const parsed = JSON.parse(body) as { message?: unknown };
+    if (typeof parsed.message === 'string' && parsed.message.trim()) {
+      details = parsed.message.trim();
+    }
+  } catch {
+    /* ignore JSON parse failures */
+  }
+
+  return details
+    ? `GitHub API returned ${statusCode}: ${details}`
+    : `GitHub API returned ${statusCode}`;
+}
+
+async function fetchLatestReleaseFromApi(): Promise<GitHubRelease> {
+  return new Promise((resolve, reject) => {
+    const request = net.request({
+      method: 'GET',
+      url: `https://api.github.com/repos/${REPO}/releases/latest`,
+    });
+    request.setHeader('Accept', 'application/vnd.github.v3+json');
+    request.setHeader('User-Agent', `FlowDeck/${app.getVersion()}`);
+
+    let body = '';
+    request.on('response', (response) => {
+      response.on('data', (chunk) => {
+        body += chunk.toString();
+      });
+      response.on('end', () => {
+        if (response.statusCode !== 200) {
+          const statusCode = response.statusCode ?? 0;
+          reject(
+            new GitHubApiStatusError(
+              statusCode,
+              parseGitHubApiErrorMessage(statusCode, body),
+            ),
+          );
+          return;
+        }
+
+        try {
+          resolve(JSON.parse(body));
+        } catch (e) {
+          reject(e);
+        }
+      });
+    });
+    request.on('error', reject);
+    request.end();
+  });
+}
+
+async function fetchLatestReleaseTagFromPage(): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const request = net.request({
+      method: 'GET',
+      url: `https://github.com/${REPO}/releases/latest`,
+    });
+    request.setHeader('Accept', 'text/html');
+    request.setHeader('User-Agent', `FlowDeck/${app.getVersion()}`);
+
+    let body = '';
+    let redirectTag: string | null = null;
+
+    request.on('redirect', (_statusCode, _method, redirectUrl) => {
+      if (redirectTag) return;
+      redirectTag = parseReleaseTagFromUrl(redirectUrl);
+    });
+
+    request.on('response', (response) => {
+      if ((response.statusCode ?? 0) >= 400) {
+        reject(
+          new Error(`GitHub releases page returned ${response.statusCode}`),
+        );
+        return;
+      }
+
+      const locationTag = parseReleaseTagFromUrl(
+        readHeaderValue(response.headers.location) ?? '',
+      );
+      if (!redirectTag && locationTag) {
+        redirectTag = locationTag;
+      }
+
+      response.on('data', (chunk) => {
+        if (body.length >= 512_000) return;
+        body += chunk.toString();
+      });
+
+      response.on('end', () => {
+        if (redirectTag) {
+          resolve(redirectTag);
+          return;
+        }
+
+        const htmlTag = parseReleaseTagFromHtml(body);
+        if (htmlTag) {
+          resolve(htmlTag);
+          return;
+        }
+
+        reject(new Error('Could not resolve latest release tag from GitHub.'));
+      });
+    });
+
+    request.on('error', reject);
+    request.end();
+  });
+}
+
 function compareVersions(a: string, b: string): number {
   const pa = a.replace(/^v/, '').split('.').map(Number);
   const pb = b.replace(/^v/, '').split('.').map(Number);
@@ -119,34 +265,28 @@ function compareVersions(a: string, b: string): number {
 }
 
 async function fetchLatestRelease(): Promise<GitHubRelease> {
-  return new Promise((resolve, reject) => {
-    const request = net.request({
-      method: 'GET',
-      url: `https://api.github.com/repos/${REPO}/releases/latest`,
-    });
-    request.setHeader('Accept', 'application/vnd.github.v3+json');
-    request.setHeader('User-Agent', `FlowDeck/${app.getVersion()}`);
+  try {
+    return await fetchLatestReleaseFromApi();
+  } catch (error) {
+    if (
+      !(error instanceof GitHubApiStatusError) ||
+      (error.statusCode !== 403 && error.statusCode !== 429)
+    ) {
+      throw error;
+    }
 
-    let body = '';
-    request.on('response', (response) => {
-      if (response.statusCode !== 200) {
-        reject(new Error(`GitHub API returned ${response.statusCode}`));
-        return;
-      }
-      response.on('data', (chunk) => {
-        body += chunk.toString();
-      });
-      response.on('end', () => {
-        try {
-          resolve(JSON.parse(body));
-        } catch (e) {
-          reject(e);
-        }
-      });
-    });
-    request.on('error', reject);
-    request.end();
-  });
+    const tag = await fetchLatestReleaseTagFromPage();
+    return {
+      tag_name: tag,
+      assets: [
+        {
+          name: ASAR_ASSET_NAME,
+          browser_download_url: `https://github.com/${REPO}/releases/latest/download/${ASAR_ASSET_NAME}`,
+          size: 0,
+        },
+      ],
+    };
+  }
 }
 
 function normalizeByteCount(raw: number): number {
