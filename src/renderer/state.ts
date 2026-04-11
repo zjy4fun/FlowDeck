@@ -24,8 +24,8 @@ export const ACCENT_PALETTE = [
 ] as const;
 
 const DEFAULT_SETTINGS: AppSettings = {
-  fontSize: 13,
-  paneOpacity: 0.92,
+  fontSize: 14,
+  paneOpacity: 0.75,
   paneWidth: 720,
   defaultOpenDirectory: bridge.defaultCwd,
   maxSessions: 8,
@@ -34,6 +34,13 @@ const DEFAULT_SETTINGS: AppSettings = {
 export function getDirectoryLabel(cwd: string): string {
   if (cwd === bridge.defaultCwd) return bridge.defaultTabTitle;
   return cwd.split(/[\\/]/).filter(Boolean).pop() || cwd;
+}
+
+export function getDisplayPath(cwd: string): string {
+  if (cwd.startsWith(bridge.defaultCwd)) {
+    return '~' + cwd.slice(bridge.defaultCwd.length);
+  }
+  return cwd;
 }
 
 function createInitialPanes(): PaneData[] {

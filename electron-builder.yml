@@ -28,5 +28,14 @@ mac:
     - dmg
     - zip
 
+# ── Windows ──
+win:
+  icon: build/icon.png
+  target:
+    - nsis
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+
 publish:
   provider: github

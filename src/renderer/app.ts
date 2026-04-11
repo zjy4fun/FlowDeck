@@ -3,9 +3,10 @@ import {
   dom,
   initDom,
   getFocusedIndex,
-  getPaneLabel,
   getDirectoryLabel,
+  getDisplayPath,
 } from './state';
+import { bridge } from './bridge';
 import { renderTabs, initTabs, clearPendingTabFocus, endTabDrag } from './tabs';
 import { renderPanes, initPanes } from './panes';
 import {
@@ -31,8 +32,11 @@ function updateStatus(): void {
   }
 
   dom.statusLabel.classList.remove('is-navigation-mode');
-  dom.statusLabel.textContent = `Focused: ${getPaneLabel(focusedPane) || focusedPane.id}`;
-  dom.statusHint.textContent = 'Ctrl+B to enter navigation mode';
+  dom.statusLabel.textContent = getDisplayPath(focusedPane.cwd);
+  const isMac = bridge.platform === 'darwin';
+  dom.statusHint.textContent = isMac
+    ? 'Control(^)+B to enter navigation mode'
+    : 'Ctrl+B to enter navigation mode';
 }
 
 function createRenderGateway(): RenderFn {

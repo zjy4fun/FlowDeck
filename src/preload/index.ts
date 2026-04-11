@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron';
+import { contextBridge, ipcRenderer, webUtils, type IpcRendererEvent } from 'electron';
 import { homedir } from 'os';
 
 const cwd = homedir();
@@ -55,6 +55,10 @@ contextBridge.exposeInMainWorld('flowdeck', {
     ipcRenderer.on('flowdeck:menu-close-tab', listener);
     return () => ipcRenderer.removeListener('flowdeck:menu-close-tab', listener);
   },
+
+  getFilePath: (file: File) => webUtils.getPathForFile(file),
+
+  confirmQuit: () => ipcRenderer.invoke('flowdeck:confirm-quit') as Promise<boolean>,
 
   onSettingsChanged: (handler: () => void) => {
     const listener = () => handler();

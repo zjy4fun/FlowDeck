@@ -9,8 +9,8 @@ permissions:
   contents: write
 
 jobs:
-  # ── Phase 1: build macOS packages ──
-  build:
+  # ── Phase 1a: build macOS packages ──
+  build-macos:
     runs-on: macos-latest
 
     steps:
@@ -43,12 +43,47 @@ jobs:
           if-no-files-found: error
           retention-days: 5
 
+  # ── Phase 1b: build Windows packages ──
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Compile TypeScript (esbuild)
+        run: pnpm build
+
+      - name: Package with electron-builder
+        run: pnpm exec electron-builder --win --publish never
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-windows
+          path: |
+            release/*.exe
+          if-no-files-found: error
+          retention-days: 5
+
   # ── Phase 2: collect artifacts and create a GitHub release ──
   publish:
-    needs: build
+    needs: [build-macos, build-windows]
     runs-on: ubuntu-latest
 
     steps:
+      - uses: actions/checkout@v4
+
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
@@ -58,12 +93,35 @@ jobs:
       - name: List release files
         run: ls -lhR artifacts/
 
+      - name: Extract release notes from CHANGELOG.md
+        id: release_notes
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          # Extract the section for this version from CHANGELOG.md
+          # Matches from "## vX.Y.Z" to the next "## " or end of file
+          NOTES=$(awk -v tag="$TAG" '
+            BEGIN { found=0 }
+            /^## / {
+              if (found) exit
+              if (index($0, tag)) { found=1; next }
+            }
+            found { print }
+          ' CHANGELOG.md)
+
+          if [ -z "$NOTES" ]; then
+            NOTES="Release $TAG"
+          fi
+
+          # Write to file for the release step
+          echo "$NOTES" > release_notes.txt
+
       - name: Create or update GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           draft: false
-          generate_release_notes: true
+          body_path: release_notes.txt
           overwrite_files: true
           files: |
             artifacts/*.dmg
             artifacts/*.zip
+            artifacts/*.exe

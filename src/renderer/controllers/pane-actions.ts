@@ -10,7 +10,7 @@ import type { PaneActionsDeps } from '../types';
 export interface PaneActionsController {
   focusPane: (paneId: string, focusTerminal?: boolean) => void;
   addPane: () => void;
-  closePane: (index: number) => void;
+  closePane: (index: number) => void | Promise<void>;
   handleTitleChange: (paneId: string, title: string) => void;
   handleCwdChange: (paneId: string, cwd: string) => void;
 }
@@ -97,9 +97,7 @@ export function createPaneActionsController(
     deps.render(true);
   }
 
-  function closePane(index: number): void {
-    if (state.panes.length === 1) return;
-
+  async function closePane(index: number): Promise<void> {
     const closing = state.panes[index];
     if (!closing) return;
 
@@ -110,6 +108,17 @@ export function createPaneActionsController(
       state.paneResizeState = null;
       state.transientPaneWidth = null;
       clearResizeUiState();
+    }
+
+    if (state.panes.length === 1) {
+      const confirmed = await bridge.confirmQuit();
+      if (!confirmed) return;
+
+      bridge.destroyTerminal({ paneId: closing.id });
+      state.panes = [];
+      state.focusedPaneId = null;
+      window.close();
+      return;
     }
 
     bridge.destroyTerminal({ paneId: closing.id });
@@ -162,6 +171,10 @@ export function createPaneActionsController(
 
     if (prevPane.title === null) {
       deps.renderTabs();
+    }
+
+    if (paneId === state.focusedPaneId) {
+      deps.render();
     }
   }
 

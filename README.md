@@ -1,6 +1,8 @@
 # FlowDeck
 
-![FlowDeck icon](./assets/brand/flowdeck-icon.svg)
+<p align="center">
+  <img src="./assets/brand/flowdeck-icon.svg" width="128" alt="FlowDeck icon" />
+</p>
 
 Focus-first desktop terminal workspace for agentic coding, built with Electron, TypeScript, xterm.js, and `node-pty`.
 
@@ -21,7 +23,7 @@ FlowDeck is currently supported on macOS only.
 
 ## Brand
 
-Brand assets live in [`assets/brand/`](./assets/brand/). The current identity uses overlapping pane shapes to represent stacked terminal sessions and a focused active workspace.
+Brand assets live in [`assets/brand/`](./assets/brand/). The icon features three side-by-side terminal panes with distinct color accents (orange, teal, purple), representing multiple concurrent terminal sessions within a single workspace.
 
 ## Highlights
 
@@ -101,15 +103,12 @@ CI validation is also pinned to macOS.
 
 ## Versioning and Releases
 
-FlowDeck uses `bumpp` to manage version bumps and release tags.
+FlowDeck uses `bumpp` to manage version bumps and release tags. Release notes are maintained in [CHANGELOG.md](./CHANGELOG.md).
 
-### Bump version only
+### Release process
 
-```bash
-pnpm release:dry
-```
-
-### Bump version and publish a release tag
+1. Update `CHANGELOG.md` with the new version's changes
+2. Run the release command:
 
 ```bash
 pnpm release
@@ -126,7 +125,13 @@ After the tag reaches GitHub, the release workflow automatically:
 
 - builds the macOS package
 - uploads the `.dmg` and `.zip` files
-- creates or updates the GitHub Release for that tag
+- creates a GitHub Release with the description from `CHANGELOG.md`
+
+### Bump version only (dry run)
+
+```bash
+pnpm release:dry
+```
 
 ## macOS Install Notes
 

@@ -1,44 +1,55 @@
 <svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="1024" height="1024" rx="232" fill="#0C1118"/>
-  <rect x="40" y="40" width="944" height="944" rx="192" fill="url(#bg)"/>
-  <rect x="154" y="224" width="484" height="360" rx="42" fill="#121A24"/>
-  <rect x="154" y="224" width="484" height="72" rx="42" fill="#1B2633"/>
-  <rect x="190" y="343" width="152" height="18" rx="9" fill="#2F4154"/>
-  <rect x="190" y="390" width="274" height="18" rx="9" fill="#253545"/>
-  <rect x="190" y="437" width="212" height="18" rx="9" fill="#253545"/>
-  <rect x="190" y="484" width="172" height="18" rx="9" fill="#253545"/>
-
-  <rect x="322" y="392" width="548" height="408" rx="44" fill="#172230"/>
-  <rect x="322" y="392" width="548" height="80" rx="44" fill="#223244"/>
-  <rect x="364" y="525" width="162" height="20" rx="10" fill="#40556D"/>
-  <rect x="364" y="578" width="306" height="20" rx="10" fill="#314558"/>
-  <rect x="364" y="631" width="248" height="20" rx="10" fill="#314558"/>
-  <rect x="364" y="684" width="188" height="20" rx="10" fill="#314558"/>
-
-  <rect x="458" y="150" width="412" height="306" rx="40" fill="#E8F1FB"/>
-  <rect x="458" y="150" width="412" height="70" rx="40" fill="#D7E6F6"/>
-  <rect x="495" y="267" width="128" height="18" rx="9" fill="#7A9BB8"/>
-  <rect x="495" y="314" width="232" height="18" rx="9" fill="#A8C4DE"/>
-  <rect x="495" y="361" width="178" height="18" rx="9" fill="#A8C4DE"/>
-
-  <path d="M602 602H812C830.778 602 846 617.222 846 636V707C846 725.778 830.778 741 812 741H602C583.222 741 568 725.778 568 707V636C568 617.222 583.222 602 602 602Z" fill="#4BC5FF"/>
-  <path d="M622 632H755C765.493 632 774 640.507 774 651C774 661.493 765.493 670 755 670H622C611.507 670 603 661.493 603 651C603 640.507 611.507 632 622 632Z" fill="#0F2740"/>
-  <path d="M622 685H715C725.493 685 734 693.507 734 704C734 714.493 725.493 723 715 723H622C611.507 723 603 714.493 603 704C603 693.507 611.507 685 622 685Z" fill="#0F2740"/>
-
-  <circle cx="217" cy="260" r="9" fill="#43586F"/>
-  <circle cx="246" cy="260" r="9" fill="#43586F"/>
-  <circle cx="275" cy="260" r="9" fill="#43586F"/>
-  <circle cx="386" cy="431" r="9" fill="#6A87A4"/>
-  <circle cx="415" cy="431" r="9" fill="#6A87A4"/>
-  <circle cx="444" cy="431" r="9" fill="#6A87A4"/>
-  <circle cx="521" cy="185" r="9" fill="#7A9BB8"/>
-  <circle cx="550" cy="185" r="9" fill="#7A9BB8"/>
-  <circle cx="579" cy="185" r="9" fill="#7A9BB8"/>
-
   <defs>
-    <linearGradient id="bg" x1="96" y1="84" x2="930" y2="944" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#101722"/>
-      <stop offset="1" stop-color="#071018"/>
+    <linearGradient id="bg" x1="0" y1="0" x2="1024" y2="1024" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1A2332"/>
+      <stop offset="1" stop-color="#0F1720"/>
     </linearGradient>
+    <filter id="glowOrange" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glowTeal" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glowPurple" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
   </defs>
+
+  <!-- Background -->
+  <rect width="1024" height="1024" rx="220" fill="url(#bg)"/>
+
+  <!-- Divider lines -->
+  <rect x="338" y="40" width="1.5" height="944" fill="#2A3A4C" opacity="0.5"/>
+  <rect x="685" y="40" width="1.5" height="944" fill="#2A3A4C" opacity="0.5"/>
+
+  <!-- === Pane 1 (left) === -->
+  <g filter="url(#glowOrange)">
+    <path d="M100 360 L160 420 L100 480" stroke="#F0883E" stroke-width="18" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <rect x="182" y="462" width="52" height="14" rx="7" fill="#F0883E"/>
+  </g>
+  <rect x="100" y="540" width="180" height="10" rx="5" fill="#F0883E" opacity="0.13"/>
+  <rect x="100" y="574" width="200" height="10" rx="5" fill="#F0883E" opacity="0.10"/>
+  <rect x="100" y="608" width="140" height="10" rx="5" fill="#F0883E" opacity="0.07"/>
+
+  <!-- === Pane 2 (middle) === -->
+  <g filter="url(#glowTeal)">
+    <path d="M398 360 L458 420 L398 480" stroke="#56D4C4" stroke-width="18" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <rect x="480" y="462" width="52" height="14" rx="7" fill="#56D4C4"/>
+  </g>
+  <rect x="398" y="540" width="240" height="10" rx="5" fill="#56D4C4" opacity="0.13"/>
+  <rect x="398" y="574" width="170" height="10" rx="5" fill="#56D4C4" opacity="0.10"/>
+  <rect x="398" y="608" width="220" height="10" rx="5" fill="#56D4C4" opacity="0.07"/>
+  <rect x="398" y="642" width="160" height="10" rx="5" fill="#56D4C4" opacity="0.06"/>
+
+  <!-- === Pane 3 (right) === -->
+  <g filter="url(#glowPurple)">
+    <path d="M744 360 L804 420 L744 480" stroke="#A78BFA" stroke-width="18" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <rect x="826" y="462" width="52" height="14" rx="7" fill="#A78BFA"/>
+  </g>
+  <rect x="744" y="540" width="190" height="10" rx="5" fill="#A78BFA" opacity="0.13"/>
+  <rect x="744" y="574" width="150" height="10" rx="5" fill="#A78BFA" opacity="0.10"/>
+  <rect x="744" y="608" width="200" height="10" rx="5" fill="#A78BFA" opacity="0.07"/>
 </svg>

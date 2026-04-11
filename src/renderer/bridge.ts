@@ -15,12 +15,14 @@ function createUnavailableBridge(): FlowDeckBridge {
     writeTerminal: fail,
     resizeTerminal: fail,
     destroyTerminal: fail,
+    getFilePath: () => '',
     loadSettings: fail,
     saveSettings: fail,
     onTerminalData: () => () => {},
     onTerminalExit: () => () => {},
     onMenuNewTab: () => () => {},
     onMenuCloseTab: () => () => {},
+    confirmQuit: () => Promise.resolve(true),
     onSettingsChanged: () => () => {},
   };
 }

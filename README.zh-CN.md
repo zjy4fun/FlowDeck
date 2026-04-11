@@ -1,6 +1,8 @@
 # FlowDeck
 
-![FlowDeck icon](./assets/brand/flowdeck-icon.svg)
+<p align="center">
+  <img src="./assets/brand/flowdeck-icon.svg" width="128" alt="FlowDeck icon" />
+</p>
 
 面向 agentic coding 的专注型桌面终端工作区，基于 Electron、TypeScript、xterm.js 和 `node-pty` 构建。
 
@@ -21,7 +23,7 @@ FlowDeck 当前仅支持 macOS。
 
 ## 品牌资源
 
-品牌资源位于 [`assets/brand/`](./assets/brand/)。当前标识采用重叠窗格的抽象图形，表达多会话协作和一个被聚焦的活跃工作区。
+品牌资源位于 [`assets/brand/`](./assets/brand/)。图标采用三个并列终端面板的设计，分别以橙色、青色和紫色作为标识色，表达在单一工作区中同时运行多个终端会话的核心理念。
 
 ## 核心特性
 
@@ -101,15 +103,12 @@ CI 校验同样固定在 macOS。
 
 ## 版本管理与发版
 
-FlowDeck 使用 `bumpp` 管理版本号和发版标签。
+FlowDeck 使用 `bumpp` 管理版本号和发版标签。发版说明维护在 [CHANGELOG.md](./CHANGELOG.md) 中。
 
-### 仅更新版本号
+### 发版流程
 
-```bash
-pnpm release:dry
-```
-
-### 更新版本号并发布版本标签
+1. 在 `CHANGELOG.md` 中添加新版本的变更说明
+2. 执行发版命令：
 
 ```bash
 pnpm release
@@ -126,7 +125,13 @@ pnpm release
 
 - 构建 macOS 安装包
 - 上传 `.dmg` 和 `.zip`
-- 创建或更新该 tag 对应的 GitHub Release
+- 从 `CHANGELOG.md` 提取变更说明，创建 GitHub Release
+
+### 仅更新版本号（预览）
+
+```bash
+pnpm release:dry
+```
 
 ## macOS 安装说明
 

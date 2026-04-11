@@ -48,3 +48,5 @@ artifacts/*
 origin_assets/*
 !origin_assets/.gitkeep
 !origin_assets/README.md
+.claude
+.codex

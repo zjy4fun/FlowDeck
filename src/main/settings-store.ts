@@ -13,8 +13,8 @@ export interface PersistedSettings {
 const SETTINGS_FILE = 'settings.json';
 
 const DEFAULTS: PersistedSettings = {
-  fontSize: 13,
-  paneOpacity: 0.92,
+  fontSize: 14,
+  paneOpacity: 0.75,
   paneWidth: 720,
   defaultOpenDirectory: app.getPath('home'),
   maxSessions: 8,
@@ -22,9 +22,9 @@ const DEFAULTS: PersistedSettings = {
 
 const LIMITS = {
   fontSize: { min: 10, max: 24 },
-  paneOpacity: { min: 0.85, max: 1 },
+  paneOpacity: { min: 0.5, max: 1 },
   paneWidth: { min: 520, max: 1000 },
-  maxSessions: { min: 1, max: 20 },
+  maxSessions: { min: 1, max: 9 },
 } as const;
 
 function clamp(value: number, min: number, max: number): number {

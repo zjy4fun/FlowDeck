@@ -5,7 +5,7 @@ import { state, dom, getFocusedIndex, getPaneLabel } from './state';
 
 export interface TabActions {
   focusPane: (paneId: string) => void;
-  closePane: (index: number) => void;
+  closePane: (index: number) => void | Promise<void>;
   render: () => void;
 }
 
@@ -187,10 +187,6 @@ function createTabElement(
     beginRename(index);
   });
 
-  // Accent color swatch
-  const swatch = document.createElement('span');
-  swatch.className = 'tab-swatch';
-
   // Label or rename input
   let label: HTMLElement;
   if (state.renamingPaneId === pane.id) {
@@ -214,9 +210,15 @@ function createTabElement(
   } else {
     const span = document.createElement('span');
     span.className = 'tab-label';
-    span.textContent = getPaneLabel(pane);
+    const labelText = getPaneLabel(pane);
+    span.textContent = labelText;
     label = span;
   }
+
+  // Keyboard shortcut hint
+  const shortcut = document.createElement('span');
+  shortcut.className = 'tab-shortcut';
+  shortcut.textContent = `\u2318${index + 1}`;
 
   // Close button
   const close = document.createElement('button');
@@ -224,13 +226,13 @@ function createTabElement(
   close.className = 'tab-close';
   close.textContent = 'x';
   close.setAttribute('aria-label', `Close tab ${pane.id}`);
-  close.disabled = state.panes.length === 1;
+  close.disabled = false;
   close.addEventListener('click', (e) => {
     e.stopPropagation();
     actions.closePane(index);
   });
 
-  tabMain.append(swatch, label);
+  tabMain.append(label, shortcut);
   tab.append(tabMain, close);
   return tab;
 }

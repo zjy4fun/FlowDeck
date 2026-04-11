@@ -59,6 +59,29 @@ export function createNavigationController(
       !event.shiftKey &&
       key === 'b';
 
+    // Cmd+1~9 (macOS) / Ctrl+1~9 switch tab
+    const hasModifier = isMac ? event.metaKey && !event.ctrlKey && !event.altKey : event.ctrlKey && !event.metaKey && !event.altKey;
+    if (hasModifier) {
+      const num = parseInt(key, 10);
+      if (num >= 1 && num <= 9) {
+        const targetIndex = num - 1;
+        if (targetIndex < state.panes.length) {
+          event.preventDefault();
+          deps.focusPane(state.panes[targetIndex].id);
+        }
+        return;
+      }
+    }
+
+    // Ctrl+Tab / Ctrl+Shift+Tab cycle tabs
+    if (event.ctrlKey && !event.metaKey && !event.altKey && key === 'tab') {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      moveFocus(event.shiftKey ? -1 : 1);
+      if (state.focusedPaneId) deps.focusPane(state.focusedPaneId);
+      return;
+    }
+
     if (isAddTab) {
       event.preventDefault();
       deps.addPane();

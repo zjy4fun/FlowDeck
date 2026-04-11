@@ -71,14 +71,14 @@ export interface PaneActionsDeps {
 
 export interface NavigationDeps {
   addPane: () => void;
-  closePane: (index: number) => void;
+  closePane: (index: number) => void | Promise<void>;
   focusPane: (paneId: string, focusTerminal?: boolean) => void;
   render: RenderFn;
 }
 
 export interface LifecycleDeps {
   addPane: () => void;
-  closePane: (index: number) => void;
+  closePane: (index: number) => void | Promise<void>;
   handleCwdChange: (paneId: string, cwd: string) => void;
   handleGlobalKeydown: (event: KeyboardEvent) => void;
   reloadSettings: () => Promise<void>;
@@ -120,6 +120,8 @@ export interface FlowDeckBridge {
 
   destroyTerminal: (payload: { paneId: string }) => Promise<void>;
 
+  getFilePath: (file: File) => string;
+
   loadSettings: () => Promise<AppSettings | null>;
   saveSettings: (settings: AppSettings) => Promise<void>;
 
@@ -133,5 +135,6 @@ export interface FlowDeckBridge {
 
   onMenuNewTab: (handler: () => void) => () => void;
   onMenuCloseTab: (handler: () => void) => () => void;
+  confirmQuit: () => Promise<boolean>;
   onSettingsChanged: (handler: () => void) => () => void;
 }

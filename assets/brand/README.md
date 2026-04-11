@@ -1,27 +1,25 @@
 # FlowDeck Brand Assets
 
-These SVG assets define the initial FlowDeck brand direction.
+These SVG assets define the FlowDeck brand direction.
 
 ## Direction
 
 - Audience: programmers using AI coding workflows
 - Tone: professional tool
-- Shape language: abstract pane / card composition
+- Shape language: side-by-side terminal panes
 
 ## Files
 
-- `flowdeck-icon.svg`: primary application icon with layered terminal panes
-- `flowdeck-mark.svg`: compact symbol for small surfaces and previews
+- `flowdeck-icon.svg`: primary application icon with three parallel terminal panes
+- `flowdeck.iconset/`: macOS iconset with all standard sizes (16–512@2x)
 
 ## Design Notes
 
-The symbol uses three overlapping panes to communicate:
+The icon uses three side-by-side panes to communicate:
 
-- workspace orchestration
-- layered sessions
-- one focused active pane
-
-The bright cyan panel is the active working surface. The lighter top pane implies an AI-assisted layer without turning the mark into a generic chatbot icon.
+- multiple concurrent terminal sessions
+- a unified workspace
+- distinct session identity via color accents (orange, teal, purple)
 
 ## Export Guidance
 

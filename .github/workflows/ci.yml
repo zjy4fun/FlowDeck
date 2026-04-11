@@ -8,8 +8,10 @@ on:
 
 jobs:
   build:
-    # FlowDeck is currently officially supported on macOS only.
-    runs-on: macos-latest
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
 

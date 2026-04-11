@@ -9,12 +9,12 @@ import { bridge } from './bridge';
 
 export function createTerminalTheme(accent: string) {
   return {
-    background: '#111111',
+    background: '#282a36',
     foreground: '#d9d4c7',
     cursor: accent,
-    cursorAccent: '#111111',
+    cursorAccent: '#282a36',
     selectionBackground: `${accent}44`,
-    black: '#111111',
+    black: '#282a36',
     red: '#ff6b57',
     green: '#98c379',
     yellow: '#e5c07b',
@@ -172,4 +172,9 @@ export async function initializePaneTerminal(node: PaneNode): Promise<void> {
   });
   node.sessionReady = true;
   fitTerminal(node, true);
+
+  // Auto-focus the terminal if this is the currently focused pane
+  if (state.focusedPaneId === node.paneId) {
+    node.terminal.focus();
+  }
 }

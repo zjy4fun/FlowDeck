@@ -117,7 +117,7 @@
         <div class="field-header">
           <label for="max-sessions-input">Max sessions</label>
         </div>
-        <input id="max-sessions-input" type="number" min="1" max="20" step="1" value="8" />
+        <input id="max-sessions-input" type="number" min="1" max="9" step="1" value="8" />
       </div>
 
       <div class="field">
@@ -134,11 +134,11 @@
       <div class="field">
         <div class="field-header">
           <label for="pane-opacity-range">Pane depth</label>
-          <span class="value-display" id="pane-opacity-value">0.92</span>
+          <span class="value-display" id="pane-opacity-value">0.75</span>
         </div>
         <div class="dual-input">
-          <input id="pane-opacity-range" type="range" min="0.85" max="1" step="0.01" value="0.92" />
-          <input id="pane-opacity-input" type="number" min="0.85" max="1" step="0.01" value="0.92" />
+          <input id="pane-opacity-range" type="range" min="0.5" max="1" step="0.01" value="0.75" />
+          <input id="pane-opacity-input" type="number" min="0.5" max="1" step="0.01" value="0.75" />
         </div>
       </div>
     </div>
@@ -199,6 +199,11 @@
         applyToInputs(); persist();
       });
 
+      els.defaultDirectoryInput.addEventListener('input', () => {
+        settings.defaultOpenDirectory = els.defaultDirectoryInput.value.trim() || bridge.defaultCwd;
+        persist();
+      });
+
       els.maxSessionsInput.addEventListener('change', () => {
         const v = Number(els.maxSessionsInput.value);
         if (!Number.isFinite(v)) { applyToInputs(); return; }
@@ -218,7 +223,7 @@
       function handlePaneOpacity(val) {
         const v = Number(val);
         if (!Number.isFinite(v)) { applyToInputs(); return; }
-        settings.paneOpacity = clamp(Number(v.toFixed(2)), 0.85, 1);
+        settings.paneOpacity = clamp(Number(v.toFixed(2)), 0.5, 1);
         applyToInputs(); persist();
       }
       els.paneOpacityRange.addEventListener('input', () => handlePaneOpacity(els.paneOpacityRange.value));
@@ -227,8 +232,8 @@
       // Load settings on open
       bridge.loadSettings().then((saved) => {
         settings = saved || {
-          fontSize: 13,
-          paneOpacity: 0.92,
+          fontSize: 14,
+          paneOpacity: 0.75,
           paneWidth: 720,
           defaultOpenDirectory: bridge.defaultCwd,
           maxSessions: 8,

@@ -7,8 +7,8 @@ let saveTimer: number | null = null;
 
 function getPaneToneOpacity(paneOpacity: number): number {
   // Keep non-focused panes readable while preserving visual hierarchy.
-  const normalized = Math.max(0.85, Math.min(1, paneOpacity));
-  return Number((0.12 + (1 - normalized) * 1.07).toFixed(2));
+  const normalized = Math.max(0.5, Math.min(1, paneOpacity));
+  return Number((0.12 + (1 - normalized) * 0.96).toFixed(2));
 }
 
 function persistSettings(): void {
@@ -90,7 +90,7 @@ function updateMaxSessions(value: string): void {
     applySettingsToDom();
     return;
   }
-  state.settings.maxSessions = Math.max(1, Math.min(20, Math.round(parsed)));
+  state.settings.maxSessions = Math.max(1, Math.min(9, Math.round(parsed)));
   applySettingsToDom();
   persistSettings();
 }
@@ -120,7 +120,7 @@ function updatePaneOpacity(value: string): void {
     return;
   }
   state.settings.paneOpacity = Math.max(
-    0.85,
+    0.5,
     Math.min(1, Number(parsed.toFixed(2))),
   );
   applySettingsToDom();
@@ -137,6 +137,10 @@ export function initSettingsListeners(
   });
 
   dom.defaultDirectoryInput.addEventListener('change', () => {
+    updateDefaultOpenDirectory(dom.defaultDirectoryInput.value);
+  });
+
+  dom.defaultDirectoryInput.addEventListener('input', () => {
     updateDefaultOpenDirectory(dom.defaultDirectoryInput.value);
   });
 

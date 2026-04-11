@@ -2,13 +2,13 @@
 
 :root {
   color-scheme: dark;
-  --bg: #151515;
-  --panel: #1d1d1d;
-  --panel-border: #2b2b2b;
+  --bg: #282a36;
+  --panel: #2d3044;
+  --panel-border: #3d3f54;
   --panel-muted: #8a8a8a;
   --text: #f4f1e8;
   --app-font-size: 13px;
-  --pane-opacity: 0.92;
+  --pane-opacity: 0.75;
   --pane-tone-opacity: 0.21;
   --pane-width: 720px;
   --tabs-height: 34px;
@@ -28,9 +28,9 @@ html,
 body {
   min-height: 100%;
   background:
-    radial-gradient(circle at top left, rgba(255, 196, 93, 0.08), transparent 28%),
-    radial-gradient(circle at top right, rgba(0, 181, 173, 0.08), transparent 24%),
-    linear-gradient(180deg, #171717 0%, #101010 100%);
+    radial-gradient(circle at top left, rgba(255, 196, 93, 0.06), transparent 28%),
+    radial-gradient(circle at top right, rgba(0, 181, 173, 0.06), transparent 24%),
+    linear-gradient(180deg, #282a36 0%, #21222c 100%);
   color: var(--text);
   font-family: Menlo, Monaco, Consolas, "Liberation Mono", monospace;
   font-size: var(--app-font-size);
@@ -54,8 +54,11 @@ body {
   align-items: start;
   gap: 0;
   padding: 0;
+  padding-left: 78px; /* space for macOS traffic light buttons */
   min-height: var(--tabs-height);
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  -webkit-app-region: drag;
+  background: #282a36;
 }
 
 .tabs-list {
@@ -75,9 +78,8 @@ body {
   align-items: stretch;
   flex: 1 1 0;
   min-width: 80px;
-  max-width: 240px;
-  border-right: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.02);
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  background: transparent;
   color: var(--panel-muted);
   transition:
     background 120ms ease,
@@ -90,13 +92,7 @@ body {
 .tab.is-focused {
   z-index: 2;
   color: #fffdf7;
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--pane-accent) 18%, rgba(255, 255, 255, 0.08)) 0%, rgba(20, 20, 20, 0.92) 100%);
-  border-right-color: color-mix(in srgb, var(--pane-accent) 34%, rgba(255, 255, 255, 0.12));
-  box-shadow:
-    inset 0 2px 0 0 var(--pane-accent),
-    inset 0 0 0 1px color-mix(in srgb, var(--pane-accent) 24%, rgba(255, 255, 255, 0.08)),
-    0 0 0 1px rgba(0, 0, 0, 0.18);
+  background: rgba(255, 255, 255, 0.12);
 }
 
 .tab.is-focused .tab-label {
@@ -104,10 +100,8 @@ body {
   letter-spacing: 0.01em;
 }
 
-.tab.is-focused .tab-swatch {
-  box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.45),
-    0 0 14px color-mix(in srgb, var(--pane-accent) 42%, transparent);
+.tab.is-focused .tab-shortcut {
+  color: inherit;
 }
 
 .tab.is-dragging {
@@ -139,53 +133,33 @@ body {
   background: transparent;
   cursor: pointer;
   font: inherit;
+  -webkit-app-region: no-drag;
 }
 
 .tab-main {
   min-height: 33px;
   min-width: 0;
   width: 100%;
-  justify-content: center;
-  padding: 0 28px 0 22px;
+  justify-content: space-between;
+  padding: 0 12px;
   color: inherit;
   font-size: var(--app-font-size);
   touch-action: none;
 }
 
 .tab-close {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 24px;
-  flex: 0 0 24px;
-  height: 100%;
-  padding: 0;
-  color: rgba(255, 255, 255, 0.5);
-  transition:
-    color 120ms ease,
-    background 120ms ease;
-}
-
-.tab-close:hover {
-  color: rgba(255, 255, 255, 0.88);
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.tab-close:disabled {
-  opacity: 0.35;
-  cursor: default;
+  display: none;
 }
 
 .tab-swatch {
-  position: absolute;
-  left: 8px;
-  top: 50%;
-  width: 9px;
-  height: 9px;
+  display: none;
+}
+
+.tab-shortcut {
   flex: 0 0 auto;
-  transform: translateY(-50%);
-  background: var(--pane-accent);
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4);
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 12px;
+  margin-left: 8px;
 }
 
 .tab-label {
@@ -251,7 +225,7 @@ body {
   width: 220px;
   padding: 8px;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  background: #171717;
+  background: #21222c;
   z-index: 50;
 }
 
@@ -312,13 +286,10 @@ body {
   top: 0;
   bottom: 0;
   width: var(--pane-width);
-  border: 2px solid var(--pane-accent);
+  border: 1px solid var(--pane-accent);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02)),
-    color-mix(in srgb, var(--pane-accent) 10%, #101010);
-  box-shadow:
-    0 18px 44px rgba(0, 0, 0, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    color-mix(in srgb, var(--pane-accent) 10%, #282a36);
   overflow: hidden;
   cursor: pointer;
   transition:
@@ -360,14 +331,13 @@ body {
   bottom: 0;
   width: var(--pane-occluded-width);
   pointer-events: none;
-  background: #101010;
+  background: #21222c;
   opacity: 0;
   transition: opacity 120ms ease;
 }
 
 .pane.is-focused {
   box-shadow:
-    0 24px 54px rgba(0, 0, 0, 0.42),
     0 0 0 1px color-mix(in srgb, var(--pane-accent) 22%, transparent),
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
@@ -396,18 +366,18 @@ body {
   position: absolute;
   top: 0;
   bottom: 0;
-  width: 24px;
+  width: 8px;
   cursor: ew-resize;
   z-index: 8;
   touch-action: none;
 }
 
 .pane-resize-handle.is-left {
-  left: -12px;
+  left: -4px;
 }
 
 .pane-resize-handle.is-right {
-  right: -12px;
+  right: -4px;
 }
 
 .pane-resize-handle::before {
@@ -426,11 +396,11 @@ body {
 }
 
 .pane-resize-handle.is-left::before {
-  right: 11px;
+  right: 3px;
 }
 
 .pane-resize-handle.is-right::before {
-  left: 11px;
+  left: 3px;
 }
 
 .pane.is-focused .pane-resize-handle:hover::before,
@@ -505,12 +475,25 @@ body.is-resizing-pane {
   width: 100%;
   height: 100%;
   padding: 0 6px;
+  background: #282a36;
+}
+
+.terminal-host.is-drop-target {
+  outline: 2px dashed var(--pane-accent, #61afef);
+  outline-offset: -2px;
+  background: rgba(97, 175, 239, 0.06);
 }
 
 .terminal-host .xterm {
   height: 100%;
+  background-color: #282a36 !important;
 }
 
 .terminal-host .xterm-viewport {
+  overflow: hidden !important;
+  background-color: #282a36 !important;
+}
+
+.terminal-host .xterm-screen {
   overflow: hidden !important;
 }

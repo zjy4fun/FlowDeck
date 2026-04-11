@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, Menu } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, Menu } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
 import { registerPtyHandlers, destroyAllSessions } from './pty-manager';
@@ -98,7 +98,11 @@ function buildAppMenu(): void {
               { role: 'hideOthers' as const },
               { role: 'unhide' as const },
               { type: 'separator' as const },
-              { role: 'quit' as const },
+              {
+                label: 'Quit FlowDeck',
+                accelerator: 'Cmd+Q',
+                click: () => app.quit(),
+              },
             ],
           },
         ]
@@ -136,6 +140,10 @@ function buildAppMenu(): void {
         { role: 'reload' },
         { role: 'forceReload' },
         { role: 'toggleDevTools' },
+        { type: 'separator' },
+        { role: 'zoomIn' },
+        { role: 'zoomOut' },
+        { role: 'resetZoom' },
         { type: 'separator' },
         { role: 'togglefullscreen' },
       ],
@@ -179,6 +187,8 @@ function createWindow(): void {
     minWidth: 960,
     minHeight: 640,
     backgroundColor: '#111111',
+    titleBarStyle: 'hiddenInset',
+    trafficLightPosition: { x: 12, y: 10 },
     autoHideMenuBar: false,
     show: !isCaptureMode,
     webPreferences: {
@@ -195,19 +205,6 @@ function createWindow(): void {
 
   win.webContents.on('preload-error', (_e, preloadPath, err) => {
     console.error(`preload-error ${preloadPath}`, err);
-  });
-
-  // Prevent Cmd+W from closing the window — let the renderer handle it as "close tab"
-  win.webContents.on('before-input-event', (_event, input) => {
-    if (
-      input.type === 'keyDown' &&
-      input.key.toLowerCase() === 'w' &&
-      input.meta &&
-      !input.control &&
-      !input.alt
-    ) {
-      _event.preventDefault();
-    }
   });
 
   win.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
@@ -250,7 +247,24 @@ app.whenReady().then(() => {
   });
 });
 
-app.on('before-quit', destroyAllSessions);
+app.on('before-quit', () => {
+  destroyAllSessions();
+});
+
+ipcMain.handle('flowdeck:confirm-quit', (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (!win || win.isDestroyed()) return true;
+
+  const choice = dialog.showMessageBoxSync(win, {
+    type: 'question',
+    buttons: ['Cancel', 'Quit'],
+    defaultId: 1,
+    cancelId: 0,
+    title: 'Quit FlowDeck',
+    message: 'Are you sure you want to quit? All sessions will be closed.',
+  });
+  return choice === 1;
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {

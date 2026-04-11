@@ -70,6 +70,10 @@ function extractCwdFromOscBuffer(buffer: string): string | null {
   return null;
 }
 
+function escapePathForShell(filePath: string): string {
+  return `'${filePath.replace(/'/g, "'\\''")}'`;
+}
+
 export function initLifecycle(deps: LifecycleDeps): CleanupFn {
   const cleanups: CleanupFn[] = [];
   const oscTailByPaneId = new Map<string, string>();
@@ -83,6 +87,58 @@ export function initLifecycle(deps: LifecycleDeps): CleanupFn {
       cleanup?.();
     }
   };
+
+  // Global file drag-and-drop: prevent Electron's default navigation and
+  // write dropped file paths into the focused terminal.
+  const handleDragOver = (e: DragEvent): void => {
+    if (!e.dataTransfer?.types.includes('Files')) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+    const node = state.focusedPaneId
+      ? paneNodeMap.get(state.focusedPaneId)
+      : undefined;
+    node?.terminalHost.classList.add('is-drop-target');
+  };
+  document.addEventListener('dragover', handleDragOver);
+  cleanups.push(() => document.removeEventListener('dragover', handleDragOver));
+
+  const handleDragLeave = (e: DragEvent): void => {
+    // Remove highlight only when leaving the window entirely
+    if (e.relatedTarget) return;
+    for (const node of paneNodeMap.values()) {
+      node.terminalHost.classList.remove('is-drop-target');
+    }
+  };
+  document.addEventListener('dragleave', handleDragLeave);
+  cleanups.push(() =>
+    document.removeEventListener('dragleave', handleDragLeave),
+  );
+
+  const handleDrop = (e: DragEvent): void => {
+    // Always prevent default to stop Electron from navigating to the file
+    e.preventDefault();
+    for (const node of paneNodeMap.values()) {
+      node.terminalHost.classList.remove('is-drop-target');
+    }
+
+    if (!e.dataTransfer?.types.includes('Files')) return;
+    const node = state.focusedPaneId
+      ? paneNodeMap.get(state.focusedPaneId)
+      : undefined;
+    if (!node?.sessionReady) return;
+
+    const paths = Array.from(e.dataTransfer.files)
+      .map((f) => bridge.getFilePath(f))
+      .filter((p) => !!p)
+      .map(escapePathForShell)
+      .join(' ');
+
+    if (paths) {
+      bridge.writeTerminal({ paneId: node.paneId, data: paths });
+    }
+  };
+  document.addEventListener('drop', handleDrop);
+  cleanups.push(() => document.removeEventListener('drop', handleDrop));
 
   const removeDataListener = bridge.onTerminalData(({ paneId, data }) => {
     paneNodeMap.get(paneId)?.terminal.write(data);
@@ -132,7 +188,7 @@ export function initLifecycle(deps: LifecycleDeps): CleanupFn {
 
   const removeMenuCloseTab = bridge.onMenuCloseTab(() => {
     const focusedIndex = getFocusedIndex();
-    if (focusedIndex !== -1 && state.panes.length > 1) {
+    if (focusedIndex !== -1) {
       deps.closePane(focusedIndex);
     }
   });
