@@ -70,9 +70,10 @@
       }
 
       body {
-        display: flex;
-        flex-direction: column;
-        padding: 28px 24px 18px;
+        display: grid;
+        align-content: center;
+        row-gap: 14px;
+        padding: 24px 24px 18px;
         -webkit-app-region: drag;
         user-select: none;
       }
@@ -81,8 +82,7 @@
         display: grid;
         grid-template-columns: 60px minmax(0, 1fr);
         column-gap: 16px;
-        align-items: start;
-        flex: 1 1 auto;
+        align-items: center;
       }
 
       .icon {
@@ -104,7 +104,7 @@
         flex-direction: column;
         gap: 6px;
         min-height: 60px;
-        padding-top: 1px;
+        justify-content: center;
       }
 
       .title {
@@ -164,7 +164,6 @@
       }
 
       .actions {
-        margin-top: 14px;
         display: flex;
         justify-content: flex-end;
         gap: 8px;
