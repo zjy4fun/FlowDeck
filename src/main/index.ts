@@ -434,6 +434,22 @@ function sendToFocusedWindow(channel: string): void {
   }
 }
 
+function confirmQuit(win?: BrowserWindow | null): boolean {
+  const dialogOptions = {
+    type: 'question' as const,
+    buttons: ['Cancel', 'Quit'],
+    defaultId: 1,
+    cancelId: 0,
+    title: 'Quit FlowDeck',
+    message: 'Are you sure you want to quit? All sessions will be closed.',
+  };
+  const choice =
+    win && !win.isDestroyed()
+      ? dialog.showMessageBoxSync(win, dialogOptions)
+      : dialog.showMessageBoxSync(dialogOptions);
+  return choice === 1;
+}
+
 function buildAppMenu(): void {
   const isMac = process.platform === 'darwin';
 
@@ -462,7 +478,11 @@ function buildAppMenu(): void {
               {
                 label: 'Quit FlowDeck',
                 accelerator: 'Cmd+Q',
-                click: () => app.quit(),
+                click: () => {
+                  if (confirmQuit(BrowserWindow.getFocusedWindow())) {
+                    app.quit();
+                  }
+                },
               },
             ],
           },
@@ -647,17 +667,7 @@ ipcMain.handle('flowdeck:select-directory', async (event) => {
 
 ipcMain.handle('flowdeck:confirm-quit', (event) => {
   const win = BrowserWindow.fromWebContents(event.sender);
-  if (!win || win.isDestroyed()) return true;
-
-  const choice = dialog.showMessageBoxSync(win, {
-    type: 'question',
-    buttons: ['Cancel', 'Quit'],
-    defaultId: 1,
-    cancelId: 0,
-    title: 'Quit FlowDeck',
-    message: 'Are you sure you want to quit? All sessions will be closed.',
-  });
-  return choice === 1;
+  return confirmQuit(win);
 });
 
 app.on('window-all-closed', () => {

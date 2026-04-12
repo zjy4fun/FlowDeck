@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.4.8
+
+- Show the quit confirmation dialog when quitting FlowDeck with `Cmd+Q`
+
 ## v0.4.5
 
 - Fix terminal input getting stuck after FlowDeck stays in the background for a while and then returns to the foreground
