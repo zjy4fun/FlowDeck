@@ -472,6 +472,12 @@ function buildAppMenu(): void {
       label: 'Shell',
       submenu: [
         {
+          label: 'New Window',
+          accelerator: isMac ? 'Cmd+N' : 'Ctrl+N',
+          click: () => createWindow(),
+        },
+        { type: 'separator' },
+        {
           label: 'New Tab',
           accelerator: isMac ? 'Cmd+T' : 'Ctrl+T',
           click: () => sendToFocusedWindow('flowdeck:menu-new-tab'),
