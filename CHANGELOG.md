@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.4.3
+
+- Fix macOS in-app update apply flow by replacing `app.asar` from a detached helper after FlowDeck fully exits
+- Fix bundled app version metadata so the installed app reports `0.4.3` correctly after updating
+- Show a clear notice when a downloaded update is still pending installation
+
+## v0.4.2
+
+- Fix update window vertical center style
+
 ## v0.4.1
 
 - Fix pane boundary rendering rules so focused-session accent controls both adjacent borders

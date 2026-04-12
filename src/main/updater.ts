@@ -1,3 +1,4 @@
+import { spawn } from 'child_process';
 import { app, BrowserWindow, dialog, ipcMain, nativeTheme, net } from 'electron';
 // Use original-fs to bypass Electron's asar interception on .asar paths
 import * as originalFs from 'original-fs';
@@ -40,6 +41,9 @@ let updateWindow: BrowserWindow | null = null;
 let updateWindowState: UpdateWindowState | null = null;
 let cancelActiveDownload: (() => void) | null = null;
 let updaterIpcRegistered = false;
+let updaterLifecycleRegistered = false;
+let updateApplyHelperScheduled = false;
+let pendingUpdateLaunchNotice: string | null = null;
 
 function getPendingUpdateDir(): string {
   return path.join(app.getPath('userData'), 'pending-update');
@@ -49,9 +53,218 @@ function getStagedAsarPath(): string {
   return path.join(getPendingUpdateDir(), 'app.asar');
 }
 
+function getInstalledAsarPath(): string {
+  return path.join(process.resourcesPath, 'app.asar');
+}
+
+function getAsarBackupPath(): string {
+  return path.join(getPendingUpdateDir(), 'app.asar.backup');
+}
+
+function getApplyUpdateScriptPath(): string {
+  return path.join(getPendingUpdateDir(), 'apply-update.sh');
+}
+
+function getApplyUpdateLogPath(): string {
+  return path.join(getPendingUpdateDir(), 'apply-update.log');
+}
+
+function ensurePendingUpdateDir(): void {
+  const directory = getPendingUpdateDir();
+  if (!fs.existsSync(directory)) {
+    fs.mkdirSync(directory, { recursive: true });
+  }
+}
+
+function getMacAppBundlePath(): string {
+  const appBundlePath = path.resolve(process.execPath, '..', '..', '..');
+  if (!appBundlePath.endsWith('.app')) {
+    throw new Error(
+      `Could not resolve app bundle path from executable: ${process.execPath}`,
+    );
+  }
+  return appBundlePath;
+}
+
+function writeMacApplyUpdateScript(scriptPath: string): void {
+  const script = `#!/bin/sh
+set -eu
+
+PID="$1"
+STAGED="$2"
+TARGET="$3"
+BACKUP="$4"
+APP_BUNDLE="$5"
+RELAUNCH="$6"
+LOG_FILE="$7"
+
+mkdir -p "$(dirname "$LOG_FILE")"
+
+log() {
+  printf '%s %s\\n' "$(date '+%Y-%m-%dT%H:%M:%S%z')" "$1" >> "$LOG_FILE"
+}
+
+reopen_app() {
+  if [ "$RELAUNCH" != "1" ]; then
+    return
+  fi
+  /usr/bin/open -n "$APP_BUNDLE" >/dev/null 2>&1 || true
+}
+
+: > "$LOG_FILE"
+log "waiting for pid $PID to exit"
+
+while kill -0 "$PID" 2>/dev/null; do
+  sleep 1
+done
+
+if [ ! -f "$STAGED" ]; then
+  log "staged update missing: $STAGED"
+  reopen_app
+  exit 1
+fi
+
+if [ ! -f "$TARGET" ]; then
+  log "installed app.asar missing: $TARGET"
+  reopen_app
+  exit 1
+fi
+
+if ! cp -f "$TARGET" "$BACKUP"; then
+  log "failed to back up installed app.asar"
+  reopen_app
+  exit 1
+fi
+
+if ! cp -f "$STAGED" "$TARGET"; then
+  STATUS=$?
+  log "failed to copy staged update into place (exit $STATUS)"
+  if [ -f "$BACKUP" ]; then
+    cp -f "$BACKUP" "$TARGET" || true
+  fi
+  reopen_app
+  exit "$STATUS"
+fi
+
+rm -f "$STAGED" "$BACKUP"
+log "update applied successfully"
+reopen_app
+log "helper finished"
+`;
+
+  originalFs.writeFileSync(scriptPath, script, { mode: 0o755 });
+  fs.chmodSync(scriptPath, 0o755);
+}
+
+function scheduleMacApplyUpdate(relaunchAfterApply: boolean): void {
+  if (updateApplyHelperScheduled) return;
+
+  const staged = getStagedAsarPath();
+  if (!originalFs.existsSync(staged)) {
+    throw new Error('No staged update was found to apply.');
+  }
+
+  ensurePendingUpdateDir();
+
+  const scriptPath = getApplyUpdateScriptPath();
+  const target = getInstalledAsarPath();
+  const backup = getAsarBackupPath();
+  const appBundlePath = getMacAppBundlePath();
+  const logPath = getApplyUpdateLogPath();
+
+  writeMacApplyUpdateScript(scriptPath);
+
+  const helper = spawn(
+    '/bin/sh',
+    [
+      scriptPath,
+      String(process.pid),
+      staged,
+      target,
+      backup,
+      appBundlePath,
+      relaunchAfterApply ? '1' : '0',
+      logPath,
+    ],
+    {
+      detached: true,
+      stdio: 'ignore',
+    },
+  );
+
+  helper.unref();
+  updateApplyHelperScheduled = true;
+}
+
+function showApplyUpdateError(error: unknown): void {
+  const detail = error instanceof Error ? error.message : 'Unknown error';
+  dialog.showMessageBox({
+    type: 'error',
+    title: 'Update Error',
+    message: 'Could not prepare the downloaded update for install.',
+    detail: `${detail}\n\nIf this keeps happening, install the latest DMG/ZIP manually.`,
+  });
+}
+
+function restartToApplyUpdate(): void {
+  closeUpdateWindow();
+
+  if (!app.isPackaged) {
+    app.relaunch();
+    app.exit(0);
+    return;
+  }
+
+  if (process.platform === 'darwin' && originalFs.existsSync(getStagedAsarPath())) {
+    scheduleMacApplyUpdate(true);
+    app.quit();
+    return;
+  }
+
+  app.relaunch();
+  app.exit(0);
+}
+
+function showPendingUpdateLaunchNoticeIfNeeded(): void {
+  if (!pendingUpdateLaunchNotice) return;
+
+  const detail = pendingUpdateLaunchNotice;
+  pendingUpdateLaunchNotice = null;
+
+  dialog.showMessageBox({
+    type: 'info',
+    title: 'Downloaded Update Still Pending',
+    message: 'FlowDeck still has a downloaded update waiting to be installed.',
+    detail,
+  });
+}
+
+function registerUpdaterLifecycleHandlers(): void {
+  if (updaterLifecycleRegistered) return;
+  updaterLifecycleRegistered = true;
+
+  app.on('before-quit', () => {
+    if (
+      !app.isPackaged ||
+      process.platform !== 'darwin' ||
+      updateApplyHelperScheduled ||
+      !originalFs.existsSync(getStagedAsarPath())
+    ) {
+      return;
+    }
+
+    try {
+      scheduleMacApplyUpdate(false);
+    } catch (error) {
+      console.error('Failed to schedule pending update on quit:', error);
+    }
+  });
+}
+
 /**
  * Called at app startup BEFORE createWindow().
- * If a staged app.asar exists, swap it in and relaunch.
+ * Windows keeps the original startup-swap behavior. macOS applies
+ * staged updates from a detached helper after the app fully exits.
  */
 export function applyPendingUpdate(): boolean {
   if (!app.isPackaged) return false;
@@ -59,10 +272,18 @@ export function applyPendingUpdate(): boolean {
   const staged = getStagedAsarPath();
   if (!originalFs.existsSync(staged)) return false;
 
-  const target = path.join(process.resourcesPath, 'app.asar');
-  const backup = path.join(process.resourcesPath, 'app.asar.backup');
+  if (process.platform === 'darwin') {
+    pendingUpdateLaunchNotice =
+      'Quit FlowDeck completely once more to let the detached updater replace the installed app. If the version still does not change after that, install the latest DMG/ZIP manually.';
+    return false;
+  }
+
+  const target = getInstalledAsarPath();
+  const backup = getAsarBackupPath();
 
   try {
+    ensurePendingUpdateDir();
+
     // Backup current asar
     originalFs.copyFileSync(target, backup);
 
@@ -602,14 +823,20 @@ async function checkAndDownload(manual: boolean): Promise<void> {
     type: 'info',
     title: 'Update Ready',
     message: `Version ${remoteVersion} has been downloaded.`,
-    detail: 'The update will be applied when you restart the application.',
+    detail:
+      process.platform === 'darwin'
+        ? 'Choose Restart Now to apply the update immediately, or Later to install it the next time FlowDeck fully closes.'
+        : 'The update will be applied when you restart the application.',
     buttons: ['Restart Now', 'Later'],
     defaultId: 0,
   });
 
   if (result.response === 0) {
-    app.relaunch();
-    app.exit(0);
+    try {
+      restartToApplyUpdate();
+    } catch (error) {
+      showApplyUpdateError(error);
+    }
   }
 }
 
@@ -627,8 +854,11 @@ export function registerUpdaterIpcHandlers(): void {
   });
 
   ipcMain.handle('flowdeck:update-restart', () => {
-    app.relaunch();
-    app.exit(0);
+    try {
+      restartToApplyUpdate();
+    } catch (error) {
+      showApplyUpdateError(error);
+    }
   });
 
   ipcMain.handle('flowdeck:update-close-window', () => {
@@ -638,6 +868,9 @@ export function registerUpdaterIpcHandlers(): void {
 
 export function initAutoUpdater(): void {
   if (!app.isPackaged) return;
+
+  registerUpdaterLifecycleHandlers();
+  showPendingUpdateLaunchNoticeIfNeeded();
 
   setTimeout(() => {
     checkAndDownload(false).catch(() => {});
