@@ -16,6 +16,13 @@ else
 fi
 unset FLOWDECK_ORIGINAL_ZDOTDIR
 
+# macOS seeds its baseline PATH in /etc/zprofile via path_helper. Because
+# FlowDeck injects a custom .zshenv, make sure user .zshenv logic starts from
+# a normal macOS PATH even when the app was launched from a restricted GUI env.
+if [ "$(uname -s)" = 'Darwin' ] && [ -x /usr/libexec/path_helper ]; then
+  eval "$(/usr/libexec/path_helper -s)"
+fi
+
 # Source the user's real .zshenv
 if [ -r "${ZDOTDIR:-$HOME}/.zshenv" ]; then
   source "${ZDOTDIR:-$HOME}/.zshenv"
