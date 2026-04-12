@@ -197,19 +197,23 @@ export function renderPanes(refit = false): void {
   const isSinglePaneLayout = state.panes.length === 1;
   const previewWidth = getPreviewWidth(stageWidth, state.panes.length);
   const focusedIndex = getFocusedIndex();
+  const focusedAccent =
+    focusedIndex >= 0 ? (state.panes[focusedIndex]?.accent ?? null) : null;
 
   ensurePaneNodes();
 
   const layouts = state.panes.map((_, index): PaneLayout => {
     const isFocused = index === focusedIndex;
-    const width = isSinglePaneLayout
+    const rawWidth = isSinglePaneLayout
       ? stageWidth
       : isFocused
         ? getFocusedPaneWidth()
         : state.settings.paneWidth;
-    const left = isSinglePaneLayout
+    const rawLeft = isSinglePaneLayout
       ? 0
       : getPaneLeft(index, previewWidth, focusedIndex);
+    const width = Math.max(1, Math.round(rawWidth));
+    const left = Math.round(rawLeft);
     return {
       left,
       width,
@@ -221,6 +225,14 @@ export function renderPanes(refit = false): void {
   state.panes.forEach((pane, index) => {
     const node = paneNodeMap.get(pane.id) as PaneNode;
     const layout = layouts[index] as PaneLayout;
+    const leftBorderColor =
+      focusedAccent !== null && focusedIndex === index - 1
+        ? focusedAccent
+        : pane.accent;
+    const rightBorderColor =
+      layout.isFocused || index === state.panes.length - 1
+        ? pane.accent
+        : 'transparent';
 
     node.root.classList.toggle('is-focused', layout.isFocused);
     node.root.classList.toggle(
@@ -228,6 +240,10 @@ export function renderPanes(refit = false): void {
       layout.isFocused && state.isNavigationMode,
     );
     node.root.style.setProperty('--pane-accent', pane.accent);
+    node.root.style.setProperty('--pane-border-top', pane.accent);
+    node.root.style.setProperty('--pane-border-bottom', pane.accent);
+    node.root.style.setProperty('--pane-border-left', leftBorderColor);
+    node.root.style.setProperty('--pane-border-right', rightBorderColor);
     const nextLeft = `${layout.left}px`;
     const nextWidth = `${layout.width}px`;
     const nextHeight = `${stageHeight}px`;

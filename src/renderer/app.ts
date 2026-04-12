@@ -2,6 +2,7 @@ import {
   state,
   dom,
   initDom,
+  paneNodeMap,
   getFocusedIndex,
   getDirectoryLabel,
   getDisplayPath,
@@ -280,6 +281,30 @@ function reportError(error: unknown): void {
   console.error(error);
 }
 
+function focusActivePaneTerminal(): void {
+  if (state.isNavigationMode || !state.focusedPaneId) return;
+
+  const activeElement = document.activeElement as HTMLElement | null;
+  if (
+    activeElement &&
+    (
+      activeElement.tagName === 'INPUT' ||
+      activeElement.tagName === 'TEXTAREA' ||
+      activeElement.tagName === 'SELECT' ||
+      activeElement.isContentEditable
+    )
+  ) {
+    return;
+  }
+
+  const node = paneNodeMap.get(state.focusedPaneId);
+  if (!node) return;
+
+  requestAnimationFrame(() => {
+    if (!state.isNavigationMode) node.terminal.focus();
+  });
+}
+
 /* ── Bootstrap ── */
 
 export async function startApp(): Promise<void> {
@@ -383,11 +408,13 @@ export async function startApp(): Promise<void> {
   }, USAGE_REFRESH_INTERVAL_MS);
   const handleWindowFocus = (): void => {
     requestUsageQuotaRefresh(true);
+    focusActivePaneTerminal();
   };
   window.addEventListener('focus', handleWindowFocus);
   const handleVisibilityChange = (): void => {
     if (document.visibilityState === 'visible') {
       requestUsageQuotaRefresh(true);
+      focusActivePaneTerminal();
     }
   };
   document.addEventListener('visibilitychange', handleVisibilityChange);

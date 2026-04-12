@@ -11,6 +11,112 @@ export interface TabActions {
 }
 
 let actions: TabActions;
+const UNICODE_WORK_FRAMES = ['◐', '◓', '◑', '◒'] as const;
+const UNICODE_WORK_FRAME_INTERVAL_MS = 110;
+const workingPaneIds = new Set<string>();
+type PaneAttentionKind = 'done' | 'confirm';
+const attentionByPaneId = new Map<string, PaneAttentionKind>();
+let unicodeWorkFrameIndex = 0;
+let unicodeWorkTimerId: number | null = null;
+
+function stopUnicodeWorkLoop(): void {
+  if (unicodeWorkTimerId !== null) {
+    window.clearInterval(unicodeWorkTimerId);
+    unicodeWorkTimerId = null;
+  }
+  unicodeWorkFrameIndex = 0;
+}
+
+function startUnicodeWorkLoop(): void {
+  if (unicodeWorkTimerId !== null) return;
+
+  unicodeWorkTimerId = window.setInterval(() => {
+    if (workingPaneIds.size === 0) {
+      stopUnicodeWorkLoop();
+      return;
+    }
+
+    unicodeWorkFrameIndex = (unicodeWorkFrameIndex + 1) % UNICODE_WORK_FRAMES.length;
+    renderTabs();
+  }, UNICODE_WORK_FRAME_INTERVAL_MS);
+}
+
+function getUnicodeWorkFrame(): string {
+  return UNICODE_WORK_FRAMES[unicodeWorkFrameIndex] ?? UNICODE_WORK_FRAMES[0];
+}
+
+export function setPaneWorkingIndicator(paneId: string, isWorking: boolean): void {
+  let changed = false;
+
+  if (isWorking) {
+    if (!workingPaneIds.has(paneId)) {
+      workingPaneIds.add(paneId);
+      changed = true;
+    }
+    if (attentionByPaneId.delete(paneId)) {
+      changed = true;
+    }
+    startUnicodeWorkLoop();
+  } else {
+    if (workingPaneIds.delete(paneId)) {
+      changed = true;
+    }
+    if (workingPaneIds.size === 0) {
+      stopUnicodeWorkLoop();
+    }
+  }
+
+  if (changed) {
+    renderTabs();
+  }
+}
+
+export function clearPaneWorkingIndicator(paneId: string): void {
+  setPaneWorkingIndicator(paneId, false);
+}
+
+export function setPaneAttentionIndicator(
+  paneId: string,
+  kind: PaneAttentionKind,
+): void {
+  let changed = false;
+  if (workingPaneIds.has(paneId)) {
+    workingPaneIds.delete(paneId);
+    changed = true;
+    if (workingPaneIds.size === 0) {
+      stopUnicodeWorkLoop();
+    }
+  }
+  if (attentionByPaneId.get(paneId) !== kind) {
+    attentionByPaneId.set(paneId, kind);
+    changed = true;
+  }
+  if (changed) {
+    renderTabs();
+  }
+}
+
+export function clearPaneAttentionIndicator(paneId: string): void {
+  if (!attentionByPaneId.delete(paneId)) return;
+  renderTabs();
+}
+
+export function clearAllPaneWorkingIndicators(): void {
+  if (workingPaneIds.size === 0) {
+    stopUnicodeWorkLoop();
+    return;
+  }
+
+  workingPaneIds.clear();
+  stopUnicodeWorkLoop();
+  renderTabs();
+}
+
+export function clearAllPaneAttentionIndicators(): void {
+  if (attentionByPaneId.size === 0) return;
+  attentionByPaneId.clear();
+  renderTabs();
+}
 
 export function initTabs(tabActions: TabActions): void {
   actions = tabActions;
@@ -211,8 +317,29 @@ function createTabElement(
   } else {
     const span = document.createElement('span');
     span.className = 'tab-label';
-    const labelText = getPaneLabel(pane);
-    span.textContent = labelText;
+    const labelText = document.createElement('span');
+    labelText.className = 'tab-label-text';
+    labelText.textContent = getPaneLabel(pane);
+
+    if (workingPaneIds.has(pane.id)) {
+      const indicator = document.createElement('span');
+      indicator.className = 'tab-busy-indicator';
+      indicator.setAttribute('aria-hidden', 'true');
+      indicator.textContent = getUnicodeWorkFrame();
+      span.append(indicator);
+    } else {
+      const attention = attentionByPaneId.get(pane.id);
+      if (attention) {
+        const indicator = document.createElement('span');
+        indicator.className =
+          `tab-attention-indicator${attention === 'confirm' ? ' is-confirm' : ' is-done'}`;
+        indicator.setAttribute('aria-hidden', 'true');
+        indicator.textContent = attention === 'confirm' ? '?' : '✓';
+        span.append(indicator);
+      }
+    }
+
+    span.append(labelText);
     label = span;
   }
 

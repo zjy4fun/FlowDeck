@@ -1,6 +1,6 @@
 import { state, dom, getResolvedTheme, paneNodeMap } from './state';
 import { bridge } from './bridge';
-import { createTerminalTheme } from './terminal';
+import { createTerminalTheme, getTerminalBackground } from './terminal';
 
 /* ── Debounced persistence ── */
 
@@ -26,7 +26,9 @@ function persistSettings(): void {
 
 export function applyThemeToDom(): void {
   const resolved = getResolvedTheme();
-  document.documentElement.setAttribute('data-theme', resolved);
+  const root = document.documentElement;
+  root.setAttribute('data-theme', resolved);
+  root.style.setProperty('--terminal-bg', getTerminalBackground(resolved));
   paneNodeMap.forEach((node) => {
     node.terminal.options.theme = createTerminalTheme(node.accent, resolved);
   });

@@ -6,6 +6,7 @@ import {
   ACCENT_PALETTE,
 } from '../state';
 import type { PaneActionsDeps } from '../types';
+import { clearPaneWorkingIndicator, clearPaneAttentionIndicator } from '../tabs';
 
 export interface PaneActionsController {
   focusPane: (paneId: string, focusTerminal?: boolean) => void;
@@ -66,6 +67,7 @@ export function createPaneActionsController(
     }
     state.focusedPaneId = paneId;
     state.isNavigationMode = false;
+    clearPaneAttentionIndicator(paneId);
     deps.render();
 
     if (focusTerminal) {
@@ -107,6 +109,8 @@ export function createPaneActionsController(
   async function closePane(index: number): Promise<void> {
     const closing = state.panes[index];
     if (!closing) return;
+    clearPaneAttentionIndicator(closing.id);
+    clearPaneWorkingIndicator(closing.id);
 
     if (closing.id === state.renamingPaneId) state.renamingPaneId = null;
     if (closing.id === state.dragState?.paneId) deps.endTabDrag();

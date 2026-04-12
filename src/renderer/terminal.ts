@@ -18,7 +18,7 @@ function getCursorAccentColor(cursorColor: string, mode: ResolvedTheme): string 
   const luminance = (0.2126 * red + 0.7152 * green + 0.0722 * blue) / 255;
 
   if (mode === 'light') {
-    return luminance > 0.58 ? '#eff1f5' : '#4c4f69';
+    return luminance > 0.58 ? '#e9e6dc' : '#4c4f69';
   }
   return luminance > 0.58 ? '#232634' : '#c6d0f5';
 }
@@ -49,9 +49,9 @@ const DARK_PALETTE = {
 
 // Catppuccin Latte (light)
 const LIGHT_PALETTE = {
-  background: '#eff1f5',
+  background: '#e9e6dc',
   foreground: '#4c4f69',
-  selectionBackground: '#bcc0cc',
+  selectionBackground: '#c9c3b5',
   selectionForeground: '#4c4f69',
   black: '#5c5f77',
   red: '#d20f39',
@@ -71,6 +71,13 @@ const LIGHT_PALETTE = {
   brightWhite: '#bcc0cc',
 };
 
+const TERMINAL_SCROLLBAR_WIDTH = 6;
+
+export function getTerminalBackground(mode?: ResolvedTheme): string {
+  const resolved = mode ?? getResolvedTheme();
+  return (resolved === 'light' ? LIGHT_PALETTE : DARK_PALETTE).background;
+}
+
 export function createTerminalTheme(accent: string, mode?: ResolvedTheme) {
   const resolved = mode ?? getResolvedTheme();
   const palette = resolved === 'light' ? LIGHT_PALETTE : DARK_PALETTE;
@@ -78,6 +85,7 @@ export function createTerminalTheme(accent: string, mode?: ResolvedTheme) {
     ...palette,
     cursor: accent,
     cursorAccent: getCursorAccentColor(accent, resolved),
+    overviewRulerBorder: palette.background,
   };
 }
 
@@ -147,6 +155,7 @@ export function createPaneNode(
     fontFamily: 'Menlo, Monaco, Consolas, "Liberation Mono", monospace',
     fontSize: state.settings.fontSize,
     lineHeight: 1.2,
+    overviewRuler: { width: TERMINAL_SCROLLBAR_WIDTH },
     scrollback: 5000,
     theme: createTerminalTheme(pane.accent),
   });

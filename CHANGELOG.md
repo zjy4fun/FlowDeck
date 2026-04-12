@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.4.1
+
+- Fix pane boundary rendering rules so focused-session accent controls both adjacent borders
+- Remove residual vertical white line near the terminal scrollbar/overview area
+- Narrow terminal scrollbar area for cleaner session edges
+- Strengthen tab "working" animation and fix left-side clipping in busy indicator
+
 ## v0.3.10
 
 - Handle GitHub API 403/429 during update checks with a releases-page fallback

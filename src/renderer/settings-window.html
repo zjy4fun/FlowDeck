@@ -38,6 +38,7 @@
         --text-muted: rgba(255, 255, 255, 0.56);
         --text-faint: rgba(255, 255, 255, 0.38);
         --border: rgba(255, 255, 255, 0.09);
+        --section-border: rgba(255, 255, 255, 0.14);
         --border-hover: rgba(255, 255, 255, 0.16);
         --border-focus: #0a84ff;
         --divider: rgba(255, 255, 255, 0.06);
@@ -55,16 +56,17 @@
 
       html[data-theme='light'] {
         color-scheme: light;
-        --bg: #f1ede0;
-        --bg-elevated: #fbf9f0;
-        --bg-input: #ffffff;
-        --bg-input-hover: #fbf9f0;
-        --bg-input-focus: #ffffff;
+        --bg: #efe9dd;
+        --bg-elevated: #f7f3e9;
+        --bg-input: #fbf8ef;
+        --bg-input-hover: #f8f4e9;
+        --bg-input-focus: #fcf9f0;
         --text: #1d1d1f;
         --text-soft: rgba(0, 0, 0, 0.82);
         --text-muted: rgba(0, 0, 0, 0.54);
         --text-faint: rgba(0, 0, 0, 0.36);
         --border: rgba(0, 0, 0, 0.12);
+        --section-border: rgba(0, 0, 0, 0.16);
         --border-hover: rgba(0, 0, 0, 0.22);
         --border-focus: #0071e3;
         --divider: rgba(0, 0, 0, 0.08);
@@ -163,7 +165,7 @@
         display: flex;
         flex-direction: column;
         background: var(--bg-elevated);
-        border: 1px solid var(--border);
+        border: 1px solid var(--section-border);
         border-radius: var(--radius-lg);
         overflow: hidden;
       }
@@ -238,7 +240,7 @@
         padding: 0 10px;
         border: 1px solid var(--border);
         border-radius: var(--radius);
-        background: var(--bg-input);
+        background-color: var(--bg-input);
         color: var(--text);
         font-family: inherit;
         font-size: 13px;
@@ -247,21 +249,21 @@
         caret-color: var(--accent);
         transition:
           border-color 120ms ease,
-          background 120ms ease,
+          background-color 120ms ease,
           box-shadow 120ms ease;
       }
 
       input[type='text']:hover,
       input[type='number']:hover,
       select:hover {
-        background: var(--bg-input-hover);
+        background-color: var(--bg-input-hover);
         border-color: var(--border-hover);
       }
 
       input[type='text']:focus,
       input[type='number']:focus,
       select:focus {
-        background: var(--bg-input-focus);
+        background-color: var(--bg-input-focus);
         border-color: var(--border-focus);
         box-shadow: 0 0 0 3px var(--focus-ring);
       }

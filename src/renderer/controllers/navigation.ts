@@ -11,6 +11,13 @@ export interface NavigationController {
 export function createNavigationController(
   deps: NavigationDeps,
 ): NavigationController {
+  function isImeCompositionEvent(event: KeyboardEvent): boolean {
+    if (event.isComposing) return true;
+
+    const key = event.key.toLowerCase();
+    return key === 'process' || key === 'dead' || event.keyCode === 229;
+  }
+
   function blurFocusedTerminal(): void {
     if (!state.focusedPaneId) return;
     const node = paneNodeMap.get(state.focusedPaneId);
@@ -33,14 +40,26 @@ export function createNavigationController(
   }
 
   function isEditableTarget(): boolean {
+    const activeElement = document.activeElement as HTMLElement | null;
+    if (!activeElement) return false;
+
+    if (
+      activeElement.tagName === 'INPUT' ||
+      activeElement.tagName === 'TEXTAREA' ||
+      activeElement.tagName === 'SELECT'
+    ) {
+      return true;
+    }
+
     return (
-      document.activeElement?.tagName === 'INPUT' ||
-      document.activeElement?.classList?.contains('xterm-helper-textarea') ===
-        true
+      activeElement.isContentEditable ||
+      activeElement.classList.contains('xterm-helper-textarea')
     );
   }
 
   function handleGlobalKeydown(event: KeyboardEvent): void {
+    if (isImeCompositionEvent(event)) return;
+
     const key = event.key.toLowerCase();
     const isMac = bridge.platform === 'darwin';
 
@@ -97,7 +116,7 @@ export function createNavigationController(
       return;
     }
 
-    if (isNavigation && document.activeElement?.tagName !== 'INPUT') {
+    if (isNavigation && !isEditableTarget()) {
       event.preventDefault();
       enterNavigationMode();
       return;

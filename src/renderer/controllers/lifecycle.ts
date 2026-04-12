@@ -1,11 +1,39 @@
 import { bridge } from '../bridge';
 import { state, dom, paneNodeMap, getFocusedIndex } from '../state';
 import type { CleanupFn, LifecycleDeps } from '../types';
+import {
+  setPaneWorkingIndicator,
+  clearPaneWorkingIndicator,
+  clearAllPaneWorkingIndicators,
+  setPaneAttentionIndicator,
+  clearPaneAttentionIndicator,
+  clearAllPaneAttentionIndicators,
+} from '../tabs';
 
 const OSC_MAX_BUFFER = 1024;
+const CODEX_WORK_HOLD_MS = 1200;
 const OSC_7_REGEX = /\u001b]7;([^\u0007\u001b]*)(?:\u0007|\u001b\\)/g;
 const OSC_1337_REGEX = /\u001b]1337;CurrentDir=([^\u0007\u001b]*)(?:\u0007|\u001b\\)/g;
 const OSC_633_REGEX = /\u001b]633;P;Cwd=([^\u0007\u001b]*)(?:\u0007|\u001b\\)/g;
+const CODEX_SPINNER_REGEX = /[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏◐◓◑◒◴◷◶◵]/u;
+const ANSI_CSI_REGEX = /\u001b\[[0-9;?]*[ -/]*[@-~]/g;
+const ANSI_OSC_REGEX = /\u001b\][^\u0007\u001b]*(?:\u0007|\u001b\\)/g;
+const CONFIRMATION_PROMPT_REGEXES = [
+  /\bdo you want(?: me)? to\b/i,
+  /\bwould you like(?: me)? to\b/i,
+  /\bare you sure\b/i,
+  /\bawaiting (?:your )?confirmation\b/i,
+  /\bplease confirm\b/i,
+  /\bapproval required\b/i,
+  /\[(?:y|Y)\/(?:n|N)\]/,
+  /\((?:y|Y)\/(?:n|N)\)/,
+  /\bpress (?:enter|return) to (?:continue|confirm|proceed)\b/i,
+];
+
+interface PaneSignalState {
+  sawWorkSinceLastIdle: boolean;
+  awaitingConfirmation: boolean;
+}
 
 function decodePathValue(raw: string): string {
   const trimmed = raw.trim();
@@ -74,14 +102,104 @@ function escapePathForShell(filePath: string): string {
   return `'${filePath.replace(/'/g, "'\\''")}'`;
 }
 
+function normalizeTerminalDataForSignals(data: string): string {
+  return data
+    .replace(ANSI_OSC_REGEX, '')
+    .replace(ANSI_CSI_REGEX, '')
+    .replace(/\r/g, '')
+    .trim();
+}
+
+function hasConfirmationPrompt(text: string): boolean {
+  if (!text) return false;
+  return CONFIRMATION_PROMPT_REGEXES.some((regex) => regex.test(text));
+}
+
 export function initLifecycle(deps: LifecycleDeps): CleanupFn {
   const cleanups: CleanupFn[] = [];
   const oscTailByPaneId = new Map<string, string>();
+  const codexWorkTimeoutByPaneId = new Map<string, number>();
+  const paneSignalStateByPaneId = new Map<string, PaneSignalState>();
   let disposed = false;
+
+  const getPaneSignalState = (paneId: string): PaneSignalState => {
+    let signal = paneSignalStateByPaneId.get(paneId);
+    if (!signal) {
+      signal = { sawWorkSinceLastIdle: false, awaitingConfirmation: false };
+      paneSignalStateByPaneId.set(paneId, signal);
+    }
+    return signal;
+  };
+
+  const clearWorkTimeout = (paneId: string): void => {
+    const timeoutId = codexWorkTimeoutByPaneId.get(paneId);
+    if (timeoutId !== undefined) {
+      window.clearTimeout(timeoutId);
+      codexWorkTimeoutByPaneId.delete(paneId);
+    }
+  };
+
+  const finalizeWorkCycle = (paneId: string): void => {
+    const signal = paneSignalStateByPaneId.get(paneId);
+    const shouldShowDoneMarker = Boolean(
+      signal?.sawWorkSinceLastIdle && !signal.awaitingConfirmation,
+    );
+    if (signal) {
+      signal.sawWorkSinceLastIdle = false;
+      signal.awaitingConfirmation = false;
+    }
+
+    clearPaneWorkingIndicator(paneId);
+    if (shouldShowDoneMarker) {
+      setPaneAttentionIndicator(paneId, 'done');
+    }
+  };
+
+  const markPaneWorking = (paneId: string): void => {
+    const signal = getPaneSignalState(paneId);
+    signal.sawWorkSinceLastIdle = true;
+    signal.awaitingConfirmation = false;
+
+    setPaneWorkingIndicator(paneId, true);
+    clearWorkTimeout(paneId);
+
+    const timeoutId = window.setTimeout(() => {
+      codexWorkTimeoutByPaneId.delete(paneId);
+      finalizeWorkCycle(paneId);
+    }, CODEX_WORK_HOLD_MS);
+    codexWorkTimeoutByPaneId.set(paneId, timeoutId);
+  };
+
+  const markPaneAwaitingConfirmation = (paneId: string): void => {
+    const signal = getPaneSignalState(paneId);
+    signal.awaitingConfirmation = true;
+    clearWorkTimeout(paneId);
+    clearPaneWorkingIndicator(paneId);
+    setPaneAttentionIndicator(paneId, 'confirm');
+  };
+
+  const clearPaneSignals = (paneId: string): void => {
+    clearWorkTimeout(paneId);
+    paneSignalStateByPaneId.delete(paneId);
+    clearPaneAttentionIndicator(paneId);
+    clearPaneWorkingIndicator(paneId);
+  };
+
+  const hasCodexWorkFrame = (data: string): boolean => {
+    // Codex CLI emits Unicode spinner frames repeatedly while generating/outputting.
+    return CODEX_SPINNER_REGEX.test(data);
+  };
 
   const dispose = (): void => {
     if (disposed) return;
     disposed = true;
+    for (const timeoutId of codexWorkTimeoutByPaneId.values()) {
+      window.clearTimeout(timeoutId);
+    }
+    codexWorkTimeoutByPaneId.clear();
+    paneSignalStateByPaneId.clear();
+    clearAllPaneWorkingIndicators();
+    clearAllPaneAttentionIndicators();
     while (cleanups.length > 0) {
       const cleanup = cleanups.pop();
       cleanup?.();
@@ -142,6 +260,13 @@ export function initLifecycle(deps: LifecycleDeps): CleanupFn {
 
   const removeDataListener = bridge.onTerminalData(({ paneId, data }) => {
     paneNodeMap.get(paneId)?.terminal.write(data);
+    const signalText = normalizeTerminalDataForSignals(data);
+    if (hasCodexWorkFrame(data)) {
+      markPaneWorking(paneId);
+    }
+    if (hasConfirmationPrompt(signalText)) {
+      markPaneAwaitingConfirmation(paneId);
+    }
 
     const nextBuffer = `${oscTailByPaneId.get(paneId) ?? ''}${data}`;
     const cwd = extractCwdFromOscBuffer(nextBuffer);
@@ -154,6 +279,7 @@ export function initLifecycle(deps: LifecycleDeps): CleanupFn {
 
   const removeExitListener = bridge.onTerminalExit(({ paneId, exitCode }) => {
     oscTailByPaneId.delete(paneId);
+    clearPaneSignals(paneId);
     const node = paneNodeMap.get(paneId);
     if (!node) return;
     node.sessionReady = false;

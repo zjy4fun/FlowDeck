@@ -370,6 +370,17 @@ function registerSettingsHandlers(): void {
 
 let settingsWindow: BrowserWindow | null = null;
 
+function configureAboutPanel(): void {
+  if (process.platform !== 'darwin') return;
+
+  const currentVersion = app.getVersion();
+  app.setAboutPanelOptions({
+    applicationName: app.name,
+    applicationVersion: currentVersion,
+    version: currentVersion,
+  });
+}
+
 function openSettingsWindow(): void {
   if (settingsWindow && !settingsWindow.isDestroyed()) {
     settingsWindow.focus();
@@ -597,6 +608,7 @@ app.whenReady().then(() => {
   registerSettingsHandlers();
   registerUsageQuotaHandlers();
   registerUpdaterIpcHandlers();
+  configureAboutPanel();
   buildAppMenu();
   initAutoUpdater();
   createWindow();
