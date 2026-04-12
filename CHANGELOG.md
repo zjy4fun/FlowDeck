@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.4.5
+
+- Fix terminal input getting stuck after FlowDeck stays in the background for a while and then returns to the foreground
+- Restore terminal focus reliably when switching sessions after a background resume
+
 ## v0.4.3
 
 - Fix macOS in-app update apply flow by replacing `app.asar` from a detached helper after FlowDeck fully exits

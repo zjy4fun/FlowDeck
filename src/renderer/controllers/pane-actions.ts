@@ -5,6 +5,7 @@ import {
   getDirectoryLabel,
   ACCENT_PALETTE,
 } from '../state';
+import { refocusTerminal } from '../terminal';
 import type { PaneActionsDeps } from '../types';
 import { clearPaneWorkingIndicator, clearPaneAttentionIndicator } from '../tabs';
 
@@ -73,7 +74,7 @@ export function createPaneActionsController(
     if (focusTerminal) {
       const node = paneNodeMap.get(paneId);
       if (node) {
-        requestAnimationFrame(() => node.terminal.focus());
+        refocusTerminal(node);
       }
     }
   }

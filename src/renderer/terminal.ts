@@ -217,6 +217,42 @@ export function fitTerminal(node: PaneNode, force = false): void {
   node.needsFit = false;
 }
 
+export function refocusTerminal(
+  node: PaneNode,
+  options: { refit?: boolean; forceBlur?: boolean } = {},
+): void {
+  const { refit = false, forceBlur = false } = options;
+
+  const applyFocus = (): void => {
+    if (!node.root.isConnected) return;
+    if (refit) {
+      fitTerminal(node, true);
+    }
+
+    const textarea = node.terminal.textarea;
+    if (!textarea?.isConnected) return;
+
+    // xterm can keep its hidden textarea as document.activeElement after the
+    // app returns from the background. Force a blur/focus cycle to revive input.
+    if (forceBlur && document.activeElement === textarea) {
+      textarea.blur();
+    }
+
+    node.terminal.focus();
+  };
+
+  requestAnimationFrame(() => {
+    applyFocus();
+    if (forceBlur) {
+      window.setTimeout(() => {
+        if (!document.hidden) {
+          applyFocus();
+        }
+      }, 0);
+    }
+  });
+}
+
 /* ── PTY session bootstrap ── */
 
 export async function initializePaneTerminal(node: PaneNode): Promise<void> {
@@ -232,6 +268,6 @@ export async function initializePaneTerminal(node: PaneNode): Promise<void> {
 
   // Auto-focus the terminal if this is the currently focused pane
   if (state.focusedPaneId === node.paneId) {
-    node.terminal.focus();
+    refocusTerminal(node);
   }
 }

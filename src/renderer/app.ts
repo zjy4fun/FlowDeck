@@ -10,6 +10,7 @@ import {
 import { bridge } from './bridge';
 import { renderTabs, initTabs, clearPendingTabFocus, endTabDrag } from './tabs';
 import { renderPanes, initPanes } from './panes';
+import { refocusTerminal } from './terminal';
 import {
   applySettingsToDom,
   loadPersistedSettings,
@@ -281,28 +282,30 @@ function reportError(error: unknown): void {
   console.error(error);
 }
 
-function focusActivePaneTerminal(): void {
+function isEditableFormField(activeElement: HTMLElement | null): boolean {
+  if (!activeElement) return false;
+  if (activeElement.classList.contains('xterm-helper-textarea')) return false;
+
+  return (
+    activeElement.tagName === 'INPUT' ||
+    activeElement.tagName === 'TEXTAREA' ||
+    activeElement.tagName === 'SELECT' ||
+    activeElement.isContentEditable
+  );
+}
+
+function focusActivePaneTerminal(
+  options: { refit?: boolean; forceBlur?: boolean } = {},
+): void {
+  const { refit = false, forceBlur = false } = options;
   if (state.isNavigationMode || !state.focusedPaneId) return;
 
   const activeElement = document.activeElement as HTMLElement | null;
-  if (
-    activeElement &&
-    (
-      activeElement.tagName === 'INPUT' ||
-      activeElement.tagName === 'TEXTAREA' ||
-      activeElement.tagName === 'SELECT' ||
-      activeElement.isContentEditable
-    )
-  ) {
-    return;
-  }
+  if (isEditableFormField(activeElement)) return;
 
   const node = paneNodeMap.get(state.focusedPaneId);
   if (!node) return;
-
-  requestAnimationFrame(() => {
-    if (!state.isNavigationMode) node.terminal.focus();
-  });
+  refocusTerminal(node, { refit, forceBlur });
 }
 
 /* ── Bootstrap ── */
@@ -408,13 +411,13 @@ export async function startApp(): Promise<void> {
   }, USAGE_REFRESH_INTERVAL_MS);
   const handleWindowFocus = (): void => {
     requestUsageQuotaRefresh(true);
-    focusActivePaneTerminal();
+    focusActivePaneTerminal({ refit: true, forceBlur: true });
   };
   window.addEventListener('focus', handleWindowFocus);
   const handleVisibilityChange = (): void => {
     if (document.visibilityState === 'visible') {
       requestUsageQuotaRefresh(true);
-      focusActivePaneTerminal();
+      focusActivePaneTerminal({ refit: true, forceBlur: true });
     }
   };
   document.addEventListener('visibilitychange', handleVisibilityChange);
