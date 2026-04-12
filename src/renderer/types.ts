@@ -97,9 +97,12 @@ export interface AppSettings {
   defaultOpenDirectory: string;
   maxSessions: number;
   usageProvider: UsageProvider;
+  themeMode: ThemeMode;
 }
 
 export type UsageProvider = 'codex' | 'claude-code';
+export type ThemeMode = 'system' | 'light' | 'dark';
+export type ResolvedTheme = 'light' | 'dark';
 
 export interface UsageQuotaSnapshot {
   provider: UsageProvider;

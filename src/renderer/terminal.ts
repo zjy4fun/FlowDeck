@@ -1,49 +1,83 @@
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { WebglAddon } from '@xterm/addon-webgl';
-import type { PaneData, PaneNode } from './types';
-import { state } from './state';
+import type { PaneData, PaneNode, ResolvedTheme } from './types';
+import { state, getResolvedTheme } from './state';
 import { bridge } from './bridge';
 
 /* ── Theme ── */
 
-function getCursorAccentColor(cursorColor: string): string {
+function getCursorAccentColor(cursorColor: string, mode: ResolvedTheme): string {
+  const fallback = mode === 'light' ? '#4c4f69' : '#c6d0f5';
   const hex = cursorColor.replace('#', '');
-  if (!/^[0-9a-fA-F]{6}$/.test(hex)) return '#c6d0f5';
+  if (!/^[0-9a-fA-F]{6}$/.test(hex)) return fallback;
 
   const red = parseInt(hex.slice(0, 2), 16);
   const green = parseInt(hex.slice(2, 4), 16);
   const blue = parseInt(hex.slice(4, 6), 16);
   const luminance = (0.2126 * red + 0.7152 * green + 0.0722 * blue) / 255;
 
+  if (mode === 'light') {
+    return luminance > 0.58 ? '#eff1f5' : '#4c4f69';
+  }
   return luminance > 0.58 ? '#232634' : '#c6d0f5';
 }
 
-export function createTerminalTheme(accent: string) {
+// Catppuccin Frappe (dark)
+const DARK_PALETTE = {
+  background: '#303446',
+  foreground: '#c6d0f5',
+  selectionBackground: '#44495d',
+  selectionForeground: '#c6d0f5',
+  black: '#51576d',
+  red: '#e78284',
+  green: '#a6d189',
+  yellow: '#e5c890',
+  blue: '#8caaee',
+  magenta: '#f4b8e4',
+  cyan: '#81c8be',
+  white: '#a5adce',
+  brightBlack: '#626880',
+  brightRed: '#e78284',
+  brightGreen: '#a6d189',
+  brightYellow: '#e5c890',
+  brightBlue: '#8caaee',
+  brightMagenta: '#f4b8e4',
+  brightCyan: '#81c8be',
+  brightWhite: '#b5bfe2',
+};
+
+// Catppuccin Latte (light)
+const LIGHT_PALETTE = {
+  background: '#eff1f5',
+  foreground: '#4c4f69',
+  selectionBackground: '#bcc0cc',
+  selectionForeground: '#4c4f69',
+  black: '#5c5f77',
+  red: '#d20f39',
+  green: '#40a02b',
+  yellow: '#df8e1d',
+  blue: '#1e66f5',
+  magenta: '#ea76cb',
+  cyan: '#179299',
+  white: '#acb0be',
+  brightBlack: '#6c6f85',
+  brightRed: '#d20f39',
+  brightGreen: '#40a02b',
+  brightYellow: '#df8e1d',
+  brightBlue: '#1e66f5',
+  brightMagenta: '#ea76cb',
+  brightCyan: '#179299',
+  brightWhite: '#bcc0cc',
+};
+
+export function createTerminalTheme(accent: string, mode?: ResolvedTheme) {
+  const resolved = mode ?? getResolvedTheme();
+  const palette = resolved === 'light' ? LIGHT_PALETTE : DARK_PALETTE;
   return {
-    // Ghostty-like dark palette (based on Catppuccin Frappe)
-    background: '#303446',
-    foreground: '#c6d0f5',
+    ...palette,
     cursor: accent,
-    cursorAccent: getCursorAccentColor(accent),
-    selectionBackground: '#44495d',
-    selectionForeground: '#c6d0f5',
-    black: '#51576d',
-    red: '#e78284',
-    green: '#a6d189',
-    yellow: '#e5c890',
-    blue: '#8caaee',
-    magenta: '#f4b8e4',
-    cyan: '#81c8be',
-    white: '#a5adce',
-    brightBlack: '#626880',
-    brightRed: '#e78284',
-    brightGreen: '#a6d189',
-    brightYellow: '#e5c890',
-    brightBlue: '#8caaee',
-    brightMagenta: '#f4b8e4',
-    brightCyan: '#81c8be',
-    brightWhite: '#b5bfe2',
+    cursorAccent: getCursorAccentColor(accent, resolved),
   };
 }
 

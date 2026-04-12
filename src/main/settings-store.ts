@@ -9,6 +9,7 @@ export interface PersistedSettings {
   defaultOpenDirectory: string;
   maxSessions: number;
   usageProvider: 'codex' | 'claude-code';
+  themeMode: 'system' | 'light' | 'dark';
 }
 
 const SETTINGS_FILE = 'settings.json';
@@ -20,6 +21,7 @@ const DEFAULTS: PersistedSettings = {
   defaultOpenDirectory: app.getPath('home'),
   maxSessions: 8,
   usageProvider: 'codex',
+  themeMode: 'system',
 };
 
 const LIMITS = {
@@ -88,6 +90,10 @@ function sanitizePersistedSettings(parsed: unknown): PersistedSettings {
     ),
     usageProvider:
       source.usageProvider === 'claude-code' ? 'claude-code' : 'codex',
+    themeMode:
+      source.themeMode === 'light' || source.themeMode === 'dark'
+        ? source.themeMode
+        : 'system',
   };
 }
 

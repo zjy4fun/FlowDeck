@@ -1,5 +1,6 @@
-import { state, dom } from './state';
+import { state, dom, getResolvedTheme, paneNodeMap } from './state';
 import { bridge } from './bridge';
+import { createTerminalTheme } from './terminal';
 
 /* ── Debounced persistence ── */
 
@@ -23,9 +24,19 @@ function persistSettings(): void {
 
 /* ── Apply current settings to CSS variables and input elements ── */
 
+export function applyThemeToDom(): void {
+  const resolved = getResolvedTheme();
+  document.documentElement.setAttribute('data-theme', resolved);
+  paneNodeMap.forEach((node) => {
+    node.terminal.options.theme = createTerminalTheme(node.accent, resolved);
+  });
+}
+
 export function applySettingsToDom(): void {
   const { settings } = state;
   const root = document.documentElement;
+
+  applyThemeToDom();
 
   root.style.setProperty('--app-font-size', `${settings.fontSize}px`);
   root.style.setProperty('--pane-opacity', settings.paneOpacity.toFixed(2));
@@ -45,6 +56,7 @@ export function applySettingsToDom(): void {
   dom.paneOpacityInput.value = settings.paneOpacity.toFixed(2);
   dom.paneOpacityValue.textContent = settings.paneOpacity.toFixed(2);
   dom.usageProviderSelect.value = settings.usageProvider;
+  dom.themeModeSelect.value = settings.themeMode;
 }
 
 /* ── Load persisted settings from main process ── */
@@ -128,6 +140,17 @@ function updatePaneOpacity(value: string): void {
   persistSettings();
 }
 
+function updateThemeMode(value: string): void {
+  const next =
+    value === 'light' || value === 'dark' || value === 'system'
+      ? value
+      : 'system';
+  if (state.settings.themeMode === next) return;
+  state.settings.themeMode = next;
+  applySettingsToDom();
+  persistSettings();
+}
+
 function updateUsageProvider(
   value: string,
   onUsageProviderChanged: () => void,
@@ -182,6 +205,19 @@ export function initSettingsListeners(
   dom.usageProviderSelect.addEventListener('change', () => {
     updateUsageProvider(dom.usageProviderSelect.value, onUsageProviderChanged);
   });
+
+  dom.themeModeSelect.addEventListener('change', () => {
+    updateThemeMode(dom.themeModeSelect.value);
+  });
+
+  if (window.matchMedia) {
+    const mql = window.matchMedia('(prefers-color-scheme: light)');
+    const handleChange = (): void => {
+      if (state.settings.themeMode === 'system') applyThemeToDom();
+    };
+    if (mql.addEventListener) mql.addEventListener('change', handleChange);
+    else mql.addListener(handleChange);
+  }
 
   // Toggle panel visibility
   dom.settingsButton.addEventListener('click', (e) => {

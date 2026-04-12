@@ -5,6 +5,7 @@ import type {
   PendingTabFocus,
   PaneResizeState,
   AppSettings,
+  ResolvedTheme,
 } from './types';
 import { bridge } from './bridge';
 
@@ -30,6 +31,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   defaultOpenDirectory: bridge.defaultCwd,
   maxSessions: 8,
   usageProvider: 'codex',
+  themeMode: 'system',
 };
 
 export function getDirectoryLabel(cwd: string): string {
@@ -94,6 +96,7 @@ export let dom = {
   paneOpacityInput: null! as HTMLInputElement,
   paneOpacityValue: null! as HTMLElement,
   usageProviderSelect: null! as HTMLSelectElement,
+  themeModeSelect: null! as HTMLSelectElement,
 };
 
 export function initDom(): void {
@@ -115,6 +118,7 @@ export function initDom(): void {
     paneOpacityInput: document.getElementById('pane-opacity-input') as HTMLInputElement,
     paneOpacityValue: document.getElementById('pane-opacity-value')!,
     usageProviderSelect: document.getElementById('usage-provider-input') as HTMLSelectElement,
+    themeModeSelect: document.getElementById('theme-mode-input') as HTMLSelectElement,
   };
 }
 
@@ -130,6 +134,19 @@ export function getFocusedIndex(): number {
 
   state.focusedPaneId = state.panes[0]?.id ?? null;
   return state.panes.length > 0 ? 0 : -1;
+}
+
+export function getResolvedTheme(): ResolvedTheme {
+  const mode = state.settings.themeMode;
+  if (mode === 'light' || mode === 'dark') return mode;
+  if (
+    typeof window !== 'undefined' &&
+    window.matchMedia &&
+    window.matchMedia('(prefers-color-scheme: light)').matches
+  ) {
+    return 'light';
+  }
+  return 'dark';
 }
 
 export function getFocusedPaneWidth(): number {
