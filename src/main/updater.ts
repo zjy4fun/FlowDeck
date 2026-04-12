@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, net } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, nativeTheme, net } from 'electron';
 // Use original-fs to bypass Electron's asar interception on .asar paths
 import * as originalFs from 'original-fs';
 import * as fs from 'fs';
@@ -314,15 +314,15 @@ function createUpdateWindow(): BrowserWindow {
   if (updateWindow && !updateWindow.isDestroyed()) return updateWindow;
 
   const win = new BrowserWindow({
-    width: 800,
-    height: 286,
+    width: 480,
+    height: 188,
     resizable: false,
     minimizable: false,
     maximizable: false,
-    backgroundColor: '#ececec',
+    backgroundColor: nativeTheme.shouldUseDarkColors ? '#1e1e1e' : '#ececec',
     title: `Updating ${app.name}`,
     titleBarStyle: 'hiddenInset',
-    trafficLightPosition: { x: 14, y: 12 },
+    trafficLightPosition: { x: 12, y: 12 },
     show: false,
     webPreferences: {
       contextIsolation: true,
