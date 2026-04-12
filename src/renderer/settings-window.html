@@ -4,165 +4,497 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Settings</title>
+    <script>
+      (function () {
+        const hash = (location.hash || '').replace(/^#/, '');
+        const prefersLight =
+          window.matchMedia &&
+          window.matchMedia('(prefers-color-scheme: light)').matches;
+        let resolved;
+        if (hash === 'light' || hash === 'dark') {
+          resolved = hash;
+        } else {
+          resolved = prefersLight ? 'light' : 'dark';
+        }
+        document.documentElement.setAttribute('data-theme', resolved);
+      })();
+    </script>
     <style>
       :root {
-        color-scheme: dark;
-        --bg: #151515;
-        --text: #f4f1e8;
-        --muted: #8a8a8a;
-        --border: rgba(255, 255, 255, 0.08);
-        --input-bg: rgba(255, 255, 255, 0.04);
+        --radius-sm: 6px;
+        --radius: 8px;
+        --radius-lg: 11px;
       }
 
-      * { box-sizing: border-box; margin: 0; }
+      html[data-theme='dark'] {
+        color-scheme: dark;
+        --bg: #1c1d22;
+        --bg-elevated: #25262e;
+        --bg-input: rgba(255, 255, 255, 0.05);
+        --bg-input-hover: rgba(255, 255, 255, 0.08);
+        --bg-input-focus: rgba(255, 255, 255, 0.09);
+        --text: #f4f1e8;
+        --text-soft: rgba(255, 255, 255, 0.86);
+        --text-muted: rgba(255, 255, 255, 0.56);
+        --text-faint: rgba(255, 255, 255, 0.38);
+        --border: rgba(255, 255, 255, 0.09);
+        --border-hover: rgba(255, 255, 255, 0.16);
+        --border-focus: #0a84ff;
+        --divider: rgba(255, 255, 255, 0.06);
+        --accent: #0a84ff;
+        --accent-hover: #2494ff;
+        --track: rgba(255, 255, 255, 0.14);
+        --track-fill: linear-gradient(90deg, #0a84ff 0%, #5ac8fa 100%);
+        --thumb: #ffffff;
+        --thumb-shadow:
+          0 1px 3px rgba(0, 0, 0, 0.42),
+          0 0 0 0.5px rgba(0, 0, 0, 0.25);
+        --focus-ring: rgba(10, 132, 255, 0.38);
+        --caret-color: #888;
+      }
 
-      html, body {
+      html[data-theme='light'] {
+        color-scheme: light;
+        --bg: #f1ede0;
+        --bg-elevated: #fbf9f0;
+        --bg-input: #ffffff;
+        --bg-input-hover: #fbf9f0;
+        --bg-input-focus: #ffffff;
+        --text: #1d1d1f;
+        --text-soft: rgba(0, 0, 0, 0.82);
+        --text-muted: rgba(0, 0, 0, 0.54);
+        --text-faint: rgba(0, 0, 0, 0.36);
+        --border: rgba(0, 0, 0, 0.12);
+        --border-hover: rgba(0, 0, 0, 0.22);
+        --border-focus: #0071e3;
+        --divider: rgba(0, 0, 0, 0.08);
+        --accent: #0071e3;
+        --accent-hover: #1488ff;
+        --track: rgba(0, 0, 0, 0.12);
+        --track-fill: linear-gradient(90deg, #0071e3 0%, #3395ff 100%);
+        --thumb: #ffffff;
+        --thumb-shadow:
+          0 1px 3px rgba(0, 0, 0, 0.22),
+          0 0 0 0.5px rgba(0, 0, 0, 0.18);
+        --focus-ring: rgba(0, 113, 227, 0.3);
+        --caret-color: #555;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      html,
+      body {
+        width: 100%;
         height: 100%;
         background: var(--bg);
         color: var(--text);
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
         font-size: 13px;
+        line-height: 1.45;
+        -webkit-font-smoothing: antialiased;
       }
 
       body {
-        padding: 28px;
+        display: flex;
+        flex-direction: column;
         overflow-y: auto;
-        scrollbar-gutter: stable;
+        overflow-x: hidden;
         -webkit-app-region: drag;
       }
 
-      h1 {
-        font-size: 18px;
-        font-weight: 600;
-        margin-bottom: 24px;
-        color: rgba(255, 255, 255, 0.9);
+      body::-webkit-scrollbar {
+        width: 10px;
+      }
+      body::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      body::-webkit-scrollbar-thumb {
+        background: var(--border-hover);
+        border-radius: 999px;
+        border: 2px solid transparent;
+        background-clip: padding-box;
       }
 
-      .settings-grid {
-        display: grid;
-        gap: 18px;
-        max-width: 760px;
+      .titlebar {
+        flex: 0 0 auto;
+        height: 42px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 90px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-soft);
+        letter-spacing: -0.005em;
+        user-select: none;
+      }
+
+      .content {
+        flex: 1 1 auto;
+        padding: 4px 28px 28px;
+        max-width: 540px;
+        width: 100%;
+        margin: 0 auto;
         -webkit-app-region: no-drag;
       }
 
-      .field {
-        display: grid;
-        gap: 6px;
+      .section {
+        margin-top: 22px;
       }
 
-      .field-header {
+      .section:first-child {
+        margin-top: 4px;
+      }
+
+      .section-title {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        margin: 0 0 8px 4px;
+      }
+
+      .section-body {
+        display: flex;
+        flex-direction: column;
+        background: var(--bg-elevated);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+      }
+
+      .row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+        align-items: center;
+        gap: 16px;
+        padding: 11px 14px;
+        min-height: 46px;
+        border-top: 1px solid var(--divider);
+      }
+
+      .row:first-child {
+        border-top: 0;
+      }
+
+      .row.is-stacked {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+
+      .row-label {
+        font-size: 13px;
+        color: var(--text);
+        font-weight: 500;
+        letter-spacing: -0.005em;
+      }
+
+      .row-hint {
+        font-size: 11px;
+        color: var(--text-faint);
+        font-weight: 400;
+        margin-top: 2px;
+        line-height: 1.4;
+      }
+
+      .row-head {
         display: flex;
         align-items: center;
         justify-content: space-between;
+        gap: 12px;
       }
 
-      .field label {
+      .row-value {
+        font-size: 11px;
+        color: var(--text-muted);
+        font-variant-numeric: tabular-nums;
+        letter-spacing: 0;
+      }
+
+      .row-control {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 8px;
+      }
+
+      .row-control.is-full {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 64px;
+        gap: 12px;
+      }
+
+      input[type='text'],
+      input[type='number'],
+      select {
+        appearance: none;
+        -webkit-appearance: none;
+        height: 26px;
+        padding: 0 10px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--bg-input);
+        color: var(--text);
+        font-family: inherit;
         font-size: 13px;
-        color: rgba(255, 255, 255, 0.82);
-        font-weight: 500;
+        letter-spacing: -0.005em;
+        outline: none;
+        caret-color: var(--accent);
+        transition:
+          border-color 120ms ease,
+          background 120ms ease,
+          box-shadow 120ms ease;
       }
 
-      .field .value-display {
-        font-size: 12px;
-        color: var(--muted);
+      input[type='text']:hover,
+      input[type='number']:hover,
+      select:hover {
+        background: var(--bg-input-hover);
+        border-color: var(--border-hover);
+      }
+
+      input[type='text']:focus,
+      input[type='number']:focus,
+      select:focus {
+        background: var(--bg-input-focus);
+        border-color: var(--border-focus);
+        box-shadow: 0 0 0 3px var(--focus-ring);
+      }
+
+      input[type='text'] {
+        width: 100%;
+        min-width: 0;
+      }
+
+      input[type='number'] {
+        width: 72px;
+        text-align: right;
         font-variant-numeric: tabular-nums;
       }
 
-      .dual-input {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) 64px;
-        gap: 8px;
-        align-items: center;
-      }
-
-      input[type="range"] {
-        width: 100%;
+      input[type='number']::-webkit-inner-spin-button,
+      input[type='number']::-webkit-outer-spin-button {
+        appearance: none;
+        -webkit-appearance: none;
         margin: 0;
       }
 
-      input[type="number"],
-      input[type="text"],
       select {
         width: 100%;
-        height: 28px;
-        padding: 0 8px;
-        border: 1px solid var(--border);
-        border-radius: 4px;
-        background: var(--input-bg);
-        color: var(--text);
-        font: inherit;
+        padding-right: 28px;
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path d='M4 6.5l4 4 4-4' stroke='rgb(120,120,130)' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+        background-repeat: no-repeat;
+        background-position: right 8px center;
+        background-size: 14px;
+        cursor: pointer;
+      }
+
+      html[data-theme='light'] select {
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path d='M4 6.5l4 4 4-4' stroke='rgb(100,100,105)' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+      }
+
+      input[type='range'] {
+        appearance: none;
+        -webkit-appearance: none;
+        width: 100%;
+        height: 18px;
+        background: transparent;
+        margin: 0;
+      }
+
+      input[type='range']::-webkit-slider-runnable-track {
+        height: 4px;
+        border-radius: 999px;
+        background: var(--track);
+      }
+
+      input[type='range']::-webkit-slider-thumb {
+        appearance: none;
+        -webkit-appearance: none;
+        width: 14px;
+        height: 14px;
+        margin-top: -5px;
+        border-radius: 50%;
+        background: var(--thumb);
+        box-shadow: var(--thumb-shadow);
+        cursor: grab;
+        transition: transform 100ms ease;
+      }
+
+      input[type='range']:active::-webkit-slider-thumb {
+        cursor: grabbing;
+        transform: scale(1.1);
+      }
+
+      input[type='range']:focus {
         outline: none;
       }
 
-      input[type="number"]:focus,
-      input[type="text"]:focus,
-      select:focus {
-        border-color: rgba(255, 255, 255, 0.2);
+      input[type='range']:focus::-webkit-slider-thumb {
+        box-shadow:
+          var(--thumb-shadow),
+          0 0 0 4px var(--focus-ring);
+      }
+
+      /* Segmented control for theme picker */
+      .segment {
+        display: inline-flex;
+        padding: 2px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--bg-input);
+        gap: 0;
+      }
+
+      .segment input[type='radio'] {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .segment label {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 64px;
+        height: 22px;
+        padding: 0 12px;
+        border-radius: calc(var(--radius) - 2px);
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--text-muted);
+        cursor: pointer;
+        user-select: none;
+        transition:
+          background 120ms ease,
+          color 120ms ease;
+      }
+
+      .segment label:hover {
+        color: var(--text-soft);
+      }
+
+      .segment input[type='radio']:checked + label {
+        background: var(--accent);
+        color: #fff;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+      }
+
+      .segment input[type='radio']:focus-visible + label {
+        box-shadow: 0 0 0 3px var(--focus-ring);
       }
     </style>
   </head>
   <body>
-    <h1>Settings</h1>
-    <div class="settings-grid">
-      <div class="field">
-        <div class="field-header">
-          <label for="font-size-input">Font size</label>
-        </div>
-        <input id="font-size-input" type="number" min="10" max="24" step="1" value="13" />
-      </div>
+    <div class="titlebar">Settings</div>
 
-      <div class="field">
-        <div class="field-header">
-          <label for="default-directory-input">Default directory</label>
-        </div>
-        <input id="default-directory-input" type="text" value="~" spellcheck="false" />
-      </div>
+    <main class="content">
+      <section class="section">
+        <h2 class="section-title">Appearance</h2>
+        <div class="section-body">
+          <div class="row">
+            <div>
+              <div class="row-label">Theme</div>
+              <div class="row-hint">Follow the system or pick a fixed appearance.</div>
+            </div>
+            <div class="row-control">
+              <div class="segment" role="radiogroup" aria-label="Theme">
+                <input type="radio" id="theme-system" name="theme-mode" value="system" />
+                <label for="theme-system">System</label>
+                <input type="radio" id="theme-light" name="theme-mode" value="light" />
+                <label for="theme-light">Light</label>
+                <input type="radio" id="theme-dark" name="theme-mode" value="dark" />
+                <label for="theme-dark">Dark</label>
+              </div>
+            </div>
+          </div>
 
-      <div class="field">
-        <div class="field-header">
-          <label for="max-sessions-input">Max sessions</label>
+          <div class="row">
+            <div>
+              <div class="row-label">Font size</div>
+              <div class="row-hint">Terminal and UI text size.</div>
+            </div>
+            <div class="row-control">
+              <input id="font-size-input" type="number" min="10" max="24" step="1" value="13" />
+            </div>
+          </div>
         </div>
-        <input id="max-sessions-input" type="number" min="1" max="9" step="1" value="8" />
-      </div>
+      </section>
 
-      <div class="field">
-        <div class="field-header">
-          <label for="usage-provider-input">Usage source</label>
-        </div>
-        <select id="usage-provider-input">
-          <option value="codex">Codex</option>
-          <option value="claude-code">Claude Code</option>
-        </select>
-      </div>
+      <section class="section">
+        <h2 class="section-title">Session</h2>
+        <div class="section-body">
+          <div class="row is-stacked">
+            <div class="row-head">
+              <div class="row-label">Default directory</div>
+            </div>
+            <input id="default-directory-input" type="text" value="~" spellcheck="false" />
+          </div>
 
-      <div class="field">
-        <div class="field-header">
-          <label for="pane-width-range">Pane width</label>
-          <span class="value-display" id="pane-width-value">720px</span>
-        </div>
-        <div class="dual-input">
-          <input id="pane-width-range" type="range" min="520" max="1000" step="10" value="720" />
-          <input id="pane-width-input" type="number" min="520" max="1000" step="10" value="720" />
-        </div>
-      </div>
+          <div class="row">
+            <div>
+              <div class="row-label">Max sessions</div>
+              <div class="row-hint">Limit the number of panes (1–9).</div>
+            </div>
+            <div class="row-control">
+              <input id="max-sessions-input" type="number" min="1" max="9" step="1" value="8" />
+            </div>
+          </div>
 
-      <div class="field">
-        <div class="field-header">
-          <label for="pane-opacity-range">Pane depth</label>
-          <span class="value-display" id="pane-opacity-value">0.75</span>
+          <div class="row">
+            <div>
+              <div class="row-label">Usage source</div>
+              <div class="row-hint">Which AI provider's usage to display.</div>
+            </div>
+            <div class="row-control">
+              <select id="usage-provider-input">
+                <option value="codex">Codex</option>
+                <option value="claude-code">Claude Code</option>
+              </select>
+            </div>
+          </div>
         </div>
-        <div class="dual-input">
-          <input id="pane-opacity-range" type="range" min="0.5" max="1" step="0.01" value="0.75" />
-          <input id="pane-opacity-input" type="number" min="0.5" max="1" step="0.01" value="0.75" />
+      </section>
+
+      <section class="section">
+        <h2 class="section-title">Layout</h2>
+        <div class="section-body">
+          <div class="row is-stacked">
+            <div class="row-head">
+              <div class="row-label">Pane width</div>
+              <span class="row-value" id="pane-width-value">720px</span>
+            </div>
+            <div class="row-control is-full">
+              <input id="pane-width-range" type="range" min="520" max="1000" step="10" value="720" />
+              <input id="pane-width-input" type="number" min="520" max="1000" step="10" value="720" />
+            </div>
+          </div>
+
+          <div class="row is-stacked">
+            <div class="row-head">
+              <div class="row-label">Pane depth</div>
+              <span class="row-value" id="pane-opacity-value">0.75</span>
+            </div>
+            <div class="row-control is-full">
+              <input id="pane-opacity-range" type="range" min="0.5" max="1" step="0.01" value="0.75" />
+              <input id="pane-opacity-input" type="number" min="0.5" max="1" step="0.01" value="0.75" />
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
+      </section>
+    </main>
 
     <script>
       const bridge = window.flowdeck;
       if (!bridge) throw new Error('flowdeck bridge not available');
 
       const els = {
+        themeRadios: Array.from(document.querySelectorAll('input[name="theme-mode"]')),
         fontSizeInput: document.getElementById('font-size-input'),
         defaultDirectoryInput: document.getElementById('default-directory-input'),
         maxSessionsInput: document.getElementById('max-sessions-input'),
@@ -186,8 +518,26 @@
         }, 300);
       }
 
+      function resolveTheme(mode) {
+        if (mode === 'light' || mode === 'dark') return mode;
+        const prefersLight =
+          window.matchMedia &&
+          window.matchMedia('(prefers-color-scheme: light)').matches;
+        return prefersLight ? 'light' : 'dark';
+      }
+
+      function applyTheme(mode) {
+        document.documentElement.setAttribute('data-theme', resolveTheme(mode));
+      }
+
       function applyToInputs() {
         if (!settings) return;
+        const mode = settings.themeMode || 'system';
+        for (const radio of els.themeRadios) {
+          radio.checked = radio.value === mode;
+        }
+        applyTheme(mode);
+
         els.fontSizeInput.value = String(settings.fontSize);
         els.defaultDirectoryInput.value = settings.defaultOpenDirectory;
         els.maxSessionsInput.value = String(settings.maxSessions);
@@ -204,56 +554,84 @@
         return Math.max(min, Math.min(max, val));
       }
 
+      for (const radio of els.themeRadios) {
+        radio.addEventListener('change', () => {
+          if (!radio.checked || !settings) return;
+          const value = radio.value;
+          settings.themeMode = value === 'light' || value === 'dark' ? value : 'system';
+          applyTheme(settings.themeMode);
+          persist();
+        });
+      }
+
       els.fontSizeInput.addEventListener('change', () => {
         const v = Number(els.fontSizeInput.value);
-        if (!Number.isFinite(v)) { applyToInputs(); return; }
+        if (!Number.isFinite(v)) {
+          applyToInputs();
+          return;
+        }
         settings.fontSize = clamp(Math.round(v), 10, 24);
-        applyToInputs(); persist();
+        applyToInputs();
+        persist();
       });
 
       els.defaultDirectoryInput.addEventListener('change', () => {
-        settings.defaultOpenDirectory = els.defaultDirectoryInput.value.trim() || bridge.defaultCwd;
-        applyToInputs(); persist();
+        settings.defaultOpenDirectory =
+          els.defaultDirectoryInput.value.trim() || bridge.defaultCwd;
+        applyToInputs();
+        persist();
       });
 
       els.defaultDirectoryInput.addEventListener('input', () => {
-        settings.defaultOpenDirectory = els.defaultDirectoryInput.value.trim() || bridge.defaultCwd;
+        settings.defaultOpenDirectory =
+          els.defaultDirectoryInput.value.trim() || bridge.defaultCwd;
         persist();
       });
 
       els.maxSessionsInput.addEventListener('change', () => {
         const v = Number(els.maxSessionsInput.value);
-        if (!Number.isFinite(v)) { applyToInputs(); return; }
-        settings.maxSessions = clamp(Math.round(v), 1, 20);
-        applyToInputs(); persist();
+        if (!Number.isFinite(v)) {
+          applyToInputs();
+          return;
+        }
+        settings.maxSessions = clamp(Math.round(v), 1, 9);
+        applyToInputs();
+        persist();
       });
 
       els.usageProviderInput.addEventListener('change', () => {
-        settings.usageProvider = els.usageProviderInput.value === 'claude-code'
-          ? 'claude-code'
-          : 'codex';
-        applyToInputs(); persist();
+        settings.usageProvider =
+          els.usageProviderInput.value === 'claude-code' ? 'claude-code' : 'codex';
+        applyToInputs();
+        persist();
       });
 
       function handlePaneWidth(val) {
         const v = Number(val);
-        if (!Number.isFinite(v)) { applyToInputs(); return; }
+        if (!Number.isFinite(v)) {
+          applyToInputs();
+          return;
+        }
         settings.paneWidth = clamp(Math.round(v / 10) * 10, 520, 1000);
-        applyToInputs(); persist();
+        applyToInputs();
+        persist();
       }
       els.paneWidthRange.addEventListener('input', () => handlePaneWidth(els.paneWidthRange.value));
       els.paneWidthInput.addEventListener('change', () => handlePaneWidth(els.paneWidthInput.value));
 
       function handlePaneOpacity(val) {
         const v = Number(val);
-        if (!Number.isFinite(v)) { applyToInputs(); return; }
+        if (!Number.isFinite(v)) {
+          applyToInputs();
+          return;
+        }
         settings.paneOpacity = clamp(Number(v.toFixed(2)), 0.5, 1);
-        applyToInputs(); persist();
+        applyToInputs();
+        persist();
       }
       els.paneOpacityRange.addEventListener('input', () => handlePaneOpacity(els.paneOpacityRange.value));
       els.paneOpacityInput.addEventListener('change', () => handlePaneOpacity(els.paneOpacityInput.value));
 
-      // Load settings on open
       bridge.loadSettings().then((saved) => {
         settings = saved || {
           fontSize: 14,
@@ -262,9 +640,34 @@
           defaultOpenDirectory: bridge.defaultCwd,
           maxSessions: 8,
           usageProvider: 'codex',
+          themeMode: 'system',
         };
+        if (!settings.themeMode) settings.themeMode = 'system';
         applyToInputs();
       });
+
+      if (window.matchMedia) {
+        const mql = window.matchMedia('(prefers-color-scheme: light)');
+        const onChange = () => {
+          if (settings && settings.themeMode === 'system') applyTheme('system');
+        };
+        if (mql.addEventListener) mql.addEventListener('change', onChange);
+        else mql.addListener(onChange);
+      }
+
+      if (typeof bridge.onSettingsChanged === 'function') {
+        bridge.onSettingsChanged(async () => {
+          try {
+            const saved = await bridge.loadSettings();
+            if (saved) {
+              settings = { ...settings, ...saved };
+              applyToInputs();
+            }
+          } catch {
+            // ignore
+          }
+        });
+      }
     </script>
   </body>
 </html>

@@ -1,4 +1,12 @@
-import { app, BrowserWindow, dialog, ipcMain, Menu, type OpenDialogOptions } from 'electron';
+import {
+  app,
+  BrowserWindow,
+  dialog,
+  ipcMain,
+  Menu,
+  nativeTheme,
+  type OpenDialogOptions,
+} from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
 import { registerPtyHandlers, destroyAllSessions } from './pty-manager';
@@ -368,14 +376,24 @@ function openSettingsWindow(): void {
     return;
   }
 
+  const saved = loadSettings();
+  const themeMode = saved.themeMode;
+  const resolvedLight =
+    themeMode === 'light' ||
+    (themeMode !== 'dark' && !nativeTheme.shouldUseDarkColors);
+  const themeHash = resolvedLight ? 'light' : 'dark';
+
   settingsWindow = new BrowserWindow({
-    width: 760,
-    height: 660,
+    width: 560,
+    height: 760,
     resizable: false,
     minimizable: false,
     maximizable: false,
-    backgroundColor: '#151515',
+    backgroundColor: resolvedLight ? '#f1ede0' : '#1c1d22',
     title: 'Settings',
+    titleBarStyle: 'hiddenInset',
+    trafficLightPosition: { x: 14, y: 14 },
+    show: false,
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
@@ -384,8 +402,13 @@ function openSettingsWindow(): void {
     },
   });
 
+  settingsWindow.once('ready-to-show', () => {
+    if (settingsWindow && !settingsWindow.isDestroyed()) settingsWindow.show();
+  });
+
   settingsWindow.loadFile(
     path.join(__dirname, '..', 'renderer', 'settings-window.html'),
+    { hash: themeHash },
   );
 
   settingsWindow.on('closed', () => {
