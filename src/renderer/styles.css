@@ -34,7 +34,6 @@ html[data-theme='dark'] {
   --tab-focused-soft: rgba(255, 255, 255, 0.08);
   --tab-focused-inset-top: rgba(255, 255, 255, 0.24);
   --tab-focused-inset-border: rgba(255, 255, 255, 0.08);
-  --tab-focused-bottom: #282a36;
   --tab-drag-bg: rgba(255, 255, 255, 0.08);
   --tab-drop-line: rgba(255, 255, 255, 0.9);
   --tab-shortcut: rgba(255, 255, 255, 0.35);
@@ -88,7 +87,6 @@ html[data-theme='light'] {
   --tab-focused-soft: rgba(255, 255, 255, 0.35);
   --tab-focused-inset-top: rgba(255, 255, 255, 0.75);
   --tab-focused-inset-border: rgba(0, 0, 0, 0.10);
-  --tab-focused-bottom: #ece9dc;
   --tab-drag-bg: rgba(0, 0, 0, 0.06);
   --tab-drop-line: rgba(0, 0, 0, 0.6);
   --tab-shortcut: rgba(0, 0, 0, 0.38);
@@ -199,8 +197,7 @@ body {
     );
   box-shadow:
     inset 0 1px 0 var(--tab-focused-inset-top),
-    inset 0 0 0 1px color-mix(in srgb, var(--pane-accent) 38%, var(--tab-focused-inset-border)),
-    0 1px 0 var(--tab-focused-bottom);
+    inset 0 0 0 1px color-mix(in srgb, var(--pane-accent) 38%, var(--tab-focused-inset-border));
 }
 
 .tab.is-focused .tab-label {
@@ -470,6 +467,7 @@ body {
 
 .stage-wrap {
   min-height: 0;
+  margin-top: -1px;
   padding: var(--stage-padding);
 }
 
