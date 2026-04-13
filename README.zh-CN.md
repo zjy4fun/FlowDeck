@@ -86,7 +86,7 @@ pnpm build
 ### 生成静态截图
 
 ```bash
-pnpm capture
+FLOWDECK_CAPTURE=1 pnpm start
 ```
 
 截图会输出到 `/tmp/flowdeck-prototype.png`。
