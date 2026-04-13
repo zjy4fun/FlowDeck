@@ -5,7 +5,7 @@ import * as path from 'path';
 export interface PersistedSettings {
   fontSize: number;
   paneOpacity: number;
-  paneWidth: number;
+  paneWidthRatio: number;
   defaultOpenDirectory: string;
   maxSessions: number;
   usageProvider: 'codex' | 'claude-code';
@@ -17,7 +17,7 @@ const SETTINGS_FILE = 'settings.json';
 const DEFAULTS: PersistedSettings = {
   fontSize: 14,
   paneOpacity: 0.75,
-  paneWidth: 720,
+  paneWidthRatio: 0.45,
   defaultOpenDirectory: app.getPath('home'),
   maxSessions: 8,
   usageProvider: 'codex',
@@ -27,9 +27,10 @@ const DEFAULTS: PersistedSettings = {
 const LIMITS = {
   fontSize: { min: 10, max: 24 },
   paneOpacity: { min: 0.5, max: 1 },
-  paneWidth: { min: 520, max: 1000 },
+  paneWidthRatio: { min: 0.22, max: 0.72 },
   maxSessions: { min: 1, max: 9 },
 } as const;
+const LEGACY_PANE_WIDTH_BASE = 1600;
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
@@ -73,12 +74,15 @@ function sanitizePersistedSettings(parsed: unknown): PersistedSettings {
       LIMITS.paneOpacity.max,
       (v) => Number(v.toFixed(2)),
     ),
-    paneWidth: sanitizeSetting(
-      source.paneWidth,
-      DEFAULTS.paneWidth,
-      LIMITS.paneWidth.min,
-      LIMITS.paneWidth.max,
-      (v) => Math.round(v / 10) * 10,
+    paneWidthRatio: sanitizeSetting(
+      source.paneWidthRatio ??
+        (typeof source.paneWidth === 'number'
+          ? source.paneWidth / LEGACY_PANE_WIDTH_BASE
+          : undefined),
+      DEFAULTS.paneWidthRatio,
+      LIMITS.paneWidthRatio.min,
+      LIMITS.paneWidthRatio.max,
+      (v) => Number(v.toFixed(2)),
     ),
     defaultOpenDirectory,
     maxSessions: sanitizeSetting(
