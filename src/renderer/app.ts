@@ -56,9 +56,18 @@ function hasUsageQuotaData(quota: UsageQuotaSnapshot | null): boolean {
   );
 }
 
-function formatPercentLeft(usedPercent: number | null): string {
+function formatPercentLeft(
+  usedPercent: number | null,
+  sessionTotalTokens: number | null = null,
+): string {
   if (usedPercent === null) return '-- left';
   const remaining = Math.floor(Math.max(0, Math.min(100, 100 - usedPercent)));
+  if (
+    (usedPercent > 0 && remaining === 100) ||
+    (usedPercent === 0 && (sessionTotalTokens ?? 0) > 0)
+  ) {
+    return '<100% left';
+  }
   return `${remaining}% left`;
 }
 
@@ -159,7 +168,7 @@ function getUsageStatusHint(): string {
     return `${getProviderLabel(provider)} | Session tokens ${formatTokenCount(sessionTotalTokens)} (in ${formatTokenCount(sessionInputTokens)}, out ${formatTokenCount(sessionOutputTokens)}) | 5h/7d limits unavailable | Checked ${formatCheckedTime(checkedAt)}`;
   }
 
-  return `${getProviderLabel(provider)} | ${getPrimaryWindowLabel(provider)} ${formatPercentLeft(sessionUsedPercent)}, Resets in ${formatResetsIn(sessionResetsAt)} | ${getSecondaryWindowLabel(provider)} ${formatPercentLeft(weeklyUsedPercent)}, Resets in ${formatResetsIn(weeklyResetsAt)} | Checked ${formatCheckedTime(checkedAt)}`;
+  return `${getProviderLabel(provider)} | ${getPrimaryWindowLabel(provider)} ${formatPercentLeft(sessionUsedPercent, sessionTotalTokens)}, Resets in ${formatResetsIn(sessionResetsAt)} | ${getSecondaryWindowLabel(provider)} ${formatPercentLeft(weeklyUsedPercent)}, Resets in ${formatResetsIn(weeklyResetsAt)} | Checked ${formatCheckedTime(checkedAt)}`;
 }
 
 function clearUsageRefreshTimer(): void {

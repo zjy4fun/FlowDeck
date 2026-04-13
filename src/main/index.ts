@@ -201,6 +201,52 @@ function extractCodexUsage(entry: Record<string, unknown>): UsageQuotaRecord | n
   };
 }
 
+function extractCodexSessionTotalTokens(entry: Record<string, unknown>): number | null {
+  const payload = toRecord(entry.payload);
+  const info = payload ? toRecord(payload.info) : null;
+  const totalTokenUsage = info ? toRecord(info.total_token_usage) : null;
+  return toNonNegativeInteger(totalTokenUsage?.total_tokens);
+}
+
+function readLatestCodexSessionTotalTokens(filePath: string): number | null {
+  let content: string;
+  try {
+    content = fs.readFileSync(filePath, 'utf-8');
+  } catch {
+    return null;
+  }
+
+  const lines = content.split('\n');
+  for (let index = lines.length - 1; index >= 0; index -= 1) {
+    const line = lines[index]?.trim();
+    if (!line) continue;
+
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(line);
+    } catch {
+      continue;
+    }
+
+    const entry = toRecord(parsed);
+    if (!entry) continue;
+
+    const totalTokens = extractCodexSessionTotalTokens(entry);
+    if (totalTokens !== null) return totalTokens;
+  }
+
+  return null;
+}
+
+function findLatestCodexSessionTotalTokens(rootDirectory: string): number | null {
+  const recentFiles = listJsonlFilesByMtime(rootDirectory);
+  for (const filePath of recentFiles) {
+    const totalTokens = readLatestCodexSessionTotalTokens(filePath);
+    if (totalTokens !== null) return totalTokens;
+  }
+  return null;
+}
+
 function extractClaudeUsage(entry: Record<string, unknown>): UsageQuotaRecord | null {
   const directRateLimits = toRecord(entry.rate_limits);
   const messageRateLimits = toRecord(toRecord(entry.message)?.rate_limits);
@@ -330,6 +376,10 @@ function loadUsageQuotaSnapshot(provider: UsageProvider): UsageQuotaSnapshot {
     provider === 'claude-code'
       ? findLatestClaudeTokenUsage(rootDirectory)
       : null;
+  const codexSessionTotalTokens =
+    provider === 'codex' && usageRecord
+      ? findLatestCodexSessionTotalTokens(rootDirectory)
+      : null;
   if (!usageRecord && !tokenUsage) return emptyUsageQuota(provider);
 
   return {
@@ -340,7 +390,10 @@ function loadUsageQuotaSnapshot(provider: UsageProvider): UsageQuotaSnapshot {
     weeklyResetsAt: usageRecord?.weekly.resetsAt ?? null,
     sessionInputTokens: tokenUsage?.inputTokens ?? null,
     sessionOutputTokens: tokenUsage?.outputTokens ?? null,
-    sessionTotalTokens: tokenUsage?.totalTokens ?? null,
+    sessionTotalTokens:
+      provider === 'codex'
+        ? codexSessionTotalTokens
+        : tokenUsage?.totalTokens ?? null,
     queriedAt: new Date().toISOString(),
   };
 }

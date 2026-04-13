@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.4.9
+
+- Fix duplicate/ghost vertical divider lines between panes by drawing each shared pane boundary only once
+- Fix Codex footer usage status so low-but-nonzero session usage is not shown as an exact 100% remaining
+
 ## v0.4.8
 
 - Show the quit confirmation dialog when quitting FlowDeck with `Cmd+Q`
