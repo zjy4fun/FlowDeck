@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.4.10
+
+- Make wide layouts fill the full stage width when all panes can fit
+- Gate pane width expansion by stage capacity so narrower layouts keep their existing behavior
+- Remove the dedicated `pnpm capture` script and document `FLOWDECK_CAPTURE=1 pnpm start` instead
+
 ## v0.4.9
 
 - Fix duplicate/ghost vertical divider lines between panes by drawing each shared pane boundary only once
