@@ -197,6 +197,8 @@ export function renderPanes(refit = false): void {
   const stageWidth = dom.stage.clientWidth;
   const stageHeight = dom.stage.clientHeight;
   const isSinglePaneLayout = state.panes.length === 1;
+  const canFillStageWidth =
+    stageWidth >= state.settings.paneWidth * state.panes.length;
   const previewWidth = getPreviewWidth(stageWidth, state.panes.length);
   const focusedIndex = getFocusedIndex();
   const focusedAccent =
@@ -206,10 +208,9 @@ export function renderPanes(refit = false): void {
 
   const layouts = state.panes.map((_, index): PaneLayout => {
     const isFocused = index === focusedIndex;
-    const shouldFillAvailableWidth = previewWidth >= state.settings.paneWidth;
     const rawWidth = isSinglePaneLayout
       ? stageWidth
-      : shouldFillAvailableWidth
+      : canFillStageWidth
         ? previewWidth
       : isFocused
         ? getFocusedPaneWidth()
