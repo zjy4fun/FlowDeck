@@ -44,7 +44,9 @@ function getPreviewWidth(stageWidth: number, count: number): number {
   if (count <= 1) return 0;
   const baseWidth = state.settings.paneWidth;
   const focusedWidth = getFocusedPaneWidth();
-  if (stageWidth >= baseWidth * count) return baseWidth;
+  if (stageWidth >= baseWidth * count) {
+    return stageWidth / count;
+  }
   return Math.max(
     MIN_PREVIEW_WIDTH,
     (stageWidth - focusedWidth) / (count - 1),
@@ -58,7 +60,7 @@ function getPaneLeft(
 ): number {
   const baseWidth = state.settings.paneWidth;
   const focusedWidth = getFocusedPaneWidth();
-  if (previewWidth >= baseWidth) return index * baseWidth;
+  if (previewWidth >= baseWidth) return index * previewWidth;
 
   const focusedLeft = focusedIndex * previewWidth;
   if (index < focusedIndex) return index * previewWidth;
@@ -195,6 +197,8 @@ export function renderPanes(refit = false): void {
   const stageWidth = dom.stage.clientWidth;
   const stageHeight = dom.stage.clientHeight;
   const isSinglePaneLayout = state.panes.length === 1;
+  const canFillStageWidth =
+    stageWidth >= state.settings.paneWidth * state.panes.length;
   const previewWidth = getPreviewWidth(stageWidth, state.panes.length);
   const focusedIndex = getFocusedIndex();
   const focusedAccent =
@@ -206,6 +210,8 @@ export function renderPanes(refit = false): void {
     const isFocused = index === focusedIndex;
     const rawWidth = isSinglePaneLayout
       ? stageWidth
+      : canFillStageWidth
+        ? previewWidth
       : isFocused
         ? getFocusedPaneWidth()
         : state.settings.paneWidth;
