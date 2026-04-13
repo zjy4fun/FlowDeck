@@ -93,7 +93,7 @@ export interface LifecycleDeps {
 export interface AppSettings {
   fontSize: number;
   paneOpacity: number;
-  paneWidth: number;
+  paneWidthRatio: number;
   defaultOpenDirectory: string;
   maxSessions: number;
   usageProvider: UsageProvider;

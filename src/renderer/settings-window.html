@@ -468,12 +468,12 @@
         <div class="section-body">
           <div class="row is-stacked">
             <div class="row-head">
-              <div class="row-label">Pane width</div>
-              <span class="row-value" id="pane-width-value">720px</span>
+              <div class="row-label">Pane width ratio</div>
+              <span class="row-value" id="pane-width-value">45%</span>
             </div>
             <div class="row-control is-full">
-              <input id="pane-width-range" type="range" min="520" max="1000" step="10" value="720" />
-              <input id="pane-width-input" type="number" min="520" max="1000" step="10" value="720" />
+              <input id="pane-width-range" type="range" min="22" max="72" step="1" value="45" />
+              <input id="pane-width-input" type="number" min="22" max="72" step="1" value="45" />
             </div>
           </div>
 
@@ -544,9 +544,10 @@
         els.defaultDirectoryInput.value = settings.defaultOpenDirectory;
         els.maxSessionsInput.value = String(settings.maxSessions);
         els.usageProviderInput.value = settings.usageProvider || 'codex';
-        els.paneWidthRange.value = String(settings.paneWidth);
-        els.paneWidthInput.value = String(settings.paneWidth);
-        els.paneWidthValue.textContent = settings.paneWidth + 'px';
+        const paneWidthPercent = Math.round(settings.paneWidthRatio * 100);
+        els.paneWidthRange.value = String(paneWidthPercent);
+        els.paneWidthInput.value = String(paneWidthPercent);
+        els.paneWidthValue.textContent = paneWidthPercent + '%';
         els.paneOpacityRange.value = settings.paneOpacity.toFixed(2);
         els.paneOpacityInput.value = settings.paneOpacity.toFixed(2);
         els.paneOpacityValue.textContent = settings.paneOpacity.toFixed(2);
@@ -614,7 +615,7 @@
           applyToInputs();
           return;
         }
-        settings.paneWidth = clamp(Math.round(v / 10) * 10, 520, 1000);
+        settings.paneWidthRatio = clamp(Math.round(v), 22, 72) / 100;
         applyToInputs();
         persist();
       }
@@ -638,13 +639,18 @@
         settings = saved || {
           fontSize: 14,
           paneOpacity: 0.75,
-          paneWidth: 720,
+          paneWidthRatio: 0.45,
           defaultOpenDirectory: bridge.defaultCwd,
           maxSessions: 8,
           usageProvider: 'codex',
           themeMode: 'system',
         };
         if (!settings.themeMode) settings.themeMode = 'system';
+        if (typeof settings.paneWidthRatio !== 'number') {
+          const legacyPaneWidth =
+            typeof settings.paneWidth === 'number' ? settings.paneWidth : 720;
+          settings.paneWidthRatio = clamp(Math.round((legacyPaneWidth / 1600) * 100), 22, 72) / 100;
+        }
         applyToInputs();
       });
 

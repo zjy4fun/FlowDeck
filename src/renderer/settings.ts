@@ -37,6 +37,8 @@ export function applyThemeToDom(): void {
 export function applySettingsToDom(): void {
   const { settings } = state;
   const root = document.documentElement;
+  const paneWidthPx = Math.round(dom.stage.clientWidth * settings.paneWidthRatio);
+  const paneWidthPercent = Math.round(settings.paneWidthRatio * 100);
 
   applyThemeToDom();
 
@@ -46,14 +48,14 @@ export function applySettingsToDom(): void {
     '--pane-tone-opacity',
     getPaneToneOpacity(settings.paneOpacity).toFixed(2),
   );
-  root.style.setProperty('--pane-width', `${settings.paneWidth}px`);
+  root.style.setProperty('--pane-width', `${paneWidthPx}px`);
 
   dom.fontSizeInput.value = String(settings.fontSize);
   dom.defaultDirectoryInput.value = settings.defaultOpenDirectory;
   dom.maxSessionsInput.value = String(settings.maxSessions);
-  dom.paneWidthRange.value = String(settings.paneWidth);
-  dom.paneWidthInput.value = String(settings.paneWidth);
-  dom.paneWidthValue.textContent = `${settings.paneWidth}px`;
+  dom.paneWidthRange.value = String(paneWidthPercent);
+  dom.paneWidthInput.value = String(paneWidthPercent);
+  dom.paneWidthValue.textContent = `${paneWidthPercent}%`;
   dom.paneOpacityRange.value = settings.paneOpacity.toFixed(2);
   dom.paneOpacityInput.value = settings.paneOpacity.toFixed(2);
   dom.paneOpacityValue.textContent = settings.paneOpacity.toFixed(2);
@@ -110,7 +112,7 @@ function updateMaxSessions(value: string): void {
   persistSettings();
 }
 
-function updatePaneWidth(
+function updatePaneWidthRatio(
   value: string,
   render: (refit: boolean) => void,
 ): void {
@@ -119,9 +121,9 @@ function updatePaneWidth(
     applySettingsToDom();
     return;
   }
-  state.settings.paneWidth = Math.max(
-    520,
-    Math.min(1000, Math.round(parsed / 10) * 10),
+  state.settings.paneWidthRatio = Math.max(
+    0.22,
+    Math.min(0.72, Number((Math.round(parsed) / 100).toFixed(2))),
   );
   applySettingsToDom();
   persistSettings();
@@ -189,11 +191,11 @@ export function initSettingsListeners(
   });
 
   dom.paneWidthRange.addEventListener('input', () => {
-    updatePaneWidth(dom.paneWidthRange.value, render);
+    updatePaneWidthRatio(dom.paneWidthRange.value, render);
   });
 
   dom.paneWidthInput.addEventListener('change', () => {
-    updatePaneWidth(dom.paneWidthInput.value, render);
+    updatePaneWidthRatio(dom.paneWidthInput.value, render);
   });
 
   dom.paneOpacityRange.addEventListener('input', () => {

@@ -27,7 +27,7 @@ export const ACCENT_PALETTE = [
 const DEFAULT_SETTINGS: AppSettings = {
   fontSize: 14,
   paneOpacity: 0.75,
-  paneWidth: 720,
+  paneWidthRatio: 0.45,
   defaultOpenDirectory: bridge.defaultCwd,
   maxSessions: 8,
   usageProvider: 'codex',
@@ -150,5 +150,5 @@ export function getResolvedTheme(): ResolvedTheme {
 }
 
 export function getFocusedPaneWidth(): number {
-  return state.transientPaneWidth ?? state.settings.paneWidth;
+  return state.transientPaneWidth ?? Math.round((dom.stage?.clientWidth ?? 1600) * state.settings.paneWidthRatio);
 }
