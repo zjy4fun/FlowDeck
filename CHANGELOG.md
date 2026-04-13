@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.4.11
+
+- Store pane width as a responsive ratio so session layouts scale more consistently across different window sizes
+- Preserve compatibility with older saved settings by converting legacy pixel-based pane width values on load
+- Upgrade GitHub Actions versions in CI and release workflows for newer runner compatibility
+
 ## v0.4.10
 
 - Make wide layouts fill the full stage width when all panes can fit
