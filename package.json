@@ -10,7 +10,6 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "start": "node scripts/build.mjs && electron .",
-    "capture": "node scripts/build.mjs && FLOWDECK_CAPTURE=1 electron .",
     "pack": "node scripts/build.mjs && electron-builder --dir",
     "dist": "node scripts/build.mjs && electron-builder",
     "release": "bumpp --all --commit --tag --push",

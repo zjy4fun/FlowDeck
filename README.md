@@ -86,7 +86,7 @@ pnpm build
 ### Capture a static render
 
 ```bash
-pnpm capture
+FLOWDECK_CAPTURE=1 pnpm start
 ```
 
 The capture is written to `/tmp/flowdeck-prototype.png`.
