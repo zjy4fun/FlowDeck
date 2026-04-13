@@ -230,9 +230,7 @@ export function renderPanes(refit = false): void {
         ? focusedAccent
         : pane.accent;
     const rightBorderColor =
-      layout.isFocused || index === state.panes.length - 1
-        ? pane.accent
-        : 'transparent';
+      index === state.panes.length - 1 ? pane.accent : 'transparent';
 
     node.root.classList.toggle('is-focused', layout.isFocused);
     node.root.classList.toggle(
