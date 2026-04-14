@@ -75,7 +75,11 @@ function formatCheckedTime(checkedAt: string | null): string {
   if (!checkedAt) return '--';
   const timestamp = new Date(checkedAt);
   if (Number.isNaN(timestamp.getTime())) return checkedAt;
-  return timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return timestamp.toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
 }
 
 function formatResetsIn(resetsAt: number | null): string {
