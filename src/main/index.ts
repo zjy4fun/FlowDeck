@@ -50,6 +50,11 @@ interface ClaudeTokenUsage {
   totalTokens: number;
 }
 
+interface TimestampedValue<T> {
+  value: T;
+  timestampMs: number;
+}
+
 function ensurePtyHelper(): void {
   if (process.platform !== 'darwin') return;
 
@@ -95,6 +100,12 @@ function toNonNegativeInteger(value: unknown): number | null {
   return Math.floor(numeric);
 }
 
+function toTimestampMs(value: unknown): number | null {
+  if (typeof value !== 'string' || value.trim().length === 0) return null;
+  const timestampMs = Date.parse(value);
+  return Number.isFinite(timestampMs) ? timestampMs : null;
+}
+
 function listJsonlFilesByMtime(rootDirectory: string): string[] {
   if (!fs.existsSync(rootDirectory)) return [];
 
@@ -138,15 +149,19 @@ function listJsonlFilesByMtime(rootDirectory: string): string[] {
 function readLatestUsageRecord(
   filePath: string,
   extractor: (entry: Record<string, unknown>) => UsageQuotaRecord | null,
-): UsageQuotaRecord | null {
+): TimestampedValue<UsageQuotaRecord> | null {
   let content: string;
+  let fileMtimeMs = 0;
   try {
     content = fs.readFileSync(filePath, 'utf-8');
+    fileMtimeMs = fs.statSync(filePath).mtimeMs;
   } catch {
     return null;
   }
 
   const lines = content.split('\n');
+  let latestMatch: TimestampedValue<UsageQuotaRecord> | null = null;
+
   for (let index = lines.length - 1; index >= 0; index -= 1) {
     const line = lines[index]?.trim();
     if (!line) continue;
@@ -162,10 +177,18 @@ function readLatestUsageRecord(
     if (!entry) continue;
 
     const usage = extractor(entry);
-    if (usage) return usage;
+    if (!usage) continue;
+
+    const candidate = {
+      value: usage,
+      timestampMs: toTimestampMs(entry.timestamp) ?? fileMtimeMs,
+    };
+    if (!latestMatch || candidate.timestampMs > latestMatch.timestampMs) {
+      latestMatch = candidate;
+    }
   }
 
-  return null;
+  return latestMatch;
 }
 
 function findLatestUsageRecord(
@@ -173,11 +196,17 @@ function findLatestUsageRecord(
   extractor: (entry: Record<string, unknown>) => UsageQuotaRecord | null,
 ): UsageQuotaRecord | null {
   const recentFiles = listJsonlFilesByMtime(rootDirectory);
+  let latestMatch: TimestampedValue<UsageQuotaRecord> | null = null;
+
   for (const filePath of recentFiles) {
     const usageRecord = readLatestUsageRecord(filePath, extractor);
-    if (usageRecord) return usageRecord;
+    if (!usageRecord) continue;
+    if (!latestMatch || usageRecord.timestampMs > latestMatch.timestampMs) {
+      latestMatch = usageRecord;
+    }
   }
-  return null;
+
+  return latestMatch?.value ?? null;
 }
 
 function extractCodexUsage(entry: Record<string, unknown>): UsageQuotaRecord | null {
@@ -208,15 +237,19 @@ function extractCodexSessionTotalTokens(entry: Record<string, unknown>): number 
   return toNonNegativeInteger(totalTokenUsage?.total_tokens);
 }
 
-function readLatestCodexSessionTotalTokens(filePath: string): number | null {
+function readLatestCodexSessionTotalTokens(filePath: string): TimestampedValue<number> | null {
   let content: string;
+  let fileMtimeMs = 0;
   try {
     content = fs.readFileSync(filePath, 'utf-8');
+    fileMtimeMs = fs.statSync(filePath).mtimeMs;
   } catch {
     return null;
   }
 
   const lines = content.split('\n');
+  let latestMatch: TimestampedValue<number> | null = null;
+
   for (let index = lines.length - 1; index >= 0; index -= 1) {
     const line = lines[index]?.trim();
     if (!line) continue;
@@ -232,19 +265,33 @@ function readLatestCodexSessionTotalTokens(filePath: string): number | null {
     if (!entry) continue;
 
     const totalTokens = extractCodexSessionTotalTokens(entry);
-    if (totalTokens !== null) return totalTokens;
+    if (totalTokens === null) continue;
+
+    const candidate = {
+      value: totalTokens,
+      timestampMs: toTimestampMs(entry.timestamp) ?? fileMtimeMs,
+    };
+    if (!latestMatch || candidate.timestampMs > latestMatch.timestampMs) {
+      latestMatch = candidate;
+    }
   }
 
-  return null;
+  return latestMatch;
 }
 
 function findLatestCodexSessionTotalTokens(rootDirectory: string): number | null {
   const recentFiles = listJsonlFilesByMtime(rootDirectory);
+  let latestMatch: TimestampedValue<number> | null = null;
+
   for (const filePath of recentFiles) {
     const totalTokens = readLatestCodexSessionTotalTokens(filePath);
-    if (totalTokens !== null) return totalTokens;
+    if (!totalTokens) continue;
+    if (!latestMatch || totalTokens.timestampMs > latestMatch.timestampMs) {
+      latestMatch = totalTokens;
+    }
   }
-  return null;
+
+  return latestMatch?.value ?? null;
 }
 
 function extractClaudeUsage(entry: Record<string, unknown>): UsageQuotaRecord | null {
@@ -297,10 +344,12 @@ function extractClaudeTokenUsageFromEntry(
   };
 }
 
-function readClaudeTokenUsage(filePath: string): ClaudeTokenUsage | null {
+function readClaudeTokenUsage(filePath: string): TimestampedValue<ClaudeTokenUsage> | null {
   let content: string;
+  let fileMtimeMs = 0;
   try {
     content = fs.readFileSync(filePath, 'utf-8');
+    fileMtimeMs = fs.statSync(filePath).mtimeMs;
   } catch {
     return null;
   }
@@ -308,6 +357,7 @@ function readClaudeTokenUsage(filePath: string): ClaudeTokenUsage | null {
   let inputTokens = 0;
   let outputTokens = 0;
   let hasUsage = false;
+  let latestUsageTimestampMs = 0;
 
   for (const rawLine of content.split('\n')) {
     const line = rawLine.trim();
@@ -329,24 +379,37 @@ function readClaudeTokenUsage(filePath: string): ClaudeTokenUsage | null {
     inputTokens += tokenUsage.inputTokens;
     outputTokens += tokenUsage.outputTokens;
     hasUsage = true;
+    latestUsageTimestampMs = Math.max(
+      latestUsageTimestampMs,
+      toTimestampMs(entry.timestamp) ?? fileMtimeMs,
+    );
   }
 
   if (!hasUsage) return null;
 
   return {
-    inputTokens,
-    outputTokens,
-    totalTokens: inputTokens + outputTokens,
+    value: {
+      inputTokens,
+      outputTokens,
+      totalTokens: inputTokens + outputTokens,
+    },
+    timestampMs: latestUsageTimestampMs || fileMtimeMs,
   };
 }
 
 function findLatestClaudeTokenUsage(rootDirectory: string): ClaudeTokenUsage | null {
   const recentFiles = listJsonlFilesByMtime(rootDirectory);
+  let latestMatch: TimestampedValue<ClaudeTokenUsage> | null = null;
+
   for (const filePath of recentFiles) {
     const usage = readClaudeTokenUsage(filePath);
-    if (usage) return usage;
+    if (!usage) continue;
+    if (!latestMatch || usage.timestampMs > latestMatch.timestampMs) {
+      latestMatch = usage;
+    }
   }
-  return null;
+
+  return latestMatch?.value ?? null;
 }
 
 function emptyUsageQuota(provider: UsageProvider): UsageQuotaSnapshot {
