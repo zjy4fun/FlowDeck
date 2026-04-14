@@ -1,0 +1,137 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  # ── Phase 1a: build macOS packages ──
+  build-macos:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v6.0.2
+
+      - uses: pnpm/action-setup@v6.0.0
+        with:
+          version: 10.33.0
+
+      - uses: actions/setup-node@v6.3.0
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Compile TypeScript (esbuild)
+        run: pnpm build
+
+      - name: Package with electron-builder
+        run: pnpm exec electron-builder --mac --publish never
+
+      - name: Extract app.asar for hot-update
+        run: |
+          ASAR_SOURCE=$(find release -name "app.asar" -path "*/Resources/*" | head -1)
+          cp "$ASAR_SOURCE" release/app.asar
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: release-macos
+          path: |
+            release/*.dmg
+            release/*.zip
+            release/*.yml
+            release/app.asar
+          if-no-files-found: error
+          retention-days: 5
+
+  # ── Phase 1b: build Windows packages ──
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v6.0.2
+
+      - uses: pnpm/action-setup@v6.0.0
+        with:
+          version: 10.33.0
+
+      - uses: actions/setup-node@v6.3.0
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Compile TypeScript (esbuild)
+        run: pnpm build
+
+      - name: Package with electron-builder
+        run: pnpm exec electron-builder --win --publish never
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: release-windows
+          path: |
+            release/*.exe
+            release/*.yml
+          if-no-files-found: error
+          retention-days: 5
+
+  # ── Phase 2: collect artifacts and create a GitHub release ──
+  publish:
+    needs: [build-macos, build-windows]
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6.0.2
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v8.0.1
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: List release files
+        run: ls -lhR artifacts/
+
+      - name: Extract release notes from CHANGELOG.md
+        id: release_notes
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          # Extract the section for this version from CHANGELOG.md
+          # Matches from "## vX.Y.Z" to the next "## " or end of file
+          NOTES=$(awk -v tag="$TAG" '
+            BEGIN { found=0 }
+            /^## / {
+              if (found) exit
+              if (index($0, tag)) { found=1; next }
+            }
+            found { print }
+          ' CHANGELOG.md)
+
+          if [ -z "$NOTES" ]; then
+            NOTES="Release $TAG"
+          fi
+
+          # Write to file for the release step
+          echo "$NOTES" > release_notes.txt
+
+      - name: Create or update GitHub Release
+        uses: softprops/action-gh-release@v3.0.0
+        with:
+          draft: false
+          body_path: release_notes.txt
+          overwrite_files: true
+          files: |
+            artifacts/*.dmg
+            artifacts/*.zip
+            artifacts/*.exe
+            artifacts/*.yml
+            artifacts/app.asar

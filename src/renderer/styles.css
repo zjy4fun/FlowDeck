@@ -1,0 +1,680 @@
+@import '../../node_modules/@xterm/xterm/css/xterm.css';
+
+:root {
+  --app-font-size: 13px;
+  --pane-opacity: 0.75;
+  --pane-tone-opacity: 0.14;
+  --pane-width: 720px;
+  --tabs-height: 34px;
+  --status-height: 20px;
+  --stage-padding: 0px;
+  --pane-height-offset: calc(
+    var(--tabs-height) + var(--status-height) + (var(--stage-padding) * 2)
+  );
+}
+
+html[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #282a36;
+  --bg-secondary: #21222c;
+  --bg-gradient:
+    radial-gradient(circle at top left, rgba(255, 196, 93, 0.06), transparent 28%),
+    radial-gradient(circle at top right, rgba(0, 181, 173, 0.06), transparent 24%),
+    linear-gradient(180deg, #282a36 0%, #21222c 100%);
+  --panel: #2d3044;
+  --panel-border: #3d3f54;
+  --panel-muted: #8a8a8a;
+  --text: #f4f1e8;
+  --text-strong: #fffdf7;
+  --terminal-bg: #303446;
+  --terminal-fg: #c6d0f5;
+  --tabs-bg: #282a36;
+  --tabs-border: rgba(255, 255, 255, 0.06);
+  --tab-focused-line: rgba(255, 255, 255, 0.18);
+  --tab-focused-soft: rgba(255, 255, 255, 0.08);
+  --tab-focused-inset-top: rgba(255, 255, 255, 0.24);
+  --tab-focused-inset-border: rgba(255, 255, 255, 0.08);
+  --tab-drag-bg: rgba(255, 255, 255, 0.08);
+  --tab-drop-line: rgba(255, 255, 255, 0.9);
+  --tab-shortcut: rgba(255, 255, 255, 0.35);
+  --tab-input-selection: rgba(255, 255, 255, 0.18);
+  --action-btn-border: rgba(255, 255, 255, 0.08);
+  --action-btn-bg: rgba(255, 255, 255, 0.02);
+  --action-btn-bg-hover: rgba(255, 255, 255, 0.08);
+  --action-btn-color: rgba(255, 255, 255, 0.82);
+  --settings-bg: #21222c;
+  --settings-border: rgba(255, 255, 255, 0.08);
+  --settings-input-border: rgba(255, 255, 255, 0.12);
+  --settings-input-bg: rgba(255, 255, 255, 0.04);
+  --settings-row-color: rgba(255, 255, 255, 0.82);
+  --stage-overlay-top: rgba(255, 255, 255, 0.02);
+  --stage-overlay-base: rgba(255, 255, 255, 0.02);
+  --pane-gradient-top: rgba(255, 255, 255, 0.04);
+  --pane-gradient-bottom: rgba(255, 255, 255, 0.02);
+  --pane-surface-bg: rgba(255, 255, 255, 0.04);
+  --pane-tone-rgb: 20, 23, 33;
+  --pane-occlusion-bg: #2a2e3e;
+  --pane-nav-shadow: 0 24px 54px rgba(0, 0, 0, 0.42);
+  --pane-nav-inset: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --pane-resize-shadow: 0 24px 54px rgba(0, 0, 0, 0.42);
+  --pane-resize-inset: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --status-border: rgba(255, 255, 255, 0.06);
+  --status-text: rgba(255, 255, 255, 0.65);
+  --status-hint: rgba(255, 255, 255, 0.45);
+  --status-nav: #ffd166;
+  --terminal-drop-outline: #61afef;
+  --terminal-drop-bg: rgba(97, 175, 239, 0.06);
+}
+
+html[data-theme='light'] {
+  color-scheme: light;
+  --bg: #f4f1e8;
+  --bg-secondary: #e8e4d6;
+  --bg-gradient:
+    radial-gradient(circle at top left, rgba(255, 170, 60, 0.12), transparent 28%),
+    radial-gradient(circle at top right, rgba(0, 170, 160, 0.10), transparent 24%),
+    linear-gradient(180deg, #f8f5ec 0%, #e8e4d6 100%);
+  --panel: #eceadd;
+  --panel-border: #d4d0bf;
+  --panel-muted: #6b6b6b;
+  --text: #282a36;
+  --text-strong: #1a1b24;
+  --terminal-bg: #e9e6dc;
+  --terminal-fg: #4c4f69;
+  --tabs-bg: #ece9dc;
+  --tabs-border: rgba(0, 0, 0, 0.08);
+  --tab-focused-line: rgba(255, 255, 255, 0.7);
+  --tab-focused-soft: rgba(255, 255, 255, 0.35);
+  --tab-focused-inset-top: rgba(255, 255, 255, 0.75);
+  --tab-focused-inset-border: rgba(0, 0, 0, 0.10);
+  --tab-drag-bg: rgba(0, 0, 0, 0.06);
+  --tab-drop-line: rgba(0, 0, 0, 0.6);
+  --tab-shortcut: rgba(0, 0, 0, 0.38);
+  --tab-input-selection: rgba(0, 0, 0, 0.14);
+  --action-btn-border: rgba(0, 0, 0, 0.08);
+  --action-btn-bg: rgba(0, 0, 0, 0.02);
+  --action-btn-bg-hover: rgba(0, 0, 0, 0.06);
+  --action-btn-color: rgba(0, 0, 0, 0.72);
+  --settings-bg: #f6f3e8;
+  --settings-border: rgba(0, 0, 0, 0.10);
+  --settings-input-border: rgba(0, 0, 0, 0.16);
+  --settings-input-bg: rgba(0, 0, 0, 0.04);
+  --settings-row-color: rgba(0, 0, 0, 0.75);
+  --stage-overlay-top: rgba(0, 0, 0, 0.02);
+  --stage-overlay-base: rgba(0, 0, 0, 0.02);
+  --pane-gradient-top: rgba(255, 255, 255, 0.5);
+  --pane-gradient-bottom: rgba(255, 255, 255, 0.2);
+  --pane-surface-bg: rgba(255, 255, 255, 0.35);
+  --pane-tone-rgb: 255, 255, 255;
+  --pane-occlusion-bg: #d9d6c8;
+  --pane-nav-shadow: 0 24px 54px rgba(60, 50, 20, 0.18);
+  --pane-nav-inset: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  --pane-resize-shadow: 0 24px 54px rgba(60, 50, 20, 0.18);
+  --pane-resize-inset: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  --status-border: rgba(0, 0, 0, 0.08);
+  --status-text: rgba(0, 0, 0, 0.65);
+  --status-hint: rgba(0, 0, 0, 0.45);
+  --status-nav: #b4730f;
+  --terminal-drop-outline: #3478c6;
+  --terminal-drop-bg: rgba(52, 120, 198, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+}
+
+html,
+body {
+  min-height: 100%;
+  background: var(--bg-gradient);
+  color: var(--text);
+  font-family: Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: var(--app-font-size);
+}
+
+body {
+  overflow: hidden;
+}
+
+.app-shell {
+  display: grid;
+  grid-template-rows: auto 1fr var(--status-height);
+  height: 100vh;
+}
+
+/* ── Tabs ── */
+
+.tabs-panel {
+  position: relative;
+  display: flex;
+  align-items: start;
+  gap: 0;
+  padding: 0;
+  padding-left: 78px; /* space for macOS traffic light buttons */
+  min-height: var(--tabs-height);
+  border-bottom: 1px solid var(--tabs-border);
+  -webkit-app-region: drag;
+  background: var(--tabs-bg);
+}
+
+.tabs-list {
+  display: flex;
+  align-items: stretch;
+  align-content: flex-start;
+  flex-wrap: nowrap;
+  gap: 0;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: visible;
+}
+
+.tab {
+  position: relative;
+  display: inline-flex;
+  align-items: stretch;
+  flex: 1 1 0;
+  min-width: 80px;
+  border-right: 1px solid var(--tabs-border);
+  background: transparent;
+  color: var(--panel-muted);
+  transition:
+    background 120ms ease,
+    color 120ms ease,
+    box-shadow 120ms ease,
+    border-color 120ms ease,
+    transform 120ms ease;
+}
+
+.tab.is-focused {
+  z-index: 3;
+  color: var(--text-strong);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--pane-accent) 18%, var(--tab-focused-line)),
+      color-mix(in srgb, var(--pane-accent) 10%, var(--tab-focused-soft))
+    );
+  box-shadow:
+    inset 0 1px 0 var(--tab-focused-inset-top),
+    inset 0 0 0 1px color-mix(in srgb, var(--pane-accent) 38%, var(--tab-focused-inset-border));
+}
+
+.tab.is-focused .tab-label {
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.tab.is-focused .tab-shortcut {
+  color: inherit;
+  opacity: 0.72;
+}
+
+.tab.is-dragging {
+  z-index: 20;
+  transition: none;
+  background: var(--tab-drag-bg);
+}
+
+.tab.insert-before::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -1px;
+  width: 2px;
+  height: 100%;
+  background: var(--tab-drop-line);
+}
+
+.tab-main,
+.tab-close,
+.tab-add-slot,
+.tabs-add,
+.tabs-settings {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  -webkit-app-region: no-drag;
+}
+
+.tab-main {
+  min-height: 33px;
+  min-width: 0;
+  width: 100%;
+  justify-content: space-between;
+  padding: 0 12px;
+  color: inherit;
+  font-size: var(--app-font-size);
+  touch-action: none;
+}
+
+.tab-close {
+  display: none;
+}
+
+.tab-swatch {
+  display: none;
+}
+
+.tab-shortcut {
+  flex: 0 0 auto;
+  color: var(--tab-shortcut);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
+  margin-left: 8px;
+}
+
+.tab-label {
+  min-width: 0;
+  max-width: 100%;
+  flex: 1 1 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  overflow: visible;
+  white-space: nowrap;
+}
+
+.tab-label-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.tab-busy-indicator,
+.tab-attention-indicator {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.2em;
+  height: 1.2em;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.tab-busy-indicator {
+  color: color-mix(in srgb, var(--pane-accent) 86%, var(--text-strong));
+  background: color-mix(in srgb, var(--pane-accent) 24%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--pane-accent) 46%, transparent),
+    0 0 0 0 color-mix(in srgb, var(--pane-accent) 36%, transparent);
+  animation: tab-busy-pulse 880ms ease-in-out infinite;
+}
+
+.tab.is-focused .tab-busy-indicator {
+  background: color-mix(in srgb, var(--pane-accent) 32%, transparent);
+}
+
+@keyframes tab-busy-pulse {
+  0% {
+    transform: scale(1);
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--pane-accent) 50%, transparent),
+      0 0 0 0 color-mix(in srgb, var(--pane-accent) 40%, transparent);
+    opacity: 0.86;
+  }
+  50% {
+    transform: scale(1.18);
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--pane-accent) 62%, transparent),
+      0 0 0 5px color-mix(in srgb, var(--pane-accent) 22%, transparent);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--pane-accent) 50%, transparent),
+      0 0 0 0 color-mix(in srgb, var(--pane-accent) 40%, transparent);
+    opacity: 0.86;
+  }
+}
+
+.tab-attention-indicator {
+  color: var(--text-strong);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+}
+
+.tab-attention-indicator.is-done {
+  background: color-mix(in srgb, #49b675 60%, var(--pane-accent));
+}
+
+.tab-attention-indicator.is-confirm {
+  background: color-mix(in srgb, #f2a93b 62%, var(--pane-accent));
+}
+
+.tab-input {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  display: block;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  text-align: center;
+  font: inherit;
+  outline: none;
+}
+
+.tab-input::selection {
+  background: var(--tab-input-selection);
+}
+
+/* ── Tab actions ── */
+
+.tabs-actions {
+  display: none;
+}
+
+.tabs-add,
+.tabs-settings,
+.tab-add-slot {
+  width: 34px;
+  height: 33px;
+  flex: 0 0 auto;
+  border-left: 1px solid var(--action-btn-border);
+  background: var(--action-btn-bg);
+  color: var(--action-btn-color);
+  font-size: 18px;
+  line-height: 1;
+  transition:
+    background 120ms ease,
+    color 120ms ease;
+}
+
+.tabs-add:hover,
+.tabs-settings:hover,
+.tab-add-slot:hover {
+  background: var(--action-btn-bg-hover);
+}
+
+/* ── Settings panel ── */
+
+.settings-panel {
+  position: absolute;
+  top: calc(100% + 1px);
+  right: 0;
+  display: grid;
+  gap: 8px;
+  width: 220px;
+  padding: 8px;
+  border: 1px solid var(--settings-border);
+  background: var(--settings-bg);
+  z-index: 50;
+}
+
+.settings-panel.is-hidden {
+  display: none;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--settings-row-color);
+  font-size: var(--app-font-size);
+}
+
+.settings-dual {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 56px;
+  gap: 8px;
+  align-items: center;
+}
+
+.settings-panel input[type="range"] {
+  width: 100%;
+  margin: 0;
+}
+
+.settings-number,
+.settings-panel input[type="text"] {
+  width: 100%;
+  height: 24px;
+  padding: 0 6px;
+  border: 1px solid var(--settings-input-border);
+  background: var(--settings-input-bg);
+  color: var(--text);
+  font: inherit;
+}
+
+.settings-select {
+  width: 100%;
+  height: 24px;
+  padding: 0 6px;
+  border: 1px solid var(--settings-input-border);
+  background: var(--settings-input-bg);
+  color: var(--text);
+  font: inherit;
+}
+
+/* ── Stage / panes ── */
+
+.stage-wrap {
+  min-height: 0;
+  margin-top: -1px;
+  padding: var(--stage-padding);
+}
+
+.stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, var(--stage-overlay-top), transparent),
+    var(--stage-overlay-base);
+}
+
+.pane {
+  --pane-occluded-width: 0px;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: var(--pane-width);
+  border-style: solid;
+  border-width: 1px;
+  border-top-color: var(--pane-border-top, var(--pane-accent));
+  border-right-color: var(--pane-border-right, transparent);
+  border-bottom-color: var(--pane-border-bottom, var(--pane-accent));
+  border-left-color: var(--pane-border-left, var(--pane-accent));
+  background:
+    linear-gradient(180deg, var(--pane-gradient-top), var(--pane-gradient-bottom)),
+    color-mix(in srgb, var(--pane-accent) 10%, var(--terminal-bg));
+  overflow: hidden;
+  cursor: pointer;
+  transition:
+    left 150ms cubic-bezier(0.2, 0.85, 0.32, 1),
+    box-shadow 120ms ease;
+  will-change: left;
+}
+
+.pane-shell {
+  height: 100%;
+}
+
+.pane-body {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.pane-surface {
+  position: absolute;
+  inset: 0;
+  background: var(--pane-surface-bg);
+}
+
+.pane-surface::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: rgba(var(--pane-tone-rgb), var(--pane-tone-opacity));
+  transition: background 120ms ease;
+}
+
+.pane-occlusion-shield {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: var(--pane-occluded-width);
+  pointer-events: none;
+  background: var(--pane-occlusion-bg);
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.pane.is-focused {
+  box-shadow: none;
+}
+
+.pane.is-focused .pane-surface::after {
+  background: rgba(var(--pane-tone-rgb), 0.08);
+}
+
+.pane.is-navigation-target {
+  border-width: 4px;
+  box-shadow:
+    var(--pane-nav-shadow),
+    0 0 0 3px color-mix(in srgb, var(--pane-accent) 44%, transparent),
+    var(--pane-nav-inset);
+}
+
+.pane:not(.is-focused) {
+  opacity: var(--pane-opacity);
+}
+
+.pane:not(.is-focused) .pane-occlusion-shield {
+  opacity: 1;
+}
+
+.pane-resize-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  cursor: ew-resize;
+  z-index: 8;
+  touch-action: none;
+}
+
+.pane-resize-handle.is-left {
+  left: -4px;
+}
+
+.pane-resize-handle.is-right {
+  right: -4px;
+}
+
+.pane-resize-handle::before {
+  content: none;
+}
+
+.pane.is-resizing {
+  box-shadow:
+    var(--pane-resize-shadow),
+    0 0 0 1px color-mix(in srgb, var(--pane-accent) 34%, transparent),
+    var(--pane-resize-inset);
+}
+
+.pane:not(.is-focused) .pane-resize-handle {
+  pointer-events: none;
+}
+
+/* ── Status bar ── */
+
+.status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 8px;
+  border-top: 1px solid var(--status-border);
+  color: var(--status-text);
+  font-size: var(--app-font-size);
+}
+
+#status-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#status-label.is-navigation-mode {
+  color: var(--status-nav);
+  font-weight: 700;
+}
+
+.status-hint {
+  min-width: 0;
+  flex: 0 1 62%;
+  max-width: 62%;
+  text-align: right;
+  color: var(--status-hint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Drag state ── */
+
+body.is-dragging-tabs {
+  user-select: none;
+  cursor: grabbing;
+}
+
+body.is-resizing-pane {
+  user-select: none;
+  cursor: ew-resize;
+}
+
+/* ── Terminal host ── */
+
+.terminal-host {
+  width: 100%;
+  height: 100%;
+  padding: 0 6px;
+  background: var(--terminal-bg);
+  color: var(--terminal-fg);
+}
+
+.terminal-host.is-drop-target {
+  outline: 2px dashed var(--pane-accent, var(--terminal-drop-outline));
+  outline-offset: -2px;
+  background: var(--terminal-drop-bg);
+}
+
+.terminal-host .xterm {
+  height: 100%;
+  background-color: var(--terminal-bg) !important;
+  color: var(--terminal-fg);
+}
+
+.terminal-host .xterm-viewport {
+  overflow: hidden !important;
+  background-color: var(--terminal-bg) !important;
+}
+
+.terminal-host .xterm-screen {
+  overflow: hidden !important;
+}
