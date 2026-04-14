@@ -3,15 +3,18 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Updating FlowDeck</title>
+    <title>FlowDeck Update</title>
     <style>
       :root {
         color-scheme: light dark;
         --bg: #ececec;
+        --surface: rgba(255, 255, 255, 0.76);
+        --surface-strong: rgba(255, 255, 255, 0.92);
+        --surface-border: rgba(0, 0, 0, 0.08);
         --text: #1d1d1f;
         --text-soft: #3a3a3c;
         --muted: #6e6e73;
-        --track: rgba(0, 0, 0, 0.10);
+        --track: rgba(0, 0, 0, 0.1);
         --fill-a: #0071e3;
         --fill-b: #3395ff;
         --btn-bg: rgba(255, 255, 255, 0.78);
@@ -25,19 +28,26 @@
         --primary-text: #ffffff;
         --primary-shadow: 0 1px 2px rgba(0, 70, 180, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.2);
         --icon-shadow: 0 2px 6px rgba(0, 0, 0, 0.18), 0 0 0 0.5px rgba(0, 0, 0, 0.08);
+        --panel-shadow: 0 18px 40px rgba(0, 0, 0, 0.08);
         --focus-ring: rgba(0, 113, 227, 0.35);
+        --badge-bg: rgba(0, 113, 227, 0.12);
+        --badge-text: #0057b8;
+        --notes-bg: rgba(255, 255, 255, 0.58);
       }
 
       @media (prefers-color-scheme: dark) {
         :root {
           --bg: #1e1e1e;
+          --surface: rgba(255, 255, 255, 0.08);
+          --surface-strong: rgba(255, 255, 255, 0.12);
+          --surface-border: rgba(255, 255, 255, 0.08);
           --text: #f5f5f7;
           --text-soft: #d1d1d6;
           --muted: #8e8e93;
           --track: rgba(255, 255, 255, 0.14);
           --fill-a: #0a84ff;
           --fill-b: #5ac8fa;
-          --btn-bg: rgba(255, 255, 255, 0.10);
+          --btn-bg: rgba(255, 255, 255, 0.1);
           --btn-bg-hover: rgba(255, 255, 255, 0.16);
           --btn-border: rgba(255, 255, 255, 0.14);
           --btn-border-hover: rgba(255, 255, 255, 0.22);
@@ -47,7 +57,11 @@
           --primary-bg-hover: #2494ff;
           --primary-shadow: 0 1px 2px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.22);
           --icon-shadow: 0 2px 8px rgba(0, 0, 0, 0.5), 0 0 0 0.5px rgba(255, 255, 255, 0.08);
+          --panel-shadow: 0 18px 48px rgba(0, 0, 0, 0.42);
           --focus-ring: rgba(10, 132, 255, 0.5);
+          --badge-bg: rgba(10, 132, 255, 0.18);
+          --badge-text: #8dc1ff;
+          --notes-bg: rgba(255, 255, 255, 0.06);
         }
       }
 
@@ -70,19 +84,33 @@
       }
 
       body {
-        display: grid;
-        align-content: center;
-        row-gap: 14px;
-        padding: 24px 24px 18px;
+        min-height: 100%;
+        padding: 24px;
         -webkit-app-region: drag;
         user-select: none;
       }
 
-      .layout {
+      body.is-compact {
+        display: grid;
+        align-content: center;
+      }
+
+      .panel {
+        display: grid;
+        grid-template-rows: auto auto;
+        gap: 18px;
+        min-height: 100%;
+      }
+
+      .card {
         display: grid;
         grid-template-columns: 60px minmax(0, 1fr);
-        column-gap: 16px;
-        align-items: center;
+        gap: 16px;
+        padding: 18px;
+        border-radius: 18px;
+        background: linear-gradient(180deg, var(--surface-strong), var(--surface));
+        border: 1px solid var(--surface-border);
+        box-shadow: var(--panel-shadow);
       }
 
       .icon {
@@ -91,6 +119,7 @@
         border-radius: 14px;
         overflow: hidden;
         box-shadow: var(--icon-shadow);
+        align-self: start;
       }
 
       .icon svg {
@@ -102,34 +131,67 @@
       .content {
         display: flex;
         flex-direction: column;
-        gap: 6px;
-        min-height: 60px;
+        gap: 10px;
+        min-width: 0;
+      }
+
+      .meta {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
         justify-content: center;
+        min-height: 24px;
+        padding: 0 10px;
+        border-radius: 999px;
+        background: var(--badge-bg);
+        color: var(--badge-text);
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+      }
+
+      .badge.hidden,
+      .notes-shell.hidden,
+      .progress.is-hidden,
+      .button.hidden {
+        display: none;
       }
 
       .title {
-        font-size: 15px;
-        line-height: 1.22;
-        font-weight: 600;
-        letter-spacing: -0.01em;
-        color: var(--text);
+        font-size: 17px;
+        line-height: 1.24;
+        font-weight: 650;
+        letter-spacing: -0.015em;
+      }
+
+      .detail {
+        font-size: 13px;
+        line-height: 1.5;
+        color: var(--text-soft);
+        white-space: pre-wrap;
+      }
+
+      .detail.is-hidden {
+        display: none;
       }
 
       .progress {
         display: grid;
         grid-template-columns: 1fr auto;
         align-items: center;
-        column-gap: 10px;
+        gap: 12px;
         margin-top: 2px;
-      }
-
-      .progress.is-hidden {
-        display: none;
       }
 
       .progress-track {
         width: 100%;
-        height: 6px;
+        height: 8px;
         border-radius: 999px;
         background: var(--track);
         overflow: hidden;
@@ -145,38 +207,59 @@
 
       .progress-text {
         font-size: 11px;
-        line-height: 1;
         color: var(--muted);
         font-variant-numeric: tabular-nums;
-        letter-spacing: 0;
         white-space: nowrap;
       }
 
-      .detail {
-        font-size: 12px;
-        line-height: 1.38;
-        color: var(--text-soft);
-        letter-spacing: -0.005em;
+      .notes-shell {
+        display: grid;
+        gap: 8px;
+        min-height: 0;
       }
 
-      .detail.is-hidden {
-        visibility: hidden;
+      .notes-label {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .notes {
+        min-height: 220px;
+        max-height: 300px;
+        overflow: auto;
+        padding: 14px 15px;
+        border-radius: 14px;
+        background: var(--notes-bg);
+        border: 1px solid var(--surface-border);
+        color: var(--text-soft);
+        font-family: 'SF Mono', SFMono-Regular, ui-monospace, Menlo, Monaco, Consolas, monospace;
+        font-size: 12px;
+        line-height: 1.56;
+        white-space: pre-wrap;
+        word-break: break-word;
+        user-select: text;
+        -webkit-user-select: text;
+        -webkit-app-region: no-drag;
       }
 
       .actions {
         display: flex;
         justify-content: flex-end;
         gap: 8px;
+        flex-wrap: wrap;
         -webkit-app-region: no-drag;
       }
 
       .button {
         appearance: none;
-        min-width: 84px;
-        height: 28px;
+        min-width: 88px;
+        height: 30px;
         padding: 0 14px;
         border: 1px solid var(--btn-border);
-        border-radius: 7px;
+        border-radius: 8px;
         background: var(--btn-bg);
         color: var(--btn-text);
         font-family: inherit;
@@ -202,9 +285,7 @@
 
       .button:focus-visible {
         outline: none;
-        box-shadow:
-          var(--btn-shadow),
-          0 0 0 3px var(--focus-ring);
+        box-shadow: var(--btn-shadow), 0 0 0 3px var(--focus-ring);
       }
 
       .button.is-primary {
@@ -220,63 +301,67 @@
       }
 
       .button.is-primary:focus-visible {
-        box-shadow:
-          var(--primary-shadow),
-          0 0 0 3px var(--focus-ring);
-      }
-
-      .button.hidden {
-        display: none;
+        box-shadow: var(--primary-shadow), 0 0 0 3px var(--focus-ring);
       }
     </style>
   </head>
-  <body>
-    <main class="layout">
-      <div class="icon" aria-hidden="true">
-        <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <linearGradient id="fd-bg" x1="0" y1="0" x2="1024" y2="1024" gradientUnits="userSpaceOnUse">
-              <stop stop-color="#1A2332" />
-              <stop offset="1" stop-color="#0F1720" />
-            </linearGradient>
-          </defs>
-          <rect width="1024" height="1024" rx="220" fill="url(#fd-bg)" />
-          <rect x="338" y="40" width="1.5" height="944" fill="#2A3A4C" opacity="0.5" />
-          <rect x="685" y="40" width="1.5" height="944" fill="#2A3A4C" opacity="0.5" />
-          <path d="M100 360 L160 420 L100 480" stroke="#F0883E" stroke-width="18" stroke-linecap="round" stroke-linejoin="round" fill="none" />
-          <rect x="182" y="462" width="52" height="14" rx="7" fill="#F0883E" />
-          <rect x="100" y="540" width="180" height="10" rx="5" fill="#F0883E" opacity="0.13" />
-          <rect x="100" y="574" width="200" height="10" rx="5" fill="#F0883E" opacity="0.10" />
-          <rect x="100" y="608" width="140" height="10" rx="5" fill="#F0883E" opacity="0.07" />
-          <path d="M398 360 L458 420 L398 480" stroke="#56D4C4" stroke-width="18" stroke-linecap="round" stroke-linejoin="round" fill="none" />
-          <rect x="480" y="462" width="52" height="14" rx="7" fill="#56D4C4" />
-          <rect x="398" y="540" width="240" height="10" rx="5" fill="#56D4C4" opacity="0.13" />
-          <rect x="398" y="574" width="170" height="10" rx="5" fill="#56D4C4" opacity="0.10" />
-          <rect x="398" y="608" width="220" height="10" rx="5" fill="#56D4C4" opacity="0.07" />
-          <rect x="398" y="642" width="160" height="10" rx="5" fill="#56D4C4" opacity="0.06" />
-          <path d="M744 360 L804 420 L744 480" stroke="#A78BFA" stroke-width="18" stroke-linecap="round" stroke-linejoin="round" fill="none" />
-          <rect x="826" y="462" width="52" height="14" rx="7" fill="#A78BFA" />
-          <rect x="744" y="540" width="190" height="10" rx="5" fill="#A78BFA" opacity="0.13" />
-          <rect x="744" y="574" width="150" height="10" rx="5" fill="#A78BFA" opacity="0.10" />
-          <rect x="744" y="608" width="200" height="10" rx="5" fill="#A78BFA" opacity="0.07" />
-        </svg>
-      </div>
-      <section class="content">
-        <h1 id="title" class="title">Downloading update…</h1>
-        <div id="progress" class="progress">
-          <div class="progress-track">
-            <div class="progress-fill" id="progress-fill"></div>
-          </div>
-          <span id="progress-text" class="progress-text">0.0 / 0.0 MB</span>
+  <body class="is-compact">
+    <main class="panel">
+      <section class="card">
+        <div class="icon" aria-hidden="true">
+          <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="fd-bg" x1="0" y1="0" x2="1024" y2="1024" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#1A2332" />
+                <stop offset="1" stop-color="#0F1720" />
+              </linearGradient>
+            </defs>
+            <rect width="1024" height="1024" rx="220" fill="url(#fd-bg)" />
+            <rect x="338" y="40" width="1.5" height="944" fill="#2A3A4C" opacity="0.5" />
+            <rect x="685" y="40" width="1.5" height="944" fill="#2A3A4C" opacity="0.5" />
+            <path d="M100 360 L160 420 L100 480" stroke="#F0883E" stroke-width="18" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+            <rect x="182" y="462" width="52" height="14" rx="7" fill="#F0883E" />
+            <rect x="100" y="540" width="180" height="10" rx="5" fill="#F0883E" opacity="0.13" />
+            <rect x="100" y="574" width="200" height="10" rx="5" fill="#F0883E" opacity="0.10" />
+            <rect x="100" y="608" width="140" height="10" rx="5" fill="#F0883E" opacity="0.07" />
+            <path d="M398 360 L458 420 L398 480" stroke="#56D4C4" stroke-width="18" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+            <rect x="480" y="462" width="52" height="14" rx="7" fill="#56D4C4" />
+            <rect x="398" y="540" width="240" height="10" rx="5" fill="#56D4C4" opacity="0.13" />
+            <rect x="398" y="574" width="170" height="10" rx="5" fill="#56D4C4" opacity="0.10" />
+            <rect x="398" y="608" width="220" height="10" rx="5" fill="#56D4C4" opacity="0.07" />
+            <rect x="398" y="642" width="160" height="10" rx="5" fill="#56D4C4" opacity="0.06" />
+            <path d="M744 360 L804 420 L744 480" stroke="#A78BFA" stroke-width="18" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+            <rect x="826" y="462" width="52" height="14" rx="7" fill="#A78BFA" />
+            <rect x="744" y="540" width="190" height="10" rx="5" fill="#A78BFA" opacity="0.13" />
+            <rect x="744" y="574" width="150" height="10" rx="5" fill="#A78BFA" opacity="0.10" />
+            <rect x="744" y="608" width="200" height="10" rx="5" fill="#A78BFA" opacity="0.07" />
+          </svg>
         </div>
-        <p id="detail" class="detail"></p>
+        <section class="content">
+          <div class="meta">
+            <span id="badge" class="badge hidden"></span>
+          </div>
+          <h1 id="title" class="title">Downloading update…</h1>
+          <p id="detail" class="detail"></p>
+          <div id="progress" class="progress">
+            <div class="progress-track">
+              <div class="progress-fill" id="progress-fill"></div>
+            </div>
+            <span id="progress-text" class="progress-text">0.0 / 0.0 MB</span>
+          </div>
+          <section id="notes-shell" class="notes-shell hidden">
+            <div id="notes-label" class="notes-label">Changelog</div>
+            <pre id="notes" class="notes"></pre>
+          </section>
+        </section>
       </section>
-    </main>
 
-    <div class="actions">
-      <button id="secondary-button" class="button hidden" type="button">Later</button>
-      <button id="primary-button" class="button is-primary" type="button">Cancel</button>
-    </div>
+      <div class="actions">
+        <button id="tertiary-button" class="button hidden" type="button">Skip This Version</button>
+        <button id="secondary-button" class="button hidden" type="button">Later</button>
+        <button id="primary-button" class="button is-primary" type="button">Cancel</button>
+      </div>
+    </main>
 
     <script>
       const bridge = window.flowdeck;
@@ -287,6 +372,18 @@
       const ACTION_CANCEL = 'cancel';
       const ACTION_RESTART = 'restart';
       const ACTION_CLOSE = 'close';
+      const ACTION_DOWNLOAD = 'download';
+      const ACTION_OPEN_RELEASE = 'open-release';
+      const ACTION_SKIP_VERSION = 'skip-version';
+
+      const VALID_ACTIONS = new Set([
+        ACTION_CANCEL,
+        ACTION_RESTART,
+        ACTION_CLOSE,
+        ACTION_DOWNLOAD,
+        ACTION_OPEN_RELEASE,
+        ACTION_SKIP_VERSION,
+      ]);
 
       const state = {
         title: 'Downloading update…',
@@ -299,16 +396,26 @@
         primaryLabel: 'Cancel',
         secondaryAction: null,
         secondaryLabel: '',
+        tertiaryAction: null,
+        tertiaryLabel: '',
+        badge: '',
+        notes: '',
+        notesLabel: 'Changelog',
       };
 
       const els = {
+        badge: document.getElementById('badge'),
         title: document.getElementById('title'),
         detail: document.getElementById('detail'),
         progress: document.getElementById('progress'),
         progressFill: document.getElementById('progress-fill'),
         progressText: document.getElementById('progress-text'),
+        notesShell: document.getElementById('notes-shell'),
+        notesLabel: document.getElementById('notes-label'),
+        notes: document.getElementById('notes'),
         primaryButton: document.getElementById('primary-button'),
         secondaryButton: document.getElementById('secondary-button'),
+        tertiaryButton: document.getElementById('tertiary-button'),
       };
 
       function clampProgress(value) {
@@ -324,12 +431,11 @@
       }
 
       function formatMegabytes(bytes) {
-        const mb = bytes / (1024 * 1024);
-        return mb.toFixed(1);
+        return (bytes / (1024 * 1024)).toFixed(1);
       }
 
       function isAction(value) {
-        return value === ACTION_CANCEL || value === ACTION_RESTART || value === ACTION_CLOSE;
+        return VALID_ACTIONS.has(value);
       }
 
       function applyPartialState(payload) {
@@ -343,7 +449,26 @@
         } else if (!payload.secondaryLabel) {
           state.secondaryLabel = '';
         }
-
+        if (typeof payload.tertiaryLabel === 'string') {
+          state.tertiaryLabel = payload.tertiaryLabel;
+        } else if (!payload.tertiaryLabel) {
+          state.tertiaryLabel = '';
+        }
+        if (typeof payload.badge === 'string') {
+          state.badge = payload.badge;
+        } else if (!payload.badge) {
+          state.badge = '';
+        }
+        if (typeof payload.notes === 'string') {
+          state.notes = payload.notes;
+        } else if (!payload.notes) {
+          state.notes = '';
+        }
+        if (typeof payload.notesLabel === 'string') {
+          state.notesLabel = payload.notesLabel;
+        } else if (!payload.notesLabel) {
+          state.notesLabel = 'Changelog';
+        }
         if (typeof payload.showProgress === 'boolean') state.showProgress = payload.showProgress;
 
         state.downloadedBytes = normalizeBytes(
@@ -364,21 +489,37 @@
         if (isAction(payload.primaryAction)) {
           state.primaryAction = payload.primaryAction;
         }
+        state.secondaryAction = isAction(payload.secondaryAction) ? payload.secondaryAction : null;
+        state.tertiaryAction = isAction(payload.tertiaryAction) ? payload.tertiaryAction : null;
+      }
 
-        if (isAction(payload.secondaryAction)) {
-          state.secondaryAction = payload.secondaryAction;
+      function renderButton(el, label, action) {
+        if (action && label) {
+          el.textContent = label;
+          el.dataset.action = action;
+          el.classList.remove('hidden');
         } else {
-          state.secondaryAction = null;
+          el.dataset.action = '';
+          el.classList.add('hidden');
         }
       }
 
       function render() {
+        document.body.classList.toggle('is-compact', !state.notes);
         els.title.textContent = state.title;
-        els.detail.textContent = state.detail;
+
+        if (state.badge) {
+          els.badge.textContent = state.badge;
+          els.badge.classList.remove('hidden');
+        } else {
+          els.badge.classList.add('hidden');
+        }
 
         if (state.detail) {
+          els.detail.textContent = state.detail;
           els.detail.classList.remove('is-hidden');
         } else {
+          els.detail.textContent = '';
           els.detail.classList.add('is-hidden');
         }
 
@@ -392,14 +533,18 @@
           els.progress.classList.add('is-hidden');
         }
 
-        els.primaryButton.textContent = state.primaryLabel;
-
-        if (state.secondaryAction && state.secondaryLabel) {
-          els.secondaryButton.textContent = state.secondaryLabel;
-          els.secondaryButton.classList.remove('hidden');
+        if (state.notes) {
+          els.notesShell.classList.remove('hidden');
+          els.notesLabel.textContent = state.notesLabel || 'Changelog';
+          els.notes.textContent = state.notes;
         } else {
-          els.secondaryButton.classList.add('hidden');
+          els.notesShell.classList.add('hidden');
+          els.notes.textContent = '';
         }
+
+        renderButton(els.tertiaryButton, state.tertiaryLabel, state.tertiaryAction);
+        renderButton(els.secondaryButton, state.secondaryLabel, state.secondaryAction);
+        renderButton(els.primaryButton, state.primaryLabel, state.primaryAction);
       }
 
       async function runAction(action) {
@@ -413,19 +558,21 @@
             await bridge.restartForUpdate();
             return;
           }
-          await bridge.closeUpdateWindow();
+          if (action === ACTION_CLOSE) {
+            await bridge.closeUpdateWindow();
+            return;
+          }
+          await bridge.runUpdateAction(action);
         } catch (err) {
           console.error('Update action failed:', err);
         }
       }
 
-      els.primaryButton.addEventListener('click', () => {
-        runAction(state.primaryAction);
-      });
-
-      els.secondaryButton.addEventListener('click', () => {
-        runAction(state.secondaryAction);
-      });
+      for (const button of [els.primaryButton, els.secondaryButton, els.tertiaryButton]) {
+        button.addEventListener('click', () => {
+          runAction(button.dataset.action || '');
+        });
+      }
 
       const unsubscribe = bridge.onUpdateWindowState((payload) => {
         applyPartialState(payload);
