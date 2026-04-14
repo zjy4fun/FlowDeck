@@ -1,5 +1,5 @@
 import { spawn } from 'child_process';
-import { app, BrowserWindow, dialog, ipcMain, nativeTheme, net } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, nativeTheme, net, shell } from 'electron';
 // Use original-fs to bypass Electron's asar interception on .asar paths
 import * as originalFs from 'original-fs';
 import * as fs from 'fs';
@@ -325,6 +325,9 @@ export function applyPendingUpdate(): boolean {
 
 interface GitHubRelease {
   tag_name: string;
+  body?: string;
+  html_url?: string;
+  assetInfoIncomplete?: boolean;
   assets: Array<{ name: string; browser_download_url: string; size: number }>;
 }
 
@@ -499,6 +502,9 @@ async function fetchLatestRelease(): Promise<GitHubRelease> {
     const tag = await fetchLatestReleaseTagFromPage();
     return {
       tag_name: tag,
+      body: '',
+      html_url: `https://github.com/${REPO}/releases/tag/${tag}`,
+      assetInfoIncomplete: true,
       assets: [
         {
           name: ASAR_ASSET_NAME,
@@ -507,6 +513,77 @@ async function fetchLatestRelease(): Promise<GitHubRelease> {
         },
       ],
     };
+  }
+}
+
+function formatReleaseNotes(body?: string): string {
+  const trimmed = typeof body === 'string' ? body.trim() : '';
+  if (!trimmed) {
+    return 'No release notes were published for this update.';
+  }
+
+  return trimmed.length > 4_000 ? `${trimmed.slice(0, 4_000).trim()}\n\n…` : trimmed;
+}
+
+async function confirmManualUpdateAvailable(
+  release: GitHubRelease,
+  remoteVersion: string,
+): Promise<boolean> {
+  const result = await dialog.showMessageBox({
+    type: 'info',
+    title: 'Update Available',
+    message: `FlowDeck ${remoteVersion} is available.`,
+    detail: `What’s new:\n\n${formatReleaseNotes(release.body)}`,
+    buttons: ['Not Now', 'Download Update'],
+    defaultId: 1,
+    cancelId: 0,
+    noLink: true,
+  });
+
+  return result.response === 1;
+}
+
+async function handleManualInstallerOnlyUpdate(
+  release: GitHubRelease,
+  remoteVersion: string,
+): Promise<void> {
+  const result = await dialog.showMessageBox({
+    type: 'info',
+    title: 'Update Available',
+    message: `FlowDeck ${remoteVersion} is available.`,
+    detail:
+      `What’s new:\n\n${formatReleaseNotes(release.body)}\n\n` +
+      'No hot-update asset was published for this version. You can skip this update or open the GitHub release page to download the full installer.',
+    buttons: ['Not Now', 'Open Release Page'],
+    defaultId: 1,
+    cancelId: 0,
+    noLink: true,
+  });
+
+  if (result.response === 1 && release.html_url) {
+    await shell.openExternal(release.html_url);
+  }
+}
+
+async function handleManualUpdateWithUnknownAssets(
+  release: GitHubRelease,
+  remoteVersion: string,
+): Promise<void> {
+  const result = await dialog.showMessageBox({
+    type: 'info',
+    title: 'Update Available',
+    message: `FlowDeck ${remoteVersion} is available.`,
+    detail:
+      `What’s new:\n\n${formatReleaseNotes(release.body)}\n\n` +
+      'FlowDeck could not verify whether a hot-update package is available right now. You can skip this update or open the GitHub release page.',
+    buttons: ['Not Now', 'Open Release Page'],
+    defaultId: 1,
+    cancelId: 0,
+    noLink: true,
+  });
+
+  if (result.response === 1 && release.html_url) {
+    await shell.openExternal(release.html_url);
   }
 }
 
@@ -741,13 +818,21 @@ async function checkAndDownload(manual: boolean): Promise<void> {
   const asarAsset = release.assets.find((a) => a.name === ASAR_ASSET_NAME);
   if (!asarAsset) {
     if (manual) {
-      dialog.showMessageBox({
-        type: 'info',
-        title: 'Update Available',
-        message: `Version ${remoteVersion} is available, but no hot-update asset found. Please download the full installer from GitHub.`,
-      });
+      await handleManualInstallerOnlyUpdate(release, remoteVersion);
     }
     return;
+  }
+
+  if (manual) {
+    if (release.assetInfoIncomplete) {
+      await handleManualUpdateWithUnknownAssets(release, remoteVersion);
+      return;
+    }
+
+    const shouldUpdate = await confirmManualUpdateAvailable(release, remoteVersion);
+    if (!shouldUpdate) {
+      return;
+    }
   }
 
   const staged = getStagedAsarPath();
