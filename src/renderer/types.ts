@@ -116,7 +116,13 @@ export interface UsageQuotaSnapshot {
   queriedAt: string | null;
 }
 
-export type UpdateWindowAction = 'cancel' | 'restart' | 'close';
+export type UpdateWindowAction =
+  | 'cancel'
+  | 'restart'
+  | 'close'
+  | 'download'
+  | 'open-release'
+  | 'skip-version';
 
 export interface UpdateWindowState {
   title: string;
@@ -129,6 +135,11 @@ export interface UpdateWindowState {
   primaryLabel: string;
   secondaryAction?: UpdateWindowAction;
   secondaryLabel?: string;
+  tertiaryAction?: UpdateWindowAction;
+  tertiaryLabel?: string;
+  badge?: string;
+  notes?: string;
+  notesLabel?: string;
 }
 
 /* ── Preload bridge API ── */
@@ -180,4 +191,5 @@ export interface FlowDeckBridge {
   cancelUpdateDownload: () => Promise<void>;
   restartForUpdate: () => Promise<void>;
   closeUpdateWindow: () => Promise<void>;
+  runUpdateAction: (action: UpdateWindowAction) => Promise<void>;
 }

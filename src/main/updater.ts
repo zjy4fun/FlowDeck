@@ -8,8 +8,17 @@ import * as path from 'path';
 const REPO = 'zjy4fun/FlowDeck';
 const ASAR_ASSET_NAME = 'app.asar';
 const UPDATE_WINDOW_CHANNEL = 'flowdeck:update-state';
+const SKIPPED_UPDATE_FILE = 'skipped-update.json';
+const COMPACT_UPDATE_WINDOW_SIZE = { width: 480, height: 188 };
+const RELEASE_NOTES_WINDOW_SIZE = { width: 680, height: 560 };
 
-type UpdateWindowAction = 'cancel' | 'restart' | 'close';
+type UpdateWindowAction =
+  | 'cancel'
+  | 'restart'
+  | 'close'
+  | 'download'
+  | 'open-release'
+  | 'skip-version';
 
 interface UpdateWindowState {
   title: string;
@@ -22,6 +31,15 @@ interface UpdateWindowState {
   primaryLabel: string;
   secondaryAction?: UpdateWindowAction;
   secondaryLabel?: string;
+  tertiaryAction?: UpdateWindowAction;
+  tertiaryLabel?: string;
+  badge?: string;
+  notes?: string;
+  notesLabel?: string;
+}
+
+interface SkippedUpdateState {
+  version: string | null;
 }
 
 interface DownloadAssetOptions {
@@ -40,6 +58,8 @@ class UpdateCancelledError extends Error {
 let updateWindow: BrowserWindow | null = null;
 let updateWindowState: UpdateWindowState | null = null;
 let cancelActiveDownload: (() => void) | null = null;
+let pendingUpdateActionResolver: ((action: UpdateWindowAction) => void) | null = null;
+let pendingUpdateActionButtons = new Set<UpdateWindowAction>();
 let updaterIpcRegistered = false;
 let updaterLifecycleRegistered = false;
 let updateApplyHelperScheduled = false;
@@ -67,6 +87,49 @@ function getApplyUpdateScriptPath(): string {
 
 function getApplyUpdateLogPath(): string {
   return path.join(getPendingUpdateDir(), 'apply-update.log');
+}
+
+function getSkippedUpdateStatePath(): string {
+  return path.join(app.getPath('userData'), SKIPPED_UPDATE_FILE);
+}
+
+function loadSkippedUpdateState(): SkippedUpdateState {
+  try {
+    const raw = fs.readFileSync(getSkippedUpdateStatePath(), 'utf-8');
+    const parsed = JSON.parse(raw) as Partial<SkippedUpdateState>;
+    return {
+      version: typeof parsed.version === 'string' && parsed.version.trim().length > 0
+        ? parsed.version.trim()
+        : null,
+    };
+  } catch {
+    return { version: null };
+  }
+}
+
+function saveSkippedUpdateState(state: SkippedUpdateState): void {
+  try {
+    const filePath = getSkippedUpdateStatePath();
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(filePath, JSON.stringify(state, null, 2));
+  } catch (error) {
+    console.error('Failed to save skipped update state:', error);
+  }
+}
+
+function skipVersion(version: string): void {
+  saveSkippedUpdateState({ version });
+}
+
+function clearSkippedVersion(version?: string): void {
+  const current = loadSkippedUpdateState();
+  if (!current.version) return;
+  if (version && current.version !== version) return;
+  saveSkippedUpdateState({ version: null });
+}
+
+function isVersionSkipped(version: string): boolean {
+  return loadSkippedUpdateState().version === version;
 }
 
 function ensurePendingUpdateDir(): void {
@@ -522,45 +585,89 @@ function formatReleaseNotes(body?: string): string {
     return 'No release notes were published for this update.';
   }
 
-  return trimmed.length > 4_000 ? `${trimmed.slice(0, 4_000).trim()}\n\n…` : trimmed;
+  return trimmed.length > 12_000 ? `${trimmed.slice(0, 12_000).trim()}\n\n…` : trimmed;
+}
+
+function createManualUpdatePromptState(
+  release: GitHubRelease,
+  remoteVersion: string,
+  options: {
+    primaryAction: 'download' | 'open-release';
+    primaryLabel: string;
+    detailSuffix?: string;
+    skipped: boolean;
+  },
+): UpdateWindowState {
+  const detailLines = [`FlowDeck ${remoteVersion} is available.`];
+  if (options.skipped) {
+    detailLines.push('You previously chose to skip this version.');
+  }
+  if (options.detailSuffix) {
+    detailLines.push(options.detailSuffix);
+  }
+
+  return {
+    title: `Update available · ${remoteVersion}`,
+    detail: detailLines.join(' '),
+    downloadedBytes: 0,
+    totalBytes: 1,
+    progress: 0,
+    showProgress: false,
+    badge: options.skipped ? 'Skipped previously' : 'New release',
+    notesLabel: 'Changelog',
+    notes: formatReleaseNotes(release.body),
+    tertiaryAction: 'skip-version',
+    tertiaryLabel: 'Skip This Version',
+    secondaryAction: 'close',
+    secondaryLabel: 'Not Now',
+    primaryAction: options.primaryAction,
+    primaryLabel: options.primaryLabel,
+  };
+}
+
+function promptForManualUpdateAction(
+  state: UpdateWindowState,
+): Promise<UpdateWindowAction> {
+  return new Promise((resolve) => {
+    pendingUpdateActionResolver = resolve;
+    pushUpdateWindowState(state);
+  });
 }
 
 async function confirmManualUpdateAvailable(
   release: GitHubRelease,
   remoteVersion: string,
-): Promise<boolean> {
-  const result = await dialog.showMessageBox({
-    type: 'info',
-    title: 'Update Available',
-    message: `FlowDeck ${remoteVersion} is available.`,
-    detail: `What’s new:\n\n${formatReleaseNotes(release.body)}`,
-    buttons: ['Not Now', 'Download Update'],
-    defaultId: 1,
-    cancelId: 0,
-    noLink: true,
-  });
-
-  return result.response === 1;
+): Promise<UpdateWindowAction> {
+  return promptForManualUpdateAction(
+    createManualUpdatePromptState(release, remoteVersion, {
+      primaryAction: 'download',
+      primaryLabel: 'Download Update',
+      skipped: isVersionSkipped(remoteVersion),
+    }),
+  );
 }
 
 async function handleManualInstallerOnlyUpdate(
   release: GitHubRelease,
   remoteVersion: string,
 ): Promise<void> {
-  const result = await dialog.showMessageBox({
-    type: 'info',
-    title: 'Update Available',
-    message: `FlowDeck ${remoteVersion} is available.`,
-    detail:
-      `What’s new:\n\n${formatReleaseNotes(release.body)}\n\n` +
-      'No hot-update asset was published for this version. You can skip this update or open the GitHub release page to download the full installer.',
-    buttons: ['Not Now', 'Open Release Page'],
-    defaultId: 1,
-    cancelId: 0,
-    noLink: true,
-  });
+  const action = await promptForManualUpdateAction(
+    createManualUpdatePromptState(release, remoteVersion, {
+      primaryAction: 'open-release',
+      primaryLabel: 'Open Release Page',
+      detailSuffix:
+        'No hot-update package was published for this version, so you will need the full installer.',
+      skipped: isVersionSkipped(remoteVersion),
+    }),
+  );
 
-  if (result.response === 1 && release.html_url) {
+  if (action === 'skip-version') {
+    skipVersion(remoteVersion);
+    return;
+  }
+
+  if (action === 'open-release' && release.html_url) {
+    clearSkippedVersion(remoteVersion);
     await shell.openExternal(release.html_url);
   }
 }
@@ -569,20 +676,23 @@ async function handleManualUpdateWithUnknownAssets(
   release: GitHubRelease,
   remoteVersion: string,
 ): Promise<void> {
-  const result = await dialog.showMessageBox({
-    type: 'info',
-    title: 'Update Available',
-    message: `FlowDeck ${remoteVersion} is available.`,
-    detail:
-      `What’s new:\n\n${formatReleaseNotes(release.body)}\n\n` +
-      'FlowDeck could not verify whether a hot-update package is available right now. You can skip this update or open the GitHub release page.',
-    buttons: ['Not Now', 'Open Release Page'],
-    defaultId: 1,
-    cancelId: 0,
-    noLink: true,
-  });
+  const action = await promptForManualUpdateAction(
+    createManualUpdatePromptState(release, remoteVersion, {
+      primaryAction: 'open-release',
+      primaryLabel: 'Open Release Page',
+      detailSuffix:
+        'FlowDeck could not verify whether a hot-update package is available right now.',
+      skipped: isVersionSkipped(remoteVersion),
+    }),
+  );
 
-  if (result.response === 1 && release.html_url) {
+  if (action === 'skip-version') {
+    skipVersion(remoteVersion);
+    return;
+  }
+
+  if (action === 'open-release' && release.html_url) {
+    clearSkippedVersion(remoteVersion);
     await shell.openExternal(release.html_url);
   }
 }
@@ -608,12 +718,43 @@ function clampProgress(progress: number): number {
   return progress;
 }
 
+function getUpdateWindowSize(state: UpdateWindowState | null): {
+  width: number;
+  height: number;
+} {
+  return state?.notes ? RELEASE_NOTES_WINDOW_SIZE : COMPACT_UPDATE_WINDOW_SIZE;
+}
+
+function updateWindowButtonsForState(state: UpdateWindowState | null): Set<UpdateWindowAction> {
+  const next = new Set<UpdateWindowAction>();
+  if (!state) return next;
+  next.add(state.primaryAction);
+  if (state.secondaryAction) next.add(state.secondaryAction);
+  if (state.tertiaryAction) next.add(state.tertiaryAction);
+  return next;
+}
+
+function resolvePendingUpdateAction(action: UpdateWindowAction): void {
+  if (!pendingUpdateActionResolver) return;
+  const resolve = pendingUpdateActionResolver;
+  pendingUpdateActionResolver = null;
+  pendingUpdateActionButtons = new Set<UpdateWindowAction>();
+  resolve(action);
+}
+
+function resizeUpdateWindowForState(state: UpdateWindowState | null): void {
+  if (!updateWindow || updateWindow.isDestroyed()) return;
+  const size = getUpdateWindowSize(state);
+  updateWindow.setContentSize(size.width, size.height);
+}
+
 function createUpdateWindow(): BrowserWindow {
   if (updateWindow && !updateWindow.isDestroyed()) return updateWindow;
 
+  const initialSize = getUpdateWindowSize(updateWindowState);
   const win = new BrowserWindow({
-    width: 480,
-    height: 188,
+    width: initialSize.width,
+    height: initialSize.height,
     resizable: false,
     minimizable: false,
     maximizable: false,
@@ -631,10 +772,12 @@ function createUpdateWindow(): BrowserWindow {
   });
 
   win.once('ready-to-show', () => {
+    resizeUpdateWindowForState(updateWindowState);
     if (!win.isDestroyed()) win.show();
   });
 
   win.webContents.on('did-finish-load', () => {
+    resizeUpdateWindowForState(updateWindowState);
     if (updateWindowState && !win.isDestroyed()) {
       win.webContents.send(UPDATE_WINDOW_CHANNEL, updateWindowState);
     }
@@ -647,6 +790,7 @@ function createUpdateWindow(): BrowserWindow {
       cancelActiveDownload = null;
       cancel();
     }
+    resolvePendingUpdateAction('close');
   });
 
   win.loadFile(
@@ -662,6 +806,7 @@ function createUpdateWindow(): BrowserWindow {
 function closeUpdateWindow(): void {
   if (!updateWindow || updateWindow.isDestroyed()) {
     updateWindow = null;
+    resolvePendingUpdateAction('close');
     return;
   }
   updateWindow.close();
@@ -669,7 +814,9 @@ function closeUpdateWindow(): void {
 
 function pushUpdateWindowState(state: UpdateWindowState): void {
   updateWindowState = state;
+  pendingUpdateActionButtons = updateWindowButtonsForState(state);
   const win = createUpdateWindow();
+  resizeUpdateWindowForState(state);
   if (!win.isDestroyed() && !win.webContents.isLoadingMainFrame()) {
     win.webContents.send(UPDATE_WINDOW_CHANNEL, state);
   }
@@ -805,6 +952,7 @@ async function checkAndDownload(manual: boolean): Promise<void> {
   const localVersion = app.getVersion();
 
   if (compareVersions(remoteVersion, localVersion) <= 0) {
+    clearSkippedVersion();
     if (manual) {
       dialog.showMessageBox({
         type: 'info',
@@ -812,6 +960,10 @@ async function checkAndDownload(manual: boolean): Promise<void> {
         message: 'You are running the latest version.',
       });
     }
+    return;
+  }
+
+  if (!manual && isVersionSkipped(remoteVersion)) {
     return;
   }
 
@@ -829,11 +981,17 @@ async function checkAndDownload(manual: boolean): Promise<void> {
       return;
     }
 
-    const shouldUpdate = await confirmManualUpdateAvailable(release, remoteVersion);
-    if (!shouldUpdate) {
+    const action = await confirmManualUpdateAvailable(release, remoteVersion);
+    if (action === 'skip-version') {
+      skipVersion(remoteVersion);
+      return;
+    }
+    if (action !== 'download') {
       return;
     }
   }
+
+  clearSkippedVersion(remoteVersion);
 
   const staged = getStagedAsarPath();
   const shouldShowProgressWindow = manual;
@@ -947,6 +1105,14 @@ export function registerUpdaterIpcHandlers(): void {
   });
 
   ipcMain.handle('flowdeck:update-close-window', () => {
+    closeUpdateWindow();
+  });
+
+  ipcMain.handle('flowdeck:update-run-action', (_event, rawAction: unknown) => {
+    if (typeof rawAction !== 'string') return;
+    const action = rawAction as UpdateWindowAction;
+    if (!pendingUpdateActionButtons.has(action)) return;
+    resolvePendingUpdateAction(action);
     closeUpdateWindow();
   });
 }

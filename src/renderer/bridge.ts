@@ -40,6 +40,7 @@ function createUnavailableBridge(): FlowDeckBridge {
     cancelUpdateDownload: () => Promise.resolve(),
     restartForUpdate: () => Promise.resolve(),
     closeUpdateWindow: () => Promise.resolve(),
+    runUpdateAction: () => Promise.resolve(),
   };
 }
 
