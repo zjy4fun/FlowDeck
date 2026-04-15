@@ -965,7 +965,7 @@ async function checkAndDownload(manual: boolean): Promise<void> {
     manual,
     skipped: isVersionSkipped(remoteVersion),
     hasHotUpdateAsset: Boolean(asarAsset),
-    assetInfoIncomplete: release.assetInfoIncomplete,
+    assetInfoIncomplete: Boolean(release.assetInfoIncomplete),
   });
 
   if (updatePlan.kind === 'skip') {
