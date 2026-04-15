@@ -32,7 +32,7 @@
         --focus-ring: rgba(0, 113, 227, 0.35);
         --badge-bg: rgba(0, 113, 227, 0.12);
         --badge-text: #0057b8;
-        --notes-bg: rgba(255, 255, 255, 0.58);
+        --notes-divider: rgba(0, 0, 0, 0.08);
       }
 
       @media (prefers-color-scheme: dark) {
@@ -61,7 +61,7 @@
           --focus-ring: rgba(10, 132, 255, 0.5);
           --badge-bg: rgba(10, 132, 255, 0.18);
           --badge-text: #8dc1ff;
-          --notes-bg: rgba(255, 255, 255, 0.06);
+          --notes-divider: rgba(255, 255, 255, 0.08);
         }
       }
 
@@ -216,6 +216,9 @@
         display: grid;
         gap: 8px;
         min-height: 0;
+        margin-top: 2px;
+        padding-top: 12px;
+        border-top: 1px solid var(--notes-divider);
       }
 
       .notes-label {
@@ -230,10 +233,10 @@
         min-height: 220px;
         max-height: 300px;
         overflow: auto;
-        padding: 14px 15px;
-        border-radius: 14px;
-        background: var(--notes-bg);
-        border: 1px solid var(--surface-border);
+        padding: 0;
+        border-radius: 0;
+        background: transparent;
+        border: 0;
         color: var(--text-soft);
         font-family: 'SF Mono', SFMono-Regular, ui-monospace, Menlo, Monaco, Consolas, monospace;
         font-size: 12px;

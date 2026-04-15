@@ -19,6 +19,16 @@ await Promise.all([
     format: 'cjs',
   }),
 
+  // Test support helpers
+  esbuild.build({
+    ...shared,
+    entryPoints: ['src/main/updater-logic.ts'],
+    platform: 'node',
+    target: 'node20',
+    outfile: 'dist/test-support/updater-logic.cjs',
+    format: 'cjs',
+  }),
+
   // Preload script
   esbuild.build({
     ...shared,

@@ -4,6 +4,11 @@ import { app, BrowserWindow, dialog, ipcMain, nativeTheme, net, shell } from 'el
 import * as originalFs from 'original-fs';
 import * as fs from 'fs';
 import * as path from 'path';
+import {
+  resolveAvailableUpdatePlan,
+  shouldCloseWindowForAction,
+  type UpdateWindowAction,
+} from './updater-logic';
 
 const REPO = 'zjy4fun/FlowDeck';
 const ASAR_ASSET_NAME = 'app.asar';
@@ -11,14 +16,6 @@ const UPDATE_WINDOW_CHANNEL = 'flowdeck:update-state';
 const SKIPPED_UPDATE_FILE = 'skipped-update.json';
 const COMPACT_UPDATE_WINDOW_SIZE = { width: 480, height: 188 };
 const RELEASE_NOTES_WINDOW_SIZE = { width: 680, height: 560 };
-
-type UpdateWindowAction =
-  | 'cancel'
-  | 'restart'
-  | 'close'
-  | 'download'
-  | 'open-release'
-  | 'skip-version';
 
 interface UpdateWindowState {
   title: string;
@@ -963,38 +960,45 @@ async function checkAndDownload(manual: boolean): Promise<void> {
     return;
   }
 
-  if (!manual && isVersionSkipped(remoteVersion)) {
-    return;
-  }
-
   const asarAsset = release.assets.find((a) => a.name === ASAR_ASSET_NAME);
-  if (!asarAsset) {
-    if (manual) {
-      await handleManualInstallerOnlyUpdate(release, remoteVersion);
-    }
+  const updatePlan = resolveAvailableUpdatePlan({
+    manual,
+    skipped: isVersionSkipped(remoteVersion),
+    hasHotUpdateAsset: Boolean(asarAsset),
+    assetInfoIncomplete: release.assetInfoIncomplete,
+  });
+
+  if (updatePlan.kind === 'skip') {
     return;
   }
 
-  if (manual) {
+  if (updatePlan.kind === 'prompt-open-release') {
     if (release.assetInfoIncomplete) {
       await handleManualUpdateWithUnknownAssets(release, remoteVersion);
       return;
     }
 
-    const action = await confirmManualUpdateAvailable(release, remoteVersion);
-    if (action === 'skip-version') {
-      skipVersion(remoteVersion);
-      return;
-    }
-    if (action !== 'download') {
-      return;
-    }
+    await handleManualInstallerOnlyUpdate(release, remoteVersion);
+    return;
+  }
+
+  const action = await confirmManualUpdateAvailable(release, remoteVersion);
+  if (action === 'skip-version') {
+    skipVersion(remoteVersion);
+    return;
+  }
+  if (action !== 'download') {
+    return;
+  }
+
+  if (!asarAsset) {
+    return;
   }
 
   clearSkippedVersion(remoteVersion);
 
   const staged = getStagedAsarPath();
-  const shouldShowProgressWindow = manual;
+  const shouldShowProgressWindow = true;
 
   if (shouldShowProgressWindow) {
     pushUpdateWindowState(
@@ -1113,7 +1117,9 @@ export function registerUpdaterIpcHandlers(): void {
     const action = rawAction as UpdateWindowAction;
     if (!pendingUpdateActionButtons.has(action)) return;
     resolvePendingUpdateAction(action);
-    closeUpdateWindow();
+    if (shouldCloseWindowForAction(action)) {
+      closeUpdateWindow();
+    }
   });
 }
 
