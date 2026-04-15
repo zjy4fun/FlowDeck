@@ -25,11 +25,13 @@ import type { RenderFn, UsageProvider, UsageQuotaSnapshot } from './types';
 
 const USAGE_REFRESH_INTERVAL_MS = 10_000;
 const USAGE_EVENT_THROTTLE_MS = 4_000;
+const WINDOW_REACTIVATE_DEBOUNCE_MS = 250;
 let usageQuota: UsageQuotaSnapshot | null = null;
 let isRefreshingUsageQuota = false;
 let usageRefreshQueued = false;
 let usageRefreshTimer: number | null = null;
 let lastUsageRefreshStartedAt = 0;
+let lastWindowReactivateAt = 0;
 
 function createEmptyUsageQuota(provider: UsageProvider): UsageQuotaSnapshot {
   return {
@@ -422,15 +424,20 @@ export async function startApp(): Promise<void> {
   const refreshTimer = window.setInterval(() => {
     requestUsageQuotaRefresh();
   }, USAGE_REFRESH_INTERVAL_MS);
-  const handleWindowFocus = (): void => {
+  const handleWindowReactivated = (): void => {
+    const now = Date.now();
+    if (now - lastWindowReactivateAt < WINDOW_REACTIVATE_DEBOUNCE_MS) return;
+    lastWindowReactivateAt = now;
     requestUsageQuotaRefresh(true);
     focusActivePaneTerminal({ refit: true, forceBlur: true });
+  };
+  const handleWindowFocus = (): void => {
+    handleWindowReactivated();
   };
   window.addEventListener('focus', handleWindowFocus);
   const handleVisibilityChange = (): void => {
     if (document.visibilityState === 'visible') {
-      requestUsageQuotaRefresh(true);
-      focusActivePaneTerminal({ refit: true, forceBlur: true });
+      handleWindowReactivated();
     }
   };
   document.addEventListener('visibilitychange', handleVisibilityChange);

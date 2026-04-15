@@ -55,6 +55,14 @@ interface TimestampedValue<T> {
   timestampMs: number;
 }
 
+interface UsageQuotaCacheEntry {
+  snapshot: UsageQuotaSnapshot;
+  loadedAtMs: number;
+}
+
+const USAGE_QUOTA_CACHE_TTL_MS = 15_000;
+const usageQuotaCache = new Map<UsageProvider, UsageQuotaCacheEntry>();
+
 function ensurePtyHelper(): void {
   if (process.platform !== 'darwin') return;
 
@@ -427,6 +435,12 @@ function emptyUsageQuota(provider: UsageProvider): UsageQuotaSnapshot {
 }
 
 function loadUsageQuotaSnapshot(provider: UsageProvider): UsageQuotaSnapshot {
+  const now = Date.now();
+  const cached = usageQuotaCache.get(provider);
+  if (cached && now - cached.loadedAtMs < USAGE_QUOTA_CACHE_TTL_MS) {
+    return cached.snapshot;
+  }
+
   const rootDirectory =
     provider === 'claude-code'
       ? path.join(app.getPath('home'), '.claude', 'projects')
@@ -443,9 +457,16 @@ function loadUsageQuotaSnapshot(provider: UsageProvider): UsageQuotaSnapshot {
     provider === 'codex' && usageRecord
       ? findLatestCodexSessionTotalTokens(rootDirectory)
       : null;
-  if (!usageRecord && !tokenUsage) return emptyUsageQuota(provider);
+  if (!usageRecord && !tokenUsage) {
+    const empty = emptyUsageQuota(provider);
+    usageQuotaCache.set(provider, {
+      snapshot: empty,
+      loadedAtMs: now,
+    });
+    return empty;
+  }
 
-  return {
+  const snapshot = {
     provider,
     sessionUsedPercent: usageRecord?.session.usedPercent ?? null,
     sessionResetsAt: usageRecord?.session.resetsAt ?? null,
@@ -459,6 +480,12 @@ function loadUsageQuotaSnapshot(provider: UsageProvider): UsageQuotaSnapshot {
         : tokenUsage?.totalTokens ?? null,
     queriedAt: new Date().toISOString(),
   };
+
+  usageQuotaCache.set(provider, {
+    snapshot,
+    loadedAtMs: now,
+  });
+  return snapshot;
 }
 
 function registerUsageQuotaHandlers(): void {
