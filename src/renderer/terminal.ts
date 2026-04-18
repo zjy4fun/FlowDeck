@@ -222,11 +222,13 @@ export function refocusTerminal(
   options: { refit?: boolean; forceBlur?: boolean } = {},
 ): void {
   const { refit = false, forceBlur = false } = options;
+  let needsRefit = refit;
 
   const applyFocus = (): void => {
     if (!node.root.isConnected) return;
-    if (refit) {
+    if (needsRefit) {
       fitTerminal(node, true);
+      needsRefit = false;
     }
 
     const textarea = node.terminal.textarea;

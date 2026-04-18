@@ -28,6 +28,22 @@ await Promise.all([
     outfile: 'dist/test-support/updater-logic.cjs',
     format: 'cjs',
   }),
+  esbuild.build({
+    ...shared,
+    entryPoints: ['src/main/terminal-data-batcher.ts'],
+    platform: 'node',
+    target: 'node20',
+    outfile: 'dist/test-support/terminal-data-batcher.cjs',
+    format: 'cjs',
+  }),
+  esbuild.build({
+    ...shared,
+    entryPoints: ['src/renderer/reactivation-controller.ts'],
+    platform: 'node',
+    target: 'node20',
+    outfile: 'dist/test-support/reactivation-controller.cjs',
+    format: 'cjs',
+  }),
 
   // Preload script
   esbuild.build({

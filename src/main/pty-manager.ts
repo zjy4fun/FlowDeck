@@ -1,8 +1,9 @@
-import { ipcMain, type WebContents } from 'electron';
+import { ipcMain, webContents, type WebContents } from 'electron';
 import * as fs from 'fs';
 import { homedir } from 'os';
 import * as path from 'path';
 import * as pty from 'node-pty';
+import { createTerminalDataBatcher } from './terminal-data-batcher';
 
 interface TerminalSession {
   pty: pty.IPty;
@@ -11,6 +12,17 @@ interface TerminalSession {
 
 const sessions = new Map<string, TerminalSession>();
 const warnedWebContentsIds = new Set<number>();
+const terminalDataBatcher = createTerminalDataBatcher({
+  send: (paneId, data) => {
+    const session = sessions.get(paneId);
+    if (!session) return;
+    const targetWebContents = session.webContentsId
+      ? webContents.fromId(session.webContentsId)
+      : null;
+    if (!targetWebContents || targetWebContents.isDestroyed()) return;
+    targetWebContents.send('flowdeck:terminal-data', { paneId, data });
+  },
+});
 
 function buildSpawnEnv(extraEnv: Record<string, string>): Record<string, string> {
   const env: Record<string, string> = {};
@@ -107,6 +119,7 @@ function getShellConfig(): { shell: string; args: string[]; env: Record<string, 
 function destroySession(paneId: string): void {
   const session = sessions.get(paneId);
   if (!session) return;
+  terminalDataBatcher.deletePane(paneId);
   try {
     session.pty.kill();
   } catch {
@@ -138,12 +151,11 @@ export function registerPtyHandlers(): void {
     });
 
     terminal.onData((data) => {
-      if (!webContents.isDestroyed()) {
-        webContents.send('flowdeck:terminal-data', { paneId, data });
-      }
+      terminalDataBatcher.queue(paneId, data);
     });
 
     terminal.onExit(({ exitCode }) => {
+      terminalDataBatcher.flushPane(paneId);
       sessions.delete(paneId);
       if (!webContents.isDestroyed()) {
         webContents.send('flowdeck:terminal-exit', { paneId, exitCode });

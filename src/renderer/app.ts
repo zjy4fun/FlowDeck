@@ -11,6 +11,7 @@ import { bridge } from './bridge';
 import { renderTabs, initTabs, clearPendingTabFocus, endTabDrag } from './tabs';
 import { renderPanes, initPanes } from './panes';
 import { refocusTerminal } from './terminal';
+import { createReactivationController } from './reactivation-controller';
 import {
   applySettingsToDom,
   loadPersistedSettings,
@@ -26,12 +27,12 @@ import type { RenderFn, UsageProvider, UsageQuotaSnapshot } from './types';
 const USAGE_REFRESH_INTERVAL_MS = 10_000;
 const USAGE_EVENT_THROTTLE_MS = 4_000;
 const WINDOW_REACTIVATE_DEBOUNCE_MS = 250;
+const WINDOW_REACTIVATE_USAGE_REFRESH_DELAY_MS = 300;
 let usageQuota: UsageQuotaSnapshot | null = null;
 let isRefreshingUsageQuota = false;
 let usageRefreshQueued = false;
 let usageRefreshTimer: number | null = null;
 let lastUsageRefreshStartedAt = 0;
-let lastWindowReactivateAt = 0;
 
 function createEmptyUsageQuota(provider: UsageProvider): UsageQuotaSnapshot {
   return {
@@ -424,26 +425,30 @@ export async function startApp(): Promise<void> {
   const refreshTimer = window.setInterval(() => {
     requestUsageQuotaRefresh();
   }, USAGE_REFRESH_INTERVAL_MS);
-  const handleWindowReactivated = (): void => {
-    const now = Date.now();
-    if (now - lastWindowReactivateAt < WINDOW_REACTIVATE_DEBOUNCE_MS) return;
-    lastWindowReactivateAt = now;
-    requestUsageQuotaRefresh(true);
-    focusActivePaneTerminal({ refit: true, forceBlur: true });
-  };
+  const reactivationController = createReactivationController({
+    debounceMs: WINDOW_REACTIVATE_DEBOUNCE_MS,
+    usageRefreshDelayMs: WINDOW_REACTIVATE_USAGE_REFRESH_DELAY_MS,
+    onRefocusTerminal: () => {
+      focusActivePaneTerminal({ refit: true, forceBlur: true });
+    },
+    onRefreshUsage: () => {
+      requestUsageQuotaRefresh(true);
+    },
+  });
   const handleWindowFocus = (): void => {
-    handleWindowReactivated();
+    reactivationController.handleWindowReactivated();
   };
   window.addEventListener('focus', handleWindowFocus);
   const handleVisibilityChange = (): void => {
     if (document.visibilityState === 'visible') {
-      handleWindowReactivated();
+      reactivationController.handleWindowReactivated();
     }
   };
   document.addEventListener('visibilitychange', handleVisibilityChange);
   window.addEventListener('beforeunload', () => {
     window.clearInterval(refreshTimer);
     clearUsageRefreshTimer();
+    reactivationController.dispose();
     window.removeEventListener('focus', handleWindowFocus);
     document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, { once: true });

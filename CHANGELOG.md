@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.4.19
+
+- Reduce terminal lag during heavy output by batching PTY data before forwarding it from the Electron main process to the renderer
+- Make window reactivation feel smoother by refocusing the active terminal immediately while deferring usage refresh work
+- Avoid duplicate terminal refits during background-resume focus recovery and add regression tests for the new batching/reactivation helpers
+
 ## v0.4.11
 
 - Store pane width as a responsive ratio so session layouts scale more consistently across different window sizes
