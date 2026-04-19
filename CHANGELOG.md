@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.4.20
+
+- Polish the update-check and update-download dialog styling for a cleaner, flatter layout
+- Remove the unnecessary middle boxed panel so the content feels more native and lightweight
+- Refine dialog spacing, background treatment, and action button styling for better visual hierarchy
+
 ## v0.4.19
 
 - Reduce terminal lag during heavy output by batching PTY data before forwarding it from the Electron main process to the renderer

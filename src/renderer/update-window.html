@@ -7,58 +7,54 @@
     <style>
       :root {
         color-scheme: light dark;
-        --bg: #ececec;
-        --surface: rgba(255, 255, 255, 0.76);
-        --surface-strong: rgba(255, 255, 255, 0.92);
-        --surface-border: rgba(0, 0, 0, 0.08);
-        --text: #1d1d1f;
-        --text-soft: #3a3a3c;
+        --bg: #eef1f5;
+        --bg-accent: rgba(0, 113, 227, 0.12);
+        --surface-border: rgba(15, 23, 42, 0.08);
+        --text: #17171a;
+        --text-soft: #424245;
         --muted: #6e6e73;
-        --track: rgba(0, 0, 0, 0.1);
+        --track: rgba(15, 23, 42, 0.12);
         --fill-a: #0071e3;
-        --fill-b: #3395ff;
-        --btn-bg: rgba(255, 255, 255, 0.78);
-        --btn-bg-hover: #ffffff;
-        --btn-border: rgba(0, 0, 0, 0.14);
-        --btn-border-hover: rgba(0, 0, 0, 0.22);
-        --btn-shadow: 0 1px 0 rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.08);
-        --btn-text: #1d1d1f;
+        --fill-b: #45a1ff;
+        --btn-bg: rgba(255, 255, 255, 0.8);
+        --btn-bg-hover: rgba(255, 255, 255, 0.96);
+        --btn-border: rgba(15, 23, 42, 0.12);
+        --btn-border-hover: rgba(15, 23, 42, 0.2);
+        --btn-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+        --btn-text: #17171a;
         --primary-bg: #0071e3;
         --primary-bg-hover: #1488ff;
         --primary-text: #ffffff;
-        --primary-shadow: 0 1px 2px rgba(0, 70, 180, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.2);
-        --icon-shadow: 0 2px 6px rgba(0, 0, 0, 0.18), 0 0 0 0.5px rgba(0, 0, 0, 0.08);
-        --panel-shadow: 0 18px 40px rgba(0, 0, 0, 0.08);
-        --focus-ring: rgba(0, 113, 227, 0.35);
+        --primary-shadow: 0 10px 24px rgba(0, 70, 180, 0.26);
+        --icon-shadow: 0 14px 28px rgba(15, 23, 42, 0.14), 0 0 0 0.5px rgba(15, 23, 42, 0.08);
+        --focus-ring: rgba(0, 113, 227, 0.24);
         --badge-bg: rgba(0, 113, 227, 0.12);
         --badge-text: #0057b8;
-        --notes-divider: rgba(0, 0, 0, 0.08);
+        --notes-divider: rgba(15, 23, 42, 0.08);
       }
 
       @media (prefers-color-scheme: dark) {
         :root {
-          --bg: #1e1e1e;
-          --surface: rgba(255, 255, 255, 0.08);
-          --surface-strong: rgba(255, 255, 255, 0.12);
+          --bg: #131417;
+          --bg-accent: rgba(90, 200, 250, 0.14);
           --surface-border: rgba(255, 255, 255, 0.08);
           --text: #f5f5f7;
-          --text-soft: #d1d1d6;
-          --muted: #8e8e93;
-          --track: rgba(255, 255, 255, 0.14);
+          --text-soft: #d7d7dc;
+          --muted: #97979f;
+          --track: rgba(255, 255, 255, 0.16);
           --fill-a: #0a84ff;
           --fill-b: #5ac8fa;
           --btn-bg: rgba(255, 255, 255, 0.1);
           --btn-bg-hover: rgba(255, 255, 255, 0.16);
           --btn-border: rgba(255, 255, 255, 0.14);
           --btn-border-hover: rgba(255, 255, 255, 0.22);
-          --btn-shadow: 0 1px 0 rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+          --btn-shadow: 0 12px 28px rgba(0, 0, 0, 0.34);
           --btn-text: #f5f5f7;
           --primary-bg: #0a84ff;
           --primary-bg-hover: #2494ff;
-          --primary-shadow: 0 1px 2px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.22);
-          --icon-shadow: 0 2px 8px rgba(0, 0, 0, 0.5), 0 0 0 0.5px rgba(255, 255, 255, 0.08);
-          --panel-shadow: 0 18px 48px rgba(0, 0, 0, 0.42);
-          --focus-ring: rgba(10, 132, 255, 0.5);
+          --primary-shadow: 0 12px 26px rgba(0, 0, 0, 0.34);
+          --icon-shadow: 0 16px 36px rgba(0, 0, 0, 0.42), 0 0 0 0.5px rgba(255, 255, 255, 0.1);
+          --focus-ring: rgba(10, 132, 255, 0.38);
           --badge-bg: rgba(10, 132, 255, 0.18);
           --badge-text: #8dc1ff;
           --notes-divider: rgba(255, 255, 255, 0.08);
@@ -75,7 +71,9 @@
       body {
         width: 100%;
         height: 100%;
-        background: var(--bg);
+        background:
+          radial-gradient(circle at top left, var(--bg-accent), transparent 34%),
+          linear-gradient(180deg, color-mix(in srgb, var(--bg) 94%, white 6%), var(--bg));
         color: var(--text);
         font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
         font-size: 13px;
@@ -85,7 +83,7 @@
 
       body {
         min-height: 100%;
-        padding: 24px;
+        padding: 22px 24px 18px;
         -webkit-app-region: drag;
         user-select: none;
       }
@@ -97,25 +95,21 @@
 
       .panel {
         display: grid;
-        grid-template-rows: auto auto;
+        grid-template-rows: minmax(0, 1fr) auto;
         gap: 18px;
         min-height: 100%;
       }
 
       .card {
         display: grid;
-        grid-template-columns: 60px minmax(0, 1fr);
+        grid-template-columns: 56px minmax(0, 1fr);
+        align-items: start;
         gap: 16px;
-        padding: 18px;
-        border-radius: 18px;
-        background: linear-gradient(180deg, var(--surface-strong), var(--surface));
-        border: 1px solid var(--surface-border);
-        box-shadow: var(--panel-shadow);
       }
 
       .icon {
-        width: 60px;
-        height: 60px;
+        width: 56px;
+        height: 56px;
         border-radius: 14px;
         overflow: hidden;
         box-shadow: var(--icon-shadow);
@@ -131,7 +125,7 @@
       .content {
         display: flex;
         flex-direction: column;
-        gap: 10px;
+        gap: 12px;
         min-width: 0;
       }
 
@@ -140,6 +134,7 @@
         align-items: center;
         gap: 10px;
         flex-wrap: wrap;
+        min-height: 24px;
       }
 
       .badge {
@@ -214,10 +209,10 @@
 
       .notes-shell {
         display: grid;
-        gap: 8px;
+        gap: 10px;
         min-height: 0;
-        margin-top: 2px;
-        padding-top: 12px;
+        margin-top: 4px;
+        padding-top: 14px;
         border-top: 1px solid var(--notes-divider);
       }
 
@@ -233,7 +228,7 @@
         min-height: 220px;
         max-height: 300px;
         overflow: auto;
-        padding: 0;
+        padding-right: 6px;
         border-radius: 0;
         background: transparent;
         border: 0;
@@ -251,18 +246,21 @@
       .actions {
         display: flex;
         justify-content: flex-end;
+        align-items: center;
         gap: 8px;
         flex-wrap: wrap;
+        padding-top: 14px;
+        border-top: 1px solid var(--notes-divider);
         -webkit-app-region: no-drag;
       }
 
       .button {
         appearance: none;
         min-width: 88px;
-        height: 30px;
+        height: 32px;
         padding: 0 14px;
         border: 1px solid var(--btn-border);
-        border-radius: 8px;
+        border-radius: 10px;
         background: var(--btn-bg);
         color: var(--btn-text);
         font-family: inherit;
@@ -274,7 +272,8 @@
         transition:
           background 120ms ease,
           border-color 120ms ease,
-          transform 80ms ease;
+          transform 80ms ease,
+          box-shadow 120ms ease;
       }
 
       .button:hover {
