@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.4.21
+
+- Show immediate visual feedback when the user clicks Check for Updates so the app no longer feels idle during the network check
+- Reuse the update window for a lightweight "Checking for updates..." state before switching to the final update result
+- Close the temporary checking state cleanly before showing "No Updates" or update-check error dialogs
+
 ## v0.4.20
 
 - Polish the update-check and update-download dialog styling for a cleaner, flatter layout

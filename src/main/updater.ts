@@ -24,8 +24,8 @@ interface UpdateWindowState {
   totalBytes: number;
   progress: number;
   showProgress: boolean;
-  primaryAction: UpdateWindowAction;
-  primaryLabel: string;
+  primaryAction?: UpdateWindowAction;
+  primaryLabel?: string;
   secondaryAction?: UpdateWindowAction;
   secondaryLabel?: string;
   tertiaryAction?: UpdateWindowAction;
@@ -725,7 +725,7 @@ function getUpdateWindowSize(state: UpdateWindowState | null): {
 function updateWindowButtonsForState(state: UpdateWindowState | null): Set<UpdateWindowAction> {
   const next = new Set<UpdateWindowAction>();
   if (!state) return next;
-  next.add(state.primaryAction);
+  if (state.primaryAction) next.add(state.primaryAction);
   if (state.secondaryAction) next.add(state.secondaryAction);
   if (state.tertiaryAction) next.add(state.tertiaryAction);
   return next;
@@ -817,6 +817,18 @@ function pushUpdateWindowState(state: UpdateWindowState): void {
   if (!win.isDestroyed() && !win.webContents.isLoadingMainFrame()) {
     win.webContents.send(UPDATE_WINDOW_CHANNEL, state);
   }
+}
+
+function createCheckingForUpdatesState(): UpdateWindowState {
+  return {
+    title: 'Checking for updates...',
+    detail: 'Looking for the latest FlowDeck release now.',
+    downloadedBytes: 0,
+    totalBytes: 1,
+    progress: 0,
+    showProgress: false,
+    badge: 'Checking',
+  };
 }
 
 function createDownloadingState(
@@ -951,6 +963,7 @@ async function checkAndDownload(manual: boolean): Promise<void> {
   if (compareVersions(remoteVersion, localVersion) <= 0) {
     clearSkippedVersion();
     if (manual) {
+      closeUpdateWindow();
       dialog.showMessageBox({
         type: 'info',
         title: 'No Updates',
@@ -1135,7 +1148,10 @@ export function initAutoUpdater(): void {
 }
 
 export function checkForUpdatesManual(): void {
+  pushUpdateWindowState(createCheckingForUpdatesState());
+
   checkAndDownload(true).catch((err) => {
+    closeUpdateWindow();
     dialog.showMessageBox({
       type: 'error',
       title: 'Update Error',
