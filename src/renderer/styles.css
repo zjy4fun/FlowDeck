@@ -604,8 +604,7 @@ body {
 .status-bar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  gap: 8px;
   padding: 0 8px;
   border-top: 1px solid var(--status-border);
   color: var(--status-text);
@@ -623,17 +622,6 @@ body {
 #status-label.is-navigation-mode {
   color: var(--status-nav);
   font-weight: 700;
-}
-
-.status-hint {
-  min-width: 0;
-  flex: 0 1 62%;
-  max-width: 62%;
-  text-align: right;
-  color: var(--status-hint);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 /* ── Drag state ── */

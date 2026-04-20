@@ -448,18 +448,6 @@
             </div>
           </div>
 
-          <div class="row">
-            <div>
-              <div class="row-label">Usage source</div>
-              <div class="row-hint">Which AI provider's usage to display.</div>
-            </div>
-            <div class="row-control">
-              <select id="usage-provider-input">
-                <option value="codex">Codex</option>
-                <option value="claude-code">Claude Code</option>
-              </select>
-            </div>
-          </div>
         </div>
       </section>
 
@@ -500,7 +488,6 @@
         fontSizeInput: document.getElementById('font-size-input'),
         defaultDirectoryInput: document.getElementById('default-directory-input'),
         maxSessionsInput: document.getElementById('max-sessions-input'),
-        usageProviderInput: document.getElementById('usage-provider-input'),
         paneWidthRange: document.getElementById('pane-width-range'),
         paneWidthInput: document.getElementById('pane-width-input'),
         paneWidthValue: document.getElementById('pane-width-value'),
@@ -543,7 +530,6 @@
         els.fontSizeInput.value = String(settings.fontSize);
         els.defaultDirectoryInput.value = settings.defaultOpenDirectory;
         els.maxSessionsInput.value = String(settings.maxSessions);
-        els.usageProviderInput.value = settings.usageProvider || 'codex';
         const paneWidthPercent = Math.round(settings.paneWidthRatio * 100);
         els.paneWidthRange.value = String(paneWidthPercent);
         els.paneWidthInput.value = String(paneWidthPercent);
@@ -602,13 +588,6 @@
         persist();
       });
 
-      els.usageProviderInput.addEventListener('change', () => {
-        settings.usageProvider =
-          els.usageProviderInput.value === 'claude-code' ? 'claude-code' : 'codex';
-        applyToInputs();
-        persist();
-      });
-
       function handlePaneWidth(val) {
         const v = Number(val);
         if (!Number.isFinite(v)) {
@@ -642,7 +621,6 @@
           paneWidthRatio: 0.45,
           defaultOpenDirectory: bridge.defaultCwd,
           maxSessions: 8,
-          usageProvider: 'codex',
           themeMode: 'system',
         };
         if (!settings.themeMode) settings.themeMode = 'system';

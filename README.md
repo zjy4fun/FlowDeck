@@ -36,8 +36,8 @@ Brand assets live in [`assets/brand/`](./assets/brand/). The icon features three
 - Inline tab renaming with terminal title fallback
 - Keyboard navigation mode with `Ctrl+B`
 - Better default visual separation for the first three sessions (blue, green, orange accents)
-- Renderer settings for font size, pane width, pane opacity, and usage source (`Codex` / `Claude Code`)
-- Live usage quota status in the footer with remaining budget, reset countdown, and periodic refresh
+- Renderer settings for font size, pane width, pane opacity, and theme
+- Minimal status bar that stays focused on the active working directory
 - Built-in update window with download progress, cancel, and restart actions
 - Capture mode that writes a static snapshot to `/tmp/flowdeck-prototype.png`
 - macOS/Windows packaging via `electron-builder`

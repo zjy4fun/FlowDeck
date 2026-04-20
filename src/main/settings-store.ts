@@ -8,7 +8,6 @@ export interface PersistedSettings {
   paneWidthRatio: number;
   defaultOpenDirectory: string;
   maxSessions: number;
-  usageProvider: 'codex' | 'claude-code';
   themeMode: 'system' | 'light' | 'dark';
 }
 
@@ -20,7 +19,6 @@ const DEFAULTS: PersistedSettings = {
   paneWidthRatio: 0.45,
   defaultOpenDirectory: app.getPath('home'),
   maxSessions: 8,
-  usageProvider: 'codex',
   themeMode: 'system',
 };
 
@@ -92,8 +90,6 @@ function sanitizePersistedSettings(parsed: unknown): PersistedSettings {
       LIMITS.maxSessions.max,
       (v) => Math.round(v),
     ),
-    usageProvider:
-      source.usageProvider === 'claude-code' ? 'claude-code' : 'codex',
     themeMode:
       source.themeMode === 'light' || source.themeMode === 'dark'
         ? source.themeMode

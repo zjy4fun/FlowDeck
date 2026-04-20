@@ -96,25 +96,11 @@ export interface AppSettings {
   paneWidthRatio: number;
   defaultOpenDirectory: string;
   maxSessions: number;
-  usageProvider: UsageProvider;
   themeMode: ThemeMode;
 }
 
-export type UsageProvider = 'codex' | 'claude-code';
 export type ThemeMode = 'system' | 'light' | 'dark';
 export type ResolvedTheme = 'light' | 'dark';
-
-export interface UsageQuotaSnapshot {
-  provider: UsageProvider;
-  sessionUsedPercent: number | null;
-  sessionResetsAt: number | null;
-  weeklyUsedPercent: number | null;
-  weeklyResetsAt: number | null;
-  sessionInputTokens: number | null;
-  sessionOutputTokens: number | null;
-  sessionTotalTokens: number | null;
-  queriedAt: string | null;
-}
 
 export type UpdateWindowAction =
   | 'cancel'
@@ -148,7 +134,6 @@ export interface FlowDeckBridge {
   platform: string;
   defaultCwd: string;
   defaultTabTitle: string;
-  loadUsageQuota: (provider: UsageProvider) => Promise<UsageQuotaSnapshot>;
 
   createTerminal: (payload: {
     paneId: string;
