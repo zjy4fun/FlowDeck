@@ -30,7 +30,6 @@ const DEFAULT_SETTINGS: AppSettings = {
   paneWidthRatio: 0.45,
   defaultOpenDirectory: bridge.defaultCwd,
   maxSessions: 8,
-  usageProvider: 'codex',
   themeMode: 'system',
 };
 
@@ -82,7 +81,6 @@ export let dom = {
   stage: null! as HTMLElement,
   tabsList: null! as HTMLElement,
   statusLabel: null! as HTMLElement,
-  statusHint: null! as HTMLElement,
   addPaneButton: null! as HTMLButtonElement,
   settingsButton: null! as HTMLButtonElement,
   settingsPanel: null! as HTMLElement,
@@ -95,7 +93,6 @@ export let dom = {
   paneOpacityRange: null! as HTMLInputElement,
   paneOpacityInput: null! as HTMLInputElement,
   paneOpacityValue: null! as HTMLElement,
-  usageProviderSelect: null! as HTMLSelectElement,
   themeModeSelect: null! as HTMLSelectElement,
 };
 
@@ -104,7 +101,6 @@ export function initDom(): void {
     stage: document.getElementById('stage')!,
     tabsList: document.getElementById('tabs-list')!,
     statusLabel: document.getElementById('status-label')!,
-    statusHint: document.getElementById('status-hint')!,
     addPaneButton: document.getElementById('tabs-add') as HTMLButtonElement,
     settingsButton: document.getElementById('tabs-settings') as HTMLButtonElement,
     settingsPanel: document.getElementById('settings-panel')!,
@@ -117,7 +113,6 @@ export function initDom(): void {
     paneOpacityRange: document.getElementById('pane-opacity-range') as HTMLInputElement,
     paneOpacityInput: document.getElementById('pane-opacity-input') as HTMLInputElement,
     paneOpacityValue: document.getElementById('pane-opacity-value')!,
-    usageProviderSelect: document.getElementById('usage-provider-input') as HTMLSelectElement,
     themeModeSelect: document.getElementById('theme-mode-input') as HTMLSelectElement,
   };
 }

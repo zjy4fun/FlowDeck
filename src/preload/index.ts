@@ -1,6 +1,5 @@
 import { contextBridge, ipcRenderer, webUtils, type IpcRendererEvent } from 'electron';
 import { homedir } from 'os';
-import type { UsageProvider } from '../renderer/types';
 
 const cwd = homedir();
 const defaultTabTitle = '~';
@@ -9,8 +8,6 @@ contextBridge.exposeInMainWorld('flowdeck', {
   platform: process.platform,
   defaultCwd: cwd,
   defaultTabTitle,
-  loadUsageQuota: (provider: UsageProvider) =>
-    ipcRenderer.invoke('flowdeck:usage-quota-load', provider),
 
   createTerminal: (payload: unknown) =>
     ipcRenderer.invoke('flowdeck:terminal-create', payload),

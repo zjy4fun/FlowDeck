@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.4.22
+
+- Remove the Codex and Claude Code usage footer entirely so the workspace status bar stays focused on the active directory
+- Delete the usage-source setting and the main/preload usage-quota IPC plumbing to reduce renderer and main-process complexity
+- Simplify window-reactivation behavior so resuming the app only refocuses the active terminal instead of also refreshing provider usage state
+
 ## v0.4.21
 
 - Show immediate visual feedback when the user clicks Check for Updates so the app no longer feels idle during the network check

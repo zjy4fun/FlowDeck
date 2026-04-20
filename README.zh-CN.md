@@ -36,8 +36,8 @@ FlowDeck 当前面向 macOS 和 Windows。
 - 支持标签重命名，并可回退显示终端标题
 - 提供 `Ctrl+B` 键盘导航模式
 - 初始三个 Session 使用更易区分的默认配色（蓝 / 绿 / 橙）
-- 可调节字体大小、窗格宽度、窗格透明度，以及 Usage source（`Codex` / `Claude Code`）
-- 状态栏支持实时配额提示：剩余额度、重置倒计时与周期刷新
+- 可调节字体大小、窗格宽度、窗格透明度，以及主题模式
+- 极简状态栏，专注显示当前活动窗格的工作目录
 - 内置更新窗口，支持下载进度、取消更新与重启安装
 - 支持截图模式，输出静态快照到 `/tmp/flowdeck-prototype.png`
 - 通过 `electron-builder` 进行 macOS / Windows 打包
