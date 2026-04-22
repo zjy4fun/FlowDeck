@@ -44,6 +44,14 @@ await Promise.all([
     outfile: 'dist/test-support/reactivation-controller.cjs',
     format: 'cjs',
   }),
+  esbuild.build({
+    ...shared,
+    entryPoints: ['src/main/window-lifecycle.ts'],
+    platform: 'node',
+    target: 'node20',
+    outfile: 'dist/test-support/window-lifecycle.cjs',
+    format: 'cjs',
+  }),
 
   // Preload script
   esbuild.build({
