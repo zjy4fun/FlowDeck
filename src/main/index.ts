@@ -10,6 +10,7 @@ import {
 import * as fs from 'fs';
 import * as path from 'path';
 import { registerPtyHandlers, destroyAllSessions } from './pty-manager';
+import { handleWindowAllClosed } from './window-lifecycle';
 import { loadSettings, saveSettings } from './settings-store';
 import {
   applyPendingUpdate,
@@ -354,7 +355,9 @@ ipcMain.handle('flowdeck:confirm-quit', (event) => {
 });
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
+  handleWindowAllClosed({
+    platform: process.platform,
+    destroyAllSessions,
+    quit: () => app.quit(),
+  });
 });

@@ -46,10 +46,10 @@ await Promise.all([
   }),
   esbuild.build({
     ...shared,
-    entryPoints: ['src/renderer/focus-recovery.ts'],
+    entryPoints: ['src/main/window-lifecycle.ts'],
     platform: 'node',
     target: 'node20',
-    outfile: 'dist/test-support/focus-recovery.cjs',
+    outfile: 'dist/test-support/window-lifecycle.cjs',
     format: 'cjs',
   }),
 

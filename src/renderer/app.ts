@@ -10,7 +10,6 @@ import {
 import { renderTabs, initTabs, clearPendingTabFocus, endTabDrag } from './tabs';
 import { renderPanes, initPanes } from './panes';
 import { refocusTerminal } from './terminal';
-import { resolveTerminalFocusRecovery } from './focus-recovery';
 import { createReactivationController } from './reactivation-controller';
 import {
   applySettingsToDom,
@@ -114,15 +113,7 @@ function focusActivePaneTerminal(
 
   const node = paneNodeMap.get(state.focusedPaneId);
   if (!node) return;
-  const strategy = resolveTerminalFocusRecovery({
-    previousFocusedPaneId: state.focusedPaneId,
-    nextPaneId: state.focusedPaneId,
-    activeElementClassName: activeElement?.className ?? null,
-    targetTextareaIsActive: activeElement === node.terminal.textarea,
-    forceBlur,
-    refit,
-  });
-  refocusTerminal(node, strategy);
+  refocusTerminal(node, { refit, forceBlur });
 }
 
 /* ── Bootstrap ── */

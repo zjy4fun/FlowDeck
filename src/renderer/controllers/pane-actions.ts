@@ -6,7 +6,6 @@ import {
   ACCENT_PALETTE,
 } from '../state';
 import { refocusTerminal } from '../terminal';
-import { resolveTerminalFocusRecovery } from '../focus-recovery';
 import type { PaneActionsDeps } from '../types';
 import { clearPaneWorkingIndicator, clearPaneAttentionIndicator } from '../tabs';
 
@@ -62,8 +61,7 @@ export function createPaneActionsController(
   }
 
   function focusPane(paneId: string, focusTerminal = true): void {
-    const previousFocusedPaneId = state.focusedPaneId;
-    if (previousFocusedPaneId !== paneId) {
+    if (state.focusedPaneId !== paneId) {
       state.transientPaneWidth = null;
       state.paneResizeState = null;
       clearResizeUiState();
@@ -76,14 +74,7 @@ export function createPaneActionsController(
     if (focusTerminal) {
       const node = paneNodeMap.get(paneId);
       if (node) {
-        const activeElement = document.activeElement as HTMLElement | null;
-        const strategy = resolveTerminalFocusRecovery({
-          previousFocusedPaneId,
-          nextPaneId: paneId,
-          activeElementClassName: activeElement?.className ?? null,
-          targetTextareaIsActive: activeElement === node.terminal.textarea,
-        });
-        refocusTerminal(node, strategy);
+        refocusTerminal(node);
       }
     }
   }
