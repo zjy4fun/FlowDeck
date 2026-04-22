@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.4.23
+
+- Fix macOS reopen behavior after closing the last window by destroying lingering PTY sessions before the next Dock relaunch
+- Restore prompt/path output for all panes when FlowDeck is reopened, instead of leaving some sessions with only a cursor
+- Add a window-lifecycle regression test so the last-window-close cleanup stays protected
+
 ## v0.4.22
 
 - Remove the Codex and Claude Code usage footer entirely so the workspace status bar stays focused on the active directory
