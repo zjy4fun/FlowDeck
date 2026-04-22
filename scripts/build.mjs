@@ -44,6 +44,14 @@ await Promise.all([
     outfile: 'dist/test-support/reactivation-controller.cjs',
     format: 'cjs',
   }),
+  esbuild.build({
+    ...shared,
+    entryPoints: ['src/renderer/focus-recovery.ts'],
+    platform: 'node',
+    target: 'node20',
+    outfile: 'dist/test-support/focus-recovery.cjs',
+    format: 'cjs',
+  }),
 
   // Preload script
   esbuild.build({
