@@ -16,14 +16,24 @@ Focus-first desktop terminal workspace for agentic coding, built with Electron, 
 
 FlowDeck is a desktop terminal workspace designed for focused, pane-based coding sessions. It combines a compact Electron shell with PTY-backed terminals so the UI stays lightweight while still running real shell sessions.
 
+## Download
+
+Download the latest release from [GitHub Releases](https://github.com/zjy4fun/FlowDeck/releases/latest).
+
+| Platform | Artifact | Notes |
+| --- | --- | --- |
+| macOS Apple Silicon | `.dmg`, `.zip` | Use the DMG for installation. See the macOS install notes below if Gatekeeper blocks the app. |
+| Windows x64 | `.exe` | Standard installer. |
+| Linux x64 | `.deb`, `.AppImage`, `.tar.gz` | Use `.deb` for Ubuntu/Debian, AppImage for portable use, or `.tar.gz` as a generic fallback. |
+
 ## Platform Support
 
-FlowDeck currently targets macOS and Windows.
+FlowDeck currently targets macOS, Windows, and Linux x64.
 
 - Local development and runtime validation are primarily done on macOS.
-- CI build and type-check validation run on macOS and Windows runners.
-- Release artifacts include macOS `.dmg` and `.zip`, plus Windows `.exe`.
-- Linux is not supported at this time.
+- CI build and type-check validation run on macOS, Windows, and Ubuntu runners.
+- Release artifacts include macOS `.dmg` and `.zip`, Windows `.exe`, and Linux `.deb`, `.AppImage`, and `.tar.gz`.
+- Linux packages are built on GitHub Actions `ubuntu-latest` for x64/amd64 systems.
 
 ## Brand
 
@@ -105,8 +115,13 @@ pnpm pack
 pnpm dist
 ```
 
-The current release workflow packages macOS and Windows artifacts.
-Linux artifacts are not produced.
+The current release workflow packages macOS, Windows, and Linux artifacts.
+
+Linux packages can also be built explicitly with:
+
+```bash
+pnpm exec electron-builder --linux AppImage deb tar.gz --x64 --publish never
+```
 
 ## Versioning and Releases
 
@@ -130,8 +145,8 @@ This does the following:
 
 After the tag reaches GitHub, the release workflow automatically:
 
-- builds macOS and Windows packages
-- uploads `.dmg`, `.zip`, `.exe`, `.yml`, and `app.asar` artifacts
+- builds macOS, Windows, and Linux packages
+- uploads `.dmg`, `.zip`, `.exe`, `.AppImage`, `.deb`, `.tar.gz`, `.yml`, and `app.asar` artifacts
 - creates a GitHub Release with the description from `CHANGELOG.md`
 
 ### Bump version only (dry run)

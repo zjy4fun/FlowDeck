@@ -16,14 +16,24 @@
 
 FlowDeck 是一个以专注、多窗格协作为核心的桌面终端工作区。它使用轻量的 Electron 外壳承载真实 PTY 终端会话，在保持界面紧凑的同时，提供可实际使用的 shell 体验。
 
+## 下载
+
+最新版本可在 [GitHub Releases](https://github.com/zjy4fun/FlowDeck/releases/latest) 下载。
+
+| 平台 | 产物 | 说明 |
+| --- | --- | --- |
+| macOS Apple Silicon | `.dmg`、`.zip` | 推荐使用 DMG 安装；如果被 Gatekeeper 拦截，可参考下方 macOS 安装说明。 |
+| Windows x64 | `.exe` | 标准安装包。 |
+| Linux x64 | `.deb`、`.AppImage`、`.tar.gz` | Ubuntu/Debian 推荐 `.deb`；免安装可用 AppImage；`.tar.gz` 可作为通用备用包。 |
+
 ## 平台支持
 
-FlowDeck 当前面向 macOS 和 Windows。
+FlowDeck 当前面向 macOS、Windows 和 Linux x64。
 
 - 本地开发与运行验证目前仍以 macOS 为主。
-- CI 构建与类型检查在 macOS 和 Windows runner 上执行。
-- 发版产物包含 macOS `.dmg`、`.zip`，以及 Windows `.exe`。
-- 暂不支持 Linux。
+- CI 构建与类型检查在 macOS、Windows 和 Ubuntu runner 上执行。
+- 发版产物包含 macOS `.dmg`、`.zip`，Windows `.exe`，以及 Linux `.deb`、`.AppImage`、`.tar.gz`。
+- Linux 安装包通过 GitHub Actions 的 `ubuntu-latest` 环境构建，面向 x64/amd64 系统。
 
 ## 品牌资源
 
@@ -105,8 +115,13 @@ pnpm pack
 pnpm dist
 ```
 
-当前发布流程会产出 macOS 与 Windows 安装包。
-暂不提供 Linux 产物。
+当前发布流程会产出 macOS、Windows 与 Linux 安装包。
+
+也可以显式构建 Linux 包：
+
+```bash
+pnpm exec electron-builder --linux AppImage deb tar.gz --x64 --publish never
+```
 
 ## 版本管理与发版
 
@@ -130,8 +145,8 @@ pnpm release
 
 当 tag 被推送到 GitHub 后，发布流水线会自动：
 
-- 构建 macOS 与 Windows 安装包
-- 上传 `.dmg`、`.zip`、`.exe`、`.yml` 与 `app.asar`
+- 构建 macOS、Windows 与 Linux 安装包
+- 上传 `.dmg`、`.zip`、`.exe`、`.AppImage`、`.deb`、`.tar.gz`、`.yml` 与 `app.asar`
 - 从 `CHANGELOG.md` 提取变更说明，创建 GitHub Release
 
 ### 仅更新版本号（预览）
