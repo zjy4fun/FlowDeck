@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.4.25
+
+- Fix Linux fullscreen shortcuts by preserving native window decorations on Linux
+- Add Linux app icon metadata and ensure generated assets are available during packaging
+- Document Linux release artifacts and improve update/download guidance
+
 ## v0.4.23
 
 - Fix macOS reopen behavior after closing the last window by destroying lingering PTY sessions before the next Dock relaunch
