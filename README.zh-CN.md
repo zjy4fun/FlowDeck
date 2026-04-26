@@ -40,7 +40,7 @@ FlowDeck 当前面向 macOS 和 Windows。
 - 极简状态栏，专注显示当前活动窗格的工作目录
 - 内置更新窗口，支持下载进度、取消更新与重启安装
 - 支持截图模式，输出静态快照到 `/tmp/flowdeck-prototype.png`
-- 通过 `electron-builder` 进行 macOS / Windows 打包
+- 通过 `electron-builder` 进行 macOS / Windows / Linux 打包
 
 ## 技术栈
 
