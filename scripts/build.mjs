@@ -52,6 +52,14 @@ await Promise.all([
     outfile: 'dist/test-support/window-lifecycle.cjs',
     format: 'cjs',
   }),
+  esbuild.build({
+    ...shared,
+    entryPoints: ['src/main/window-options.ts'],
+    platform: 'node',
+    target: 'node20',
+    outfile: 'dist/test-support/window-options.cjs',
+    format: 'cjs',
+  }),
 
   // Preload script
   esbuild.build({
