@@ -18,6 +18,7 @@ import {
   checkForUpdatesManual,
   registerUpdaterIpcHandlers,
 } from './updater';
+import { createAboutDialogOptions } from './about-dialog';
 import { getWindowIconPath, shouldToggleFullScreenForInput } from './window-options';
 
 const isCaptureMode = process.env.FLOWDECK_CAPTURE === '1';
@@ -65,6 +66,19 @@ function configureAboutPanel(): void {
     applicationVersion: currentVersion,
     version: currentVersion,
   });
+}
+
+function showAboutDialog(): void {
+  const options = createAboutDialogOptions({
+    appName: app.name,
+    currentVersion: app.getVersion(),
+  });
+  const win = BrowserWindow.getFocusedWindow();
+  if (win && !win.isDestroyed()) {
+    void dialog.showMessageBox(win, options);
+    return;
+  }
+  void dialog.showMessageBox(options);
 }
 
 function openSettingsWindow(): void {
@@ -288,6 +302,15 @@ function buildAppMenu(): void {
               {
                 label: 'Check for Updates...',
                 click: () => checkForUpdatesManual(),
+              },
+            ],
+          },
+          {
+            label: 'Help',
+            submenu: [
+              {
+                label: 'About FlowDeck',
+                click: () => showAboutDialog(),
               },
             ],
           },

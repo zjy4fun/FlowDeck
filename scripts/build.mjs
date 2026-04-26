@@ -60,6 +60,15 @@ await Promise.all([
     outfile: 'dist/test-support/window-options.cjs',
     format: 'cjs',
   }),
+  esbuild.build({
+    ...shared,
+    entryPoints: ['src/main/about-dialog.ts'],
+    platform: 'node',
+    target: 'node20',
+    outfile: 'dist/test-support/about-dialog.cjs',
+    external: ['electron'],
+    format: 'cjs',
+  }),
 
   // Preload script
   esbuild.build({
