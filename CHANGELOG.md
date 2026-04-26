@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.4.26
+
+- Add a Linux/Windows Help > About FlowDeck menu item that shows the current app version
+- Keep macOS using the native About panel while giving non-macOS builds an explicit version dialog
+
 ## v0.4.25
 
 - Fix Linux fullscreen shortcuts by preserving native window decorations on Linux
