@@ -1,0 +1,42 @@
+name: Linux Artifact
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-linux-artifact:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6.0.2
+
+      - uses: pnpm/action-setup@v6.0.0
+        with:
+          version: 10.33.0
+
+      - uses: actions/setup-node@v6.3.0
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Compile TypeScript (esbuild)
+        run: pnpm build
+
+      - name: Package Linux x64 artifacts
+        run: pnpm exec electron-builder --linux AppImage deb tar.gz --x64 --publish never
+
+      - name: Upload Linux artifacts
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: flowdeck-linux-x64
+          path: |
+            release/*.AppImage
+            release/*.deb
+            release/*.tar.gz
+            release/*.yml
+          if-no-files-found: error
+          retention-days: 7

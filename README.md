@@ -40,7 +40,7 @@ Brand assets live in [`assets/brand/`](./assets/brand/). The icon features three
 - Minimal status bar that stays focused on the active working directory
 - Built-in update window with download progress, cancel, and restart actions
 - Capture mode that writes a static snapshot to `/tmp/flowdeck-prototype.png`
-- macOS/Windows packaging via `electron-builder`
+- macOS/Windows/Linux packaging via `electron-builder`
 
 ## Tech Stack
 

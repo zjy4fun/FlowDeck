@@ -37,5 +37,15 @@ nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
 
+# ── Linux ──
+linux:
+  icon: build/icon.png
+  category: Development
+  maintainer: zjy4fun
+  target:
+    - AppImage
+    - deb
+    - tar.gz
+
 publish:
   provider: github

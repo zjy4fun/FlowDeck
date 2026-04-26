@@ -84,9 +84,45 @@ jobs:
           if-no-files-found: error
           retention-days: 5
 
+  # ── Phase 1c: build Ubuntu/Linux packages ──
+  build-linux:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6.0.2
+
+      - uses: pnpm/action-setup@v6.0.0
+        with:
+          version: 10.33.0
+
+      - uses: actions/setup-node@v6.3.0
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Compile TypeScript (esbuild)
+        run: pnpm build
+
+      - name: Package with electron-builder
+        run: pnpm exec electron-builder --linux --publish never
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: release-linux
+          path: |
+            release/*.AppImage
+            release/*.deb
+            release/*.tar.gz
+            release/*.yml
+          if-no-files-found: error
+          retention-days: 5
+
   # ── Phase 2: collect artifacts and create a GitHub release ──
   publish:
-    needs: [build-macos, build-windows]
+    needs: [build-macos, build-windows, build-linux]
     runs-on: ubuntu-latest
 
     steps:
@@ -133,5 +169,8 @@ jobs:
             artifacts/*.dmg
             artifacts/*.zip
             artifacts/*.exe
+            artifacts/*.AppImage
+            artifacts/*.deb
+            artifacts/*.tar.gz
             artifacts/*.yml
             artifacts/app.asar
