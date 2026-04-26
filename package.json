@@ -5,6 +5,11 @@
   "packageManager": "pnpm@10.33.0",
   "license": "MIT",
   "author": "zjy4fun",
+  "homepage": "https://github.com/zjy4fun/FlowDeck",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zjy4fun/FlowDeck.git"
+  },
   "description": "FlowDeck is a focus-first desktop terminal workspace for agentic coding",
   "main": "dist/main/index.js",
   "scripts": {
