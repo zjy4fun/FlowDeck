@@ -18,6 +18,7 @@ import {
   checkForUpdatesManual,
   registerUpdaterIpcHandlers,
 } from './updater';
+import { getWindowIconPath, shouldToggleFullScreenForInput } from './window-options';
 
 const isCaptureMode = process.env.FLOWDECK_CAPTURE === '1';
 
@@ -79,6 +80,7 @@ function openSettingsWindow(): void {
     (themeMode !== 'dark' && !nativeTheme.shouldUseDarkColors);
   const themeHash = resolvedLight ? 'light' : 'dark';
 
+  const icon = currentWindowIconPath();
   settingsWindow = new BrowserWindow({
     width: 560,
     height: 760,
@@ -87,8 +89,8 @@ function openSettingsWindow(): void {
     maximizable: false,
     backgroundColor: resolvedLight ? '#f1ede0' : '#1c1d22',
     title: 'Settings',
-    titleBarStyle: 'hiddenInset',
-    trafficLightPosition: { x: 14, y: 14 },
+    ...platformWindowChromeOptions(),
+    ...(icon ? { icon } : {}),
     show: false,
     webPreferences: {
       contextIsolation: true,
@@ -117,6 +119,45 @@ function sendToFocusedWindow(channel: string): void {
   if (win && !win.isDestroyed()) {
     win.webContents.send(channel);
   }
+}
+
+function currentWindowIconPath(): string | undefined {
+  return getWindowIconPath({
+    platform: process.platform,
+    appPath: app.getAppPath(),
+    resourcesPath: process.resourcesPath,
+    isPackaged: app.isPackaged,
+  });
+}
+
+function platformWindowChromeOptions(): Electron.BrowserWindowConstructorOptions {
+  if (process.platform !== 'darwin') return {};
+  return {
+    titleBarStyle: 'hiddenInset',
+    trafficLightPosition: { x: 12, y: 10 },
+  };
+}
+
+function registerFullScreenShortcuts(win: BrowserWindow): void {
+  win.webContents.on('before-input-event', (event, input) => {
+    if (
+      !shouldToggleFullScreenForInput({
+        platform: process.platform,
+        key: input.key,
+        isFullScreen: win.isFullScreen(),
+      })
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    if (input.key === 'Escape') {
+      win.setFullScreen(false);
+      return;
+    }
+
+    win.setFullScreen(!win.isFullScreen());
+  });
 }
 
 function confirmQuit(win?: BrowserWindow | null): boolean {
@@ -258,14 +299,15 @@ function buildAppMenu(): void {
 }
 
 function createWindow(): void {
+  const icon = currentWindowIconPath();
   const win = new BrowserWindow({
     width: 1600,
     height: 920,
     minWidth: 960,
     minHeight: 640,
     backgroundColor: '#111111',
-    titleBarStyle: 'hiddenInset',
-    trafficLightPosition: { x: 12, y: 10 },
+    ...platformWindowChromeOptions(),
+    ...(icon ? { icon } : {}),
     autoHideMenuBar: false,
     show: !isCaptureMode,
     webPreferences: {
@@ -285,6 +327,7 @@ function createWindow(): void {
   });
 
   win.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
+  registerFullScreenShortcuts(win);
 
   if (isCaptureMode) {
     win.webContents.once('did-finish-load', () => {

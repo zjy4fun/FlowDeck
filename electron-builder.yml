@@ -12,6 +12,10 @@ files:
   - dist/**/*
   - package.json
 
+extraResources:
+  - from: build/icon.png
+    to: build/icon.png
+
 asar: true
 
 # node-pty contains native binaries that cannot be loaded from asar.

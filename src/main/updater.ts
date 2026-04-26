@@ -9,6 +9,7 @@ import {
   shouldCloseWindowForAction,
   type UpdateWindowAction,
 } from './updater-logic';
+import { getWindowIconPath } from './window-options';
 
 const REPO = 'zjy4fun/FlowDeck';
 const ASAR_ASSET_NAME = 'app.asar';
@@ -749,6 +750,19 @@ function createUpdateWindow(): BrowserWindow {
   if (updateWindow && !updateWindow.isDestroyed()) return updateWindow;
 
   const initialSize = getUpdateWindowSize(updateWindowState);
+  const icon = getWindowIconPath({
+    platform: process.platform,
+    appPath: app.getAppPath(),
+    resourcesPath: process.resourcesPath,
+    isPackaged: app.isPackaged,
+  });
+  const macWindowChrome =
+    process.platform === 'darwin'
+      ? {
+          titleBarStyle: 'hiddenInset' as const,
+          trafficLightPosition: { x: 12, y: 12 },
+        }
+      : {};
   const win = new BrowserWindow({
     width: initialSize.width,
     height: initialSize.height,
@@ -757,8 +771,8 @@ function createUpdateWindow(): BrowserWindow {
     maximizable: false,
     backgroundColor: nativeTheme.shouldUseDarkColors ? '#1e1e1e' : '#ececec',
     title: `Updating ${app.name}`,
-    titleBarStyle: 'hiddenInset',
-    trafficLightPosition: { x: 12, y: 12 },
+    ...macWindowChrome,
+    ...(icon ? { icon } : {}),
     show: false,
     webPreferences: {
       contextIsolation: true,
