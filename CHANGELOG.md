@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.4.27
+
+- Restore vertical terminal scrollback so mouse-wheel scrolling can reveal previous output history
+- Keep horizontal terminal overflow hidden to avoid layout bleed
+- Add a regression test for the terminal viewport scroll behavior
+
 ## v0.4.26
 
 - Add a Linux/Windows Help > About FlowDeck menu item that shows the current app version
