@@ -659,7 +659,8 @@ body.is-resizing-pane {
 }
 
 .terminal-host .xterm-viewport {
-  overflow: hidden !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
   background-color: var(--terminal-bg) !important;
 }
 
