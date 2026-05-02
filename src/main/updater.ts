@@ -5,7 +5,9 @@ import * as originalFs from 'original-fs';
 import * as fs from 'fs';
 import * as path from 'path';
 import {
+  compareVersions,
   resolveAvailableUpdatePlan,
+  resolveEffectiveCurrentVersion,
   shouldCloseWindowForAction,
   type UpdateWindowAction,
 } from './updater-logic';
@@ -89,6 +91,21 @@ function getApplyUpdateLogPath(): string {
 
 function getSkippedUpdateStatePath(): string {
   return path.join(app.getPath('userData'), SKIPPED_UPDATE_FILE);
+}
+
+function readPackagedAppVersion(): string | null {
+  try {
+    const packageJsonPath = path.join(app.getAppPath(), 'package.json');
+    const raw = fs.readFileSync(packageJsonPath, 'utf8');
+    const parsed = JSON.parse(raw) as { version?: unknown };
+    return typeof parsed.version === 'string' ? parsed.version : null;
+  } catch {
+    return null;
+  }
+}
+
+function getCurrentVersion(): string {
+  return resolveEffectiveCurrentVersion(app.getVersion(), readPackagedAppVersion());
 }
 
 function loadSkippedUpdateState(): SkippedUpdateState {
@@ -449,7 +466,7 @@ async function fetchLatestReleaseFromApi(): Promise<GitHubRelease> {
       url: `https://api.github.com/repos/${REPO}/releases/latest`,
     });
     request.setHeader('Accept', 'application/vnd.github.v3+json');
-    request.setHeader('User-Agent', `FlowDeck/${app.getVersion()}`);
+    request.setHeader('User-Agent', `FlowDeck/${getCurrentVersion()}`);
 
     let body = '';
     request.on('response', (response) => {
@@ -487,7 +504,7 @@ async function fetchLatestReleaseTagFromPage(): Promise<string> {
       url: `https://github.com/${REPO}/releases/latest`,
     });
     request.setHeader('Accept', 'text/html');
-    request.setHeader('User-Agent', `FlowDeck/${app.getVersion()}`);
+    request.setHeader('User-Agent', `FlowDeck/${getCurrentVersion()}`);
 
     let body = '';
     let redirectTag: string | null = null;
@@ -536,17 +553,6 @@ async function fetchLatestReleaseTagFromPage(): Promise<string> {
     request.on('error', reject);
     request.end();
   });
-}
-
-function compareVersions(a: string, b: string): number {
-  const pa = a.replace(/^v/, '').split('.').map(Number);
-  const pb = b.replace(/^v/, '').split('.').map(Number);
-  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
-    const na = pa[i] || 0;
-    const nb = pb[i] || 0;
-    if (na !== nb) return na - nb;
-  }
-  return 0;
 }
 
 async function fetchLatestRelease(): Promise<GitHubRelease> {
@@ -890,7 +896,7 @@ async function downloadAsset(
 
   return new Promise((resolve, reject) => {
     const request = net.request({ method: 'GET', url });
-    request.setHeader('User-Agent', `FlowDeck/${app.getVersion()}`);
+    request.setHeader('User-Agent', `FlowDeck/${getCurrentVersion()}`);
     request.setHeader('Accept', 'application/octet-stream');
 
     let settled = false;
@@ -916,6 +922,10 @@ async function downloadAsset(
     };
 
     options.onCancelableChange(cancel);
+
+    request.on('redirect', () => {
+      if (!settled) request.followRedirect();
+    });
 
     request.on('response', (response) => {
       if (response.statusCode !== 200) {
@@ -972,7 +982,7 @@ async function downloadAsset(
 async function checkAndDownload(manual: boolean): Promise<void> {
   const release = await fetchLatestRelease();
   const remoteVersion = release.tag_name.replace(/^v/, '');
-  const localVersion = app.getVersion();
+  const localVersion = getCurrentVersion();
 
   if (compareVersions(remoteVersion, localVersion) <= 0) {
     clearSkippedVersion();

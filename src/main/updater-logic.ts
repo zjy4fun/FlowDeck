@@ -13,6 +13,29 @@ export interface AvailableUpdatePlanInput {
   assetInfoIncomplete: boolean;
 }
 
+export function compareVersions(a: string, b: string): number {
+  const pa = a.replace(/^v/, '').split('.').map(Number);
+  const pb = b.replace(/^v/, '').split('.').map(Number);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const na = pa[i] || 0;
+    const nb = pb[i] || 0;
+    if (na !== nb) return na - nb;
+  }
+  return 0;
+}
+
+export function resolveEffectiveCurrentVersion(
+  bundleVersion: string,
+  packageVersion: string | null | undefined,
+): string {
+  const normalizedBundleVersion = bundleVersion.replace(/^v/, '');
+  const normalizedPackageVersion = packageVersion?.replace(/^v/, '') ?? '';
+  if (!normalizedPackageVersion) return normalizedBundleVersion;
+  return compareVersions(normalizedPackageVersion, normalizedBundleVersion) > 0
+    ? normalizedPackageVersion
+    : normalizedBundleVersion;
+}
+
 export type AvailableUpdatePlan =
   | { kind: 'skip' }
   | { kind: 'prompt-download' }
@@ -25,7 +48,7 @@ export function resolveAvailableUpdatePlan(
     return { kind: 'skip' };
   }
 
-  if (!input.hasHotUpdateAsset || input.assetInfoIncomplete) {
+  if (!input.hasHotUpdateAsset) {
     return { kind: 'prompt-open-release' };
   }
 
