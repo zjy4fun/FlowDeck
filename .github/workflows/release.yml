@@ -158,16 +158,14 @@ jobs:
 
           # Write to file for the release step and always include the
           # macOS Gatekeeper recovery command for unsigned/unnotarized builds.
-          printf '%s\n\n' "$NOTES" > release_notes.txt
-          cat >> release_notes.txt <<'EOF'
-## macOS "Cannot Open" Fix
-
-If macOS says FlowDeck cannot be opened, Gatekeeper is usually blocking an unsigned or unnotarized app. Remove the quarantine attribute and open FlowDeck again:
-
-```bash
-xattr -rd com.apple.quarantine /Applications/FlowDeck.app
-```
-EOF
+          {
+            printf '%s\n\n' "$NOTES"
+            printf '%s\n\n' '## macOS "Cannot Open" Fix'
+            printf '%s\n\n' 'If macOS says FlowDeck cannot be opened, Gatekeeper is usually blocking an unsigned or unnotarized app. Remove the quarantine attribute and open FlowDeck again:'
+            printf '%s\n' '```bash'
+            printf '%s\n' 'xattr -rd com.apple.quarantine /Applications/FlowDeck.app'
+            printf '%s\n' '```'
+          } > release_notes.txt
 
       - name: Create or update GitHub Release
         uses: softprops/action-gh-release@v3.0.0
