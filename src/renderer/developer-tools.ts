@@ -185,11 +185,18 @@ export function handleDeveloperToolbarEvent(event: Event): void {
   const paneId = toolbar?.dataset.paneId;
   if (!paneId) return;
 
-  event.preventDefault();
-  event.stopPropagation();
-
   const devState = paneDeveloperState.get(paneId);
   const action = actionTarget.dataset.devAction;
+
+  if (action === 'select' && event.type !== 'change') {
+    // Let the browser open the native select menu, but do not let the pane
+    // click handler refocus/rerender the terminal underneath it.
+    event.stopPropagation();
+    return;
+  }
+
+  event.preventDefault();
+  event.stopPropagation();
 
   if (action === 'select') {
     if (devState && actionTarget instanceof HTMLSelectElement) {

@@ -310,10 +310,10 @@ export function initLifecycle(deps: LifecycleDeps): CleanupFn {
   const handleDeveloperToolbarChange = (event: Event): void => {
     handleDeveloperToolbarEvent(event);
   };
-  dom.stage.addEventListener('click', handleDeveloperToolbarClick);
+  dom.stage.addEventListener('click', handleDeveloperToolbarClick, true);
   dom.stage.addEventListener('change', handleDeveloperToolbarChange);
   cleanups.push(() => {
-    dom.stage.removeEventListener('click', handleDeveloperToolbarClick);
+    dom.stage.removeEventListener('click', handleDeveloperToolbarClick, true);
     dom.stage.removeEventListener('change', handleDeveloperToolbarChange);
   });
 

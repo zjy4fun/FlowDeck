@@ -27,6 +27,14 @@ test('developer toolbar exposes scripts, run controls, and compact repo chip', (
   assert.match(renderer, /devbar-repo/);
 });
 
+test('developer toolbar select clicks keep the native menu open without pane rerender', () => {
+  const renderer = readFileSync('src/renderer/developer-tools.ts', 'utf8');
+  const lifecycle = readFileSync('src/renderer/controllers/lifecycle.ts', 'utf8');
+
+  assert.match(renderer, /action === 'select' && event\.type !== 'change'/);
+  assert.match(lifecycle, /dom\.stage\.addEventListener\('click', handleDeveloperToolbarClick, true\)/);
+});
+
 test('settings button stays visible immediately to the right of the rendered add button', () => {
   const html = readFileSync('src/renderer/index.html', 'utf8');
   const css = readFileSync('src/renderer/styles.css', 'utf8');
