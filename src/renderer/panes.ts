@@ -13,6 +13,7 @@ import {
   initializePaneTerminal,
 } from './terminal';
 import { bridge } from './bridge';
+import { refreshDeveloperContextForPane, removeDeveloperState } from './developer-tools';
 
 /* ── Callbacks provided by the app layer ── */
 
@@ -167,6 +168,7 @@ function ensurePaneNodes(): void {
       node.terminal.dispose();
       node.root.remove();
       paneNodeMap.delete(paneId);
+      removeDeveloperState(paneId);
     }
   }
 
@@ -277,6 +279,8 @@ export function renderPanes(refit = false): void {
       node.terminal.options.theme = createTerminalTheme(pane.accent);
       node.accent = pane.accent;
     }
+
+    refreshDeveloperContextForPane(pane);
 
     if (refit || node.needsFit) {
       fitTerminal(node, true);

@@ -18,6 +18,7 @@ export interface PaneNode {
   paneId: string;
   cwd: string;
   root: HTMLElement;
+  developerToolbar: HTMLElement;
   terminalHost: HTMLElement;
   occlusionShield: HTMLElement;
   leftResizeHandle: HTMLElement;
@@ -97,6 +98,28 @@ export interface AppSettings {
   defaultOpenDirectory: string;
   maxSessions: number;
   themeMode: ThemeMode;
+  developerModeEnabled: boolean;
+}
+
+
+export interface DeveloperScript {
+  id: string;
+  label: string;
+  command: string;
+}
+
+export interface GitRepoSummary {
+  branch: string;
+  summary: string;
+  chip: string;
+  tooltip: string;
+}
+
+export interface DeveloperContext {
+  projectType: string;
+  projectRoot: string;
+  scripts: DeveloperScript[];
+  git: GitRepoSummary | null;
 }
 
 export type ThemeMode = 'system' | 'light' | 'dark';
@@ -157,6 +180,7 @@ export interface FlowDeckBridge {
 
   loadSettings: () => Promise<AppSettings | null>;
   saveSettings: (settings: AppSettings) => Promise<void>;
+  getDeveloperContext: (payload: { cwd: string }) => Promise<DeveloperContext>;
 
   onTerminalData: (
     handler: (payload: { paneId: string; data: string }) => void,

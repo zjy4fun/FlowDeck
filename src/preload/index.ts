@@ -21,6 +21,8 @@ contextBridge.exposeInMainWorld('flowdeck', {
   loadSettings: () => ipcRenderer.invoke('flowdeck:settings-load'),
   saveSettings: (settings: unknown) =>
     ipcRenderer.invoke('flowdeck:settings-save', settings),
+  getDeveloperContext: (payload: unknown) =>
+    ipcRenderer.invoke('flowdeck:developer-context', payload),
 
   onTerminalData: (
     handler: (payload: { paneId: string; data: string }) => void,
@@ -55,6 +57,7 @@ contextBridge.exposeInMainWorld('flowdeck', {
     ipcRenderer.on('flowdeck:menu-close-tab', listener);
     return () => ipcRenderer.removeListener('flowdeck:menu-close-tab', listener);
   },
+
 
   getFilePath: (file: File) => webUtils.getPathForFile(file),
   selectDirectory: () =>

@@ -116,6 +116,10 @@ export function createPaneNode(
   const shell = document.createElement('div');
   shell.className = 'pane-shell';
 
+  const developerToolbar = document.createElement('div');
+  developerToolbar.className = 'developer-toolbar';
+  developerToolbar.dataset.paneId = pane.id;
+
   const body = document.createElement('div');
   body.className = 'pane-body';
 
@@ -142,6 +146,7 @@ export function createPaneNode(
   body.append(occlusionShield);
   body.append(leftResizeHandle);
   body.append(rightResizeHandle);
+  shell.append(developerToolbar);
   shell.append(body);
   paneEl.append(shell);
 
@@ -170,6 +175,7 @@ export function createPaneNode(
     paneId: pane.id,
     cwd: pane.cwd,
     root: paneEl,
+    developerToolbar,
     terminalHost,
     occlusionShield,
     leftResizeHandle,

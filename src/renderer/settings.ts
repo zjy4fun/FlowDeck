@@ -1,6 +1,7 @@
 import { state, dom, getResolvedTheme, paneNodeMap } from './state';
 import { bridge } from './bridge';
 import { createTerminalTheme, getTerminalBackground } from './terminal';
+import { refreshAllDeveloperContexts } from './developer-tools';
 
 /* ── Debounced persistence ── */
 
@@ -49,6 +50,7 @@ export function applySettingsToDom(): void {
     getPaneToneOpacity(settings.paneOpacity).toFixed(2),
   );
   root.style.setProperty('--pane-width', `${paneWidthPx}px`);
+  root.classList.toggle('is-dev-mode', settings.developerModeEnabled);
 
   dom.fontSizeInput.value = String(settings.fontSize);
   dom.defaultDirectoryInput.value = settings.defaultOpenDirectory;
@@ -60,6 +62,7 @@ export function applySettingsToDom(): void {
   dom.paneOpacityInput.value = settings.paneOpacity.toFixed(2);
   dom.paneOpacityValue.textContent = settings.paneOpacity.toFixed(2);
   dom.themeModeSelect.value = settings.themeMode;
+  dom.developerModeInput.checked = settings.developerModeEnabled;
 }
 
 /* ── Load persisted settings from main process ── */
@@ -143,6 +146,15 @@ function updatePaneOpacity(value: string): void {
   persistSettings();
 }
 
+function updateDeveloperMode(enabled: boolean, render: (refit: boolean) => void): void {
+  if (state.settings.developerModeEnabled === enabled) return;
+  state.settings.developerModeEnabled = enabled;
+  applySettingsToDom();
+  persistSettings();
+  render(true);
+  refreshAllDeveloperContexts();
+}
+
 function updateThemeMode(value: string): void {
   const next =
     value === 'light' || value === 'dark' || value === 'system'
@@ -193,6 +205,10 @@ export function initSettingsListeners(
 
   dom.themeModeSelect.addEventListener('change', () => {
     updateThemeMode(dom.themeModeSelect.value);
+  });
+
+  dom.developerModeInput.addEventListener('change', () => {
+    updateDeveloperMode(dom.developerModeInput.checked, render);
   });
 
   if (window.matchMedia) {

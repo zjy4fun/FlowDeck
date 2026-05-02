@@ -9,6 +9,7 @@ export interface PersistedSettings {
   defaultOpenDirectory: string;
   maxSessions: number;
   themeMode: 'system' | 'light' | 'dark';
+  developerModeEnabled: boolean;
 }
 
 const SETTINGS_FILE = 'settings.json';
@@ -20,6 +21,7 @@ const DEFAULTS: PersistedSettings = {
   defaultOpenDirectory: app.getPath('home'),
   maxSessions: 8,
   themeMode: 'system',
+  developerModeEnabled: false,
 };
 
 const LIMITS = {
@@ -94,6 +96,7 @@ function sanitizePersistedSettings(parsed: unknown): PersistedSettings {
       source.themeMode === 'light' || source.themeMode === 'dark'
         ? source.themeMode
         : 'system',
+    developerModeEnabled: source.developerModeEnabled === true,
   };
 }
 

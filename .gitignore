@@ -41,6 +41,7 @@ Thumbs.db
 
 # Local specs / scratch files
 spec/
+.hermes/
 
 # Project assets
 artifacts/*

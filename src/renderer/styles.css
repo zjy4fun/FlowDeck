@@ -410,9 +410,11 @@ body {
   top: calc(100% + 1px);
   right: 0;
   display: grid;
-  gap: 8px;
-  width: 220px;
-  padding: 8px;
+  gap: 10px;
+  width: min(386px, calc(100vw - 12px));
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  padding: 10px;
   border: 1px solid var(--settings-border);
   background: var(--settings-bg);
   z-index: 50;
@@ -422,12 +424,54 @@ body {
   display: none;
 }
 
+.settings-title {
+  color: var(--text-strong);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.settings-section {
+  display: grid;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--settings-border);
+}
+
+.settings-section:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.settings-section-title {
+  color: var(--panel-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.settings-hint {
+  color: var(--panel-muted);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
 .settings-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   color: var(--settings-row-color);
   font-size: var(--app-font-size);
+}
+
+.settings-switch-row {
+  gap: 10px;
+}
+
+.settings-switch {
+  width: 38px;
+  height: 20px;
+  accent-color: #49b675;
 }
 
 .settings-dual {
@@ -461,6 +505,111 @@ body {
   background: var(--settings-input-bg);
   color: var(--text);
   font: inherit;
+}
+
+
+/* ── Developer mode toolbar ── */
+.developer-toolbar {
+  display: none;
+  grid-template-columns: minmax(82px, 0.72fr) minmax(150px, 1fr) minmax(208px, auto);
+  gap: 6px;
+  align-items: center;
+  min-height: 32px;
+  padding: 4px 6px;
+  border-bottom: 1px solid color-mix(in srgb, var(--pane-accent) 22%, transparent);
+  background: color-mix(in srgb, var(--terminal-bg) 86%, var(--pane-accent));
+  color: var(--terminal-fg);
+  font-size: 11px;
+}
+
+html.is-dev-mode .pane.has-devbar .developer-toolbar {
+  display: grid;
+}
+
+.devbar-meta,
+.devbar-actions {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 5px;
+}
+
+.devbar-type,
+.devbar-repo {
+  flex: 0 1 auto;
+  max-width: 154px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 2px 7px;
+  border: 1px solid color-mix(in srgb, var(--pane-accent) 28%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--pane-accent) 12%, transparent);
+  color: color-mix(in srgb, var(--text-strong) 88%, var(--pane-accent));
+}
+
+.devbar-path {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: color-mix(in srgb, var(--terminal-fg) 72%, transparent);
+}
+
+.devbar-select,
+.devbar-actions button {
+  height: 23px;
+  border: 1px solid color-mix(in srgb, var(--pane-accent) 24%, var(--settings-input-border));
+  background: color-mix(in srgb, var(--terminal-bg) 78%, black);
+  color: var(--terminal-fg);
+  font: inherit;
+}
+
+.devbar-select {
+  min-width: 0;
+  width: 100%;
+  padding: 0 6px;
+  border-radius: 6px;
+}
+
+.devbar-actions {
+  justify-content: flex-end;
+}
+
+.devbar-actions button {
+  padding: 0 8px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.devbar-actions button:disabled,
+.devbar-select:disabled {
+  cursor: default;
+  opacity: 0.48;
+}
+
+.devbar-run:not(:disabled) {
+  border-color: color-mix(in srgb, #49b675 62%, var(--pane-accent));
+  background: color-mix(in srgb, #49b675 34%, var(--terminal-bg));
+  color: var(--text-strong);
+}
+
+.devbar-stop:not(:disabled) {
+  border-color: color-mix(in srgb, #e78284 62%, var(--pane-accent));
+}
+
+@media (max-width: 1180px) {
+  .developer-toolbar {
+    grid-template-columns: minmax(74px, 0.6fr) minmax(120px, 1fr) minmax(154px, auto);
+  }
+
+  .devbar-path {
+    display: none;
+  }
+
+  .devbar-restart {
+    display: none;
+  }
 }
 
 /* ── Stage / panes ── */
@@ -505,11 +654,14 @@ body {
 }
 
 .pane-shell {
+  display: flex;
+  flex-direction: column;
   height: 100%;
 }
 
 .pane-body {
   position: relative;
+  flex: 1 1 auto;
   width: 100%;
   height: 100%;
   min-height: 0;

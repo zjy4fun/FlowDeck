@@ -29,46 +29,66 @@
           <button class="tabs-settings" id="tabs-settings" type="button" aria-label="Open settings">&#9881;</button>
         </div>
         <section class="settings-panel is-hidden" id="settings-panel" aria-label="Settings">
-          <label class="settings-row" for="theme-mode-input">
-            <span>Theme</span>
-          </label>
-          <select class="settings-select" id="theme-mode-input">
-            <option value="system">System</option>
-            <option value="light">Light</option>
-            <option value="dark">Dark</option>
-          </select>
+          <div class="settings-title">Settings</div>
 
-          <label class="settings-row" for="font-size-input">
-            <span>Font size</span>
-          </label>
-          <input class="settings-number" id="font-size-input" type="number" min="10" max="24" step="1" value="13" />
-
-          <label class="settings-row" for="default-directory-input">
-            <span>Default directory</span>
-          </label>
-          <input id="default-directory-input" type="text" value="~" spellcheck="false" />
-
-          <label class="settings-row" for="max-sessions-input">
-            <span>Max sessions</span>
-          </label>
-          <input class="settings-number" id="max-sessions-input" type="number" min="1" max="9" step="1" value="8" />
-
-          <label class="settings-row" for="pane-width-range">
-            <span>Pane width ratio</span>
-            <span id="pane-width-value">45%</span>
-          </label>
-          <div class="settings-dual">
-            <input id="pane-width-range" type="range" min="22" max="72" step="1" value="45" />
-            <input class="settings-number" id="pane-width-input" type="number" min="22" max="72" step="1" value="45" />
+          <div class="settings-section">
+            <div class="settings-section-title">Developer</div>
+            <label class="settings-row settings-switch-row" for="developer-mode-input">
+              <span>Developer Mode</span>
+              <input class="settings-switch" id="developer-mode-input" type="checkbox" />
+            </label>
+            <p class="settings-hint">Show script runner and repo status in every session.</p>
           </div>
 
-          <label class="settings-row" for="pane-opacity-range">
-            <span>Pane depth</span>
-            <span id="pane-opacity-value">0.75</span>
-          </label>
-          <div class="settings-dual">
-            <input id="pane-opacity-range" type="range" min="0.5" max="1" step="0.01" value="0.75" />
-            <input class="settings-number" id="pane-opacity-input" type="number" min="0.5" max="1" step="0.01" value="0.75" />
+          <div class="settings-section">
+            <div class="settings-section-title">Appearance</div>
+            <label class="settings-row" for="theme-mode-input">
+              <span>Theme</span>
+            </label>
+            <select class="settings-select" id="theme-mode-input">
+              <option value="system">System</option>
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+            </select>
+
+            <label class="settings-row" for="font-size-input">
+              <span>Font size</span>
+            </label>
+            <input class="settings-number" id="font-size-input" type="number" min="10" max="24" step="1" value="13" />
+          </div>
+
+          <div class="settings-section">
+            <div class="settings-section-title">Workspace</div>
+            <label class="settings-row" for="default-directory-input">
+              <span>Default directory</span>
+            </label>
+            <input id="default-directory-input" type="text" value="~" spellcheck="false" />
+
+            <label class="settings-row" for="max-sessions-input">
+              <span>Max sessions</span>
+            </label>
+            <input class="settings-number" id="max-sessions-input" type="number" min="1" max="9" step="1" value="8" />
+          </div>
+
+          <div class="settings-section">
+            <div class="settings-section-title">Panes</div>
+            <label class="settings-row" for="pane-width-range">
+              <span>Pane width ratio</span>
+              <span id="pane-width-value">45%</span>
+            </label>
+            <div class="settings-dual">
+              <input id="pane-width-range" type="range" min="22" max="72" step="1" value="45" />
+              <input class="settings-number" id="pane-width-input" type="number" min="22" max="72" step="1" value="45" />
+            </div>
+
+            <label class="settings-row" for="pane-opacity-range">
+              <span>Pane depth</span>
+              <span id="pane-opacity-value">0.75</span>
+            </label>
+            <div class="settings-dual">
+              <input id="pane-opacity-range" type="range" min="0.5" max="1" step="0.01" value="0.75" />
+              <input class="settings-number" id="pane-opacity-input" type="number" min="0.5" max="1" step="0.01" value="0.75" />
+            </div>
           </div>
         </section>
       </header>

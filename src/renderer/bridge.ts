@@ -19,6 +19,7 @@ function createUnavailableBridge(): FlowDeckBridge {
     selectDirectory: fail,
     loadSettings: fail,
     saveSettings: fail,
+    getDeveloperContext: fail,
     onTerminalData: () => () => {},
     onTerminalExit: () => () => {},
     onMenuNewTab: () => () => {},

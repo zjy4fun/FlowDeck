@@ -31,6 +31,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   defaultOpenDirectory: bridge.defaultCwd,
   maxSessions: 8,
   themeMode: 'system',
+  developerModeEnabled: false,
 };
 
 export function getDirectoryLabel(cwd: string): string {
@@ -94,6 +95,7 @@ export let dom = {
   paneOpacityInput: null! as HTMLInputElement,
   paneOpacityValue: null! as HTMLElement,
   themeModeSelect: null! as HTMLSelectElement,
+  developerModeInput: null! as HTMLInputElement,
 };
 
 export function initDom(): void {
@@ -114,6 +116,7 @@ export function initDom(): void {
     paneOpacityInput: document.getElementById('pane-opacity-input') as HTMLInputElement,
     paneOpacityValue: document.getElementById('pane-opacity-value')!,
     themeModeSelect: document.getElementById('theme-mode-input') as HTMLSelectElement,
+    developerModeInput: document.getElementById('developer-mode-input') as HTMLInputElement,
   };
 }
 

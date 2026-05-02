@@ -4,7 +4,6 @@ import {
   dialog,
   ipcMain,
   Menu,
-  nativeTheme,
   type OpenDialogOptions,
 } from 'electron';
 import * as fs from 'fs';
@@ -12,6 +11,7 @@ import * as path from 'path';
 import { registerPtyHandlers, destroyAllSessions } from './pty-manager';
 import { handleWindowAllClosed } from './window-lifecycle';
 import { loadSettings, saveSettings } from './settings-store';
+import { getDeveloperContext } from './developer-context';
 import {
   applyPendingUpdate,
   initAutoUpdater,
@@ -53,9 +53,8 @@ function registerSettingsHandlers(): void {
       }
     }
   });
+  ipcMain.handle('flowdeck:developer-context', (_event, payload) => getDeveloperContext(payload));
 }
-
-let settingsWindow: BrowserWindow | null = null;
 
 function configureAboutPanel(): void {
   if (process.platform !== 'darwin') return;
@@ -79,53 +78,6 @@ function showAboutDialog(): void {
     return;
   }
   void dialog.showMessageBox(options);
-}
-
-function openSettingsWindow(): void {
-  if (settingsWindow && !settingsWindow.isDestroyed()) {
-    settingsWindow.focus();
-    return;
-  }
-
-  const saved = loadSettings();
-  const themeMode = saved.themeMode;
-  const resolvedLight =
-    themeMode === 'light' ||
-    (themeMode !== 'dark' && !nativeTheme.shouldUseDarkColors);
-  const themeHash = resolvedLight ? 'light' : 'dark';
-
-  const icon = currentWindowIconPath();
-  settingsWindow = new BrowserWindow({
-    width: 560,
-    height: 760,
-    resizable: false,
-    minimizable: false,
-    maximizable: false,
-    backgroundColor: resolvedLight ? '#f1ede0' : '#1c1d22',
-    title: 'Settings',
-    ...platformWindowChromeOptions(),
-    ...(icon ? { icon } : {}),
-    show: false,
-    webPreferences: {
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: false,
-      preload: path.join(__dirname, '..', 'preload', 'index.js'),
-    },
-  });
-
-  settingsWindow.once('ready-to-show', () => {
-    if (settingsWindow && !settingsWindow.isDestroyed()) settingsWindow.show();
-  });
-
-  settingsWindow.loadFile(
-    path.join(__dirname, '..', 'renderer', 'settings-window.html'),
-    { hash: themeHash },
-  );
-
-  settingsWindow.on('closed', () => {
-    settingsWindow = null;
-  });
 }
 
 function sendToFocusedWindow(channel: string): void {
@@ -201,11 +153,6 @@ function buildAppMenu(): void {
             submenu: [
               { role: 'about' as const },
               { type: 'separator' as const },
-              {
-                label: 'Settings...',
-                accelerator: 'Cmd+,',
-                click: () => openSettingsWindow(),
-              },
               {
                 label: 'Check for Updates...',
                 click: () => checkForUpdatesManual(),
@@ -291,23 +238,13 @@ function buildAppMenu(): void {
     ...(!isMac
       ? [
           {
-            label: 'Settings',
+            label: 'Help',
             submenu: [
-              {
-                label: 'Preferences...',
-                accelerator: 'Ctrl+,',
-                click: () => openSettingsWindow(),
-              },
-              { type: 'separator' as const },
               {
                 label: 'Check for Updates...',
                 click: () => checkForUpdatesManual(),
               },
-            ],
-          },
-          {
-            label: 'Help',
-            submenu: [
+              { type: 'separator' as const },
               {
                 label: 'About FlowDeck',
                 click: () => showAboutDialog(),

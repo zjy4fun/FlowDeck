@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.4.28
+
+- Add Developer Mode as a persistent setting in the gear-triggered floating Settings panel
+- Show a per-session developer toolbar with project script detection, Run/Stop/Restart controls, and compact repo status chips
+- Remove the independent Settings window and migrate settings into the main window panel
+
 ## v0.4.27
 
 - Restore vertical terminal scrollback so mouse-wheel scrolling can reveal previous output history
