@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.4.30
+
+- Fix hot-update downloads when GitHub Release asset metadata falls back to the direct `app.asar` URL
+- Follow GitHub release asset redirects while staging `app.asar` updates
+- Use the installed `app.asar` package version for update checks so hot-updated builds do not keep reporting the old shell version
+
 ## v0.4.29
 
 - Restore the Settings gear button in the tab bar directly to the right of the rendered add-tab button
