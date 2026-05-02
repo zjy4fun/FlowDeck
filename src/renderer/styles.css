@@ -378,10 +378,15 @@ body {
 /* ── Tab actions ── */
 
 .tabs-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: stretch;
+}
+
+.tabs-add {
   display: none;
 }
 
-.tabs-add,
 .tabs-settings,
 .tab-add-slot {
   width: 34px;

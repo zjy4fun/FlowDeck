@@ -27,6 +27,19 @@ test('developer toolbar exposes scripts, run controls, and compact repo chip', (
   assert.match(renderer, /devbar-repo/);
 });
 
+test('settings button stays visible immediately to the right of the rendered add button', () => {
+  const html = readFileSync('src/renderer/index.html', 'utf8');
+  const css = readFileSync('src/renderer/styles.css', 'utf8');
+  const tabs = readFileSync('src/renderer/tabs.ts', 'utf8');
+
+  assert.match(html, /<div class="tabs-list" id="tabs-list"><\/div>\s*<div class="tabs-actions">\s*<button class="tabs-add"/);
+  assert.match(tabs, /addButton\.className = 'tab-add-slot';/);
+  assert.match(tabs, /tabElements\.push\(createAddPaneButton\(\)\);\s*dom\.tabsList\.replaceChildren\(\.\.\.tabElements\);/);
+  assert.match(css, /\.tabs-actions \{\s*display: flex;/);
+  assert.match(css, /\.tabs-add \{\s*display: none;/);
+  assert.doesNotMatch(css, /\.tabs-actions \{\s*display: none;/);
+});
+
 test('release notes include the macOS Gatekeeper recovery command', () => {
   const workflow = readFileSync('.github/workflows/release.yml', 'utf8');
   assert.match(workflow, /macOS "Cannot Open" Fix/);
