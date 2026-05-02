@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.4.31
+
+- Keep Developer Mode script controls interactive by handling toolbar clicks before pane focus rerenders
+- Allow the native script dropdown to stay open while still preventing underlying pane click handlers from stealing focus
+- Fix Run/Stop/Restart toolbar actions so script commands are reliably written to the active terminal pane
+
 ## v0.4.30
 
 - Fix hot-update downloads when GitHub Release asset metadata falls back to the direct `app.asar` URL
