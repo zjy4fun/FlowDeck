@@ -156,8 +156,18 @@ jobs:
             NOTES="Release $TAG"
           fi
 
-          # Write to file for the release step
-          echo "$NOTES" > release_notes.txt
+          # Write to file for the release step and always include the
+          # macOS Gatekeeper recovery command for unsigned/unnotarized builds.
+          printf '%s\n\n' "$NOTES" > release_notes.txt
+          cat >> release_notes.txt <<'EOF'
+## macOS "Cannot Open" Fix
+
+If macOS says FlowDeck cannot be opened, Gatekeeper is usually blocking an unsigned or unnotarized app. Remove the quarantine attribute and open FlowDeck again:
+
+```bash
+xattr -rd com.apple.quarantine /Applications/FlowDeck.app
+```
+EOF
 
       - name: Create or update GitHub Release
         uses: softprops/action-gh-release@v3.0.0

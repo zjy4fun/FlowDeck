@@ -26,3 +26,9 @@ test('developer toolbar exposes scripts, run controls, and compact repo chip', (
   assert.match(renderer, /data-dev-action="restart"/);
   assert.match(renderer, /devbar-repo/);
 });
+
+test('release notes include the macOS Gatekeeper recovery command', () => {
+  const workflow = readFileSync('.github/workflows/release.yml', 'utf8');
+  assert.match(workflow, /macOS "Cannot Open" Fix/);
+  assert.match(workflow, /xattr -rd com\.apple\.quarantine \/Applications\/FlowDeck\.app/);
+});
