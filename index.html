@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="FlowDeck is a focus-first desktop terminal workspace for agentic coding."
+    />
+    <title>FlowDeck — Focus-first terminal workspace</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=JetBrains+Mono:wght@500;700&family=Manrope:wght@400;500;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="site-header" aria-label="Primary navigation">
+      <a class="brand" href="#top" aria-label="FlowDeck home">
+        <img src="./assets/flowdeck-icon.svg" alt="" />
+        <span>FlowDeck</span>
+      </a>
+      <nav class="nav-links" aria-label="Page sections">
+        <a href="#film">Film</a>
+        <a href="#workflow">Workflow</a>
+        <a href="#details">Capabilities</a>
+        <a href="#download">Download</a>
+      </nav>
+      <a class="header-action" href="https://github.com/zjy4fun/FlowDeck/releases/latest">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 3v11m0 0 4-4m-4 4-4-4M5 21h14" />
+        </svg>
+        Download
+      </a>
+    </header>
+
+    <main id="top">
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-grid" aria-hidden="true"></div>
+        <div class="hero-glow hero-glow-a" aria-hidden="true"></div>
+        <div class="hero-glow hero-glow-b" aria-hidden="true"></div>
+        <div class="hero-content">
+          <div class="release-line">
+            <span class="status-dot"></span>
+            <span>Electron · xterm.js · node-pty</span>
+          </div>
+          <h1 id="hero-title">FlowDeck</h1>
+          <p class="hero-copy">
+            A focus-first desktop terminal workspace for agentic coding. Run real shell sessions side by side, keep build logs, agents, releases, and debugging in one calm surface.
+          </p>
+          <div class="hero-actions">
+            <a class="primary-action" href="https://github.com/zjy4fun/FlowDeck/releases/latest">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 3v11m0 0 4-4m-4 4-4-4M5 21h14" />
+              </svg>
+              Get the latest release
+            </a>
+            <a class="secondary-action" href="#film">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m8 5 11 7-11 7V5Z" />
+              </svg>
+              Watch the film
+            </a>
+          </div>
+        </div>
+        <div class="hero-terminal" aria-label="FlowDeck terminal session preview">
+          <div class="hero-terminal-bar">
+            <span>flowdeck://workspace</span>
+            <i></i>
+          </div>
+          <div class="hero-terminal-grid">
+            <div>
+              <strong>build</strong>
+              <pre><span>&gt;</span> pnpm build
+main/index.ts
+renderer/app.ts
+done in 1.2s</pre>
+            </div>
+            <div>
+              <strong>agent</strong>
+              <pre><span>&gt;</span> codex work
+reading panes.ts
+patch ready</pre>
+            </div>
+            <div>
+              <strong>release</strong>
+              <pre><span>&gt;</span> pnpm dist
+macOS dmg
+Windows exe</pre>
+            </div>
+          </div>
+        </div>
+        <div class="hero-footer" aria-label="Supported platforms">
+          <span>macOS Apple Silicon</span>
+          <span>Windows x64</span>
+          <span>Linux x64</span>
+        </div>
+      </section>
+
+      <section id="film" class="film-section" aria-labelledby="film-title">
+        <div class="film-heading">
+          <span class="eyebrow">Product film</span>
+          <h2 id="film-title">See the pane-first workflow in motion.</h2>
+          <p>
+            The promo below is the English version of the FlowDeck video, with the latest soundtrack and real product footage from the project.
+          </p>
+        </div>
+        <div class="film-frame">
+          <video
+            id="promoVideo"
+            src="./assets/flowdeck-promo.mp4"
+            poster="./assets/flowdeck-promo-contact.jpg"
+            controls
+            playsinline
+            preload="metadata"
+          ></video>
+        </div>
+      </section>
+
+      <section id="workflow" class="workflow-section">
+        <div class="section-copy">
+          <span class="eyebrow">Pane-first workflow</span>
+          <h2>Spread context out. Stop switching windows.</h2>
+          <p>
+            FlowDeck keeps real terminal sessions inside one compact desktop workspace: one pane for builds, one for agent context, one for release or regression work.
+          </p>
+        </div>
+        <div class="terminal-board" aria-label="FlowDeck pane layout mockup">
+          <div class="terminal-pane pane-a">
+            <div class="pane-top">
+              <span>build</span>
+              <i></i>
+            </div>
+            <pre><span>&gt;</span> pnpm build
+src/main/index.ts
+src/renderer/app.ts
+done in 1.2s</pre>
+          </div>
+          <div class="terminal-pane pane-b">
+            <div class="pane-top">
+              <span>agent</span>
+              <i></i>
+            </div>
+            <pre><span>&gt;</span> codex work
+reading panes.ts
+patch ready
+awaiting review</pre>
+          </div>
+          <div class="terminal-pane pane-c">
+            <div class="pane-top">
+              <span>release</span>
+              <i></i>
+            </div>
+            <pre><span>&gt;</span> pnpm dist
+macOS dmg
+Windows exe
+Linux AppImage</pre>
+          </div>
+        </div>
+      </section>
+
+      <section id="details" class="details-section">
+        <div class="detail">
+          <span>01</span>
+          <h3>Real PTY terminals</h3>
+          <p>Powered by node-pty, FlowDeck starts real shell sessions instead of simulating terminal output.</p>
+        </div>
+        <div class="detail">
+          <span>02</span>
+          <h3>Focused multi-pane work</h3>
+          <p>Add, close, focus, and reorder panes with distinct session accents that reduce visual scanning cost.</p>
+        </div>
+        <div class="detail">
+          <span>03</span>
+          <h3>Built for daily use</h3>
+          <p>Rename tabs, use keyboard navigation, tune fonts and themes, and keep the status bar focused on the active directory.</p>
+        </div>
+      </section>
+
+      <section id="download" class="download-section">
+        <div>
+          <span class="eyebrow">Ready for desktop</span>
+          <h2>Download FlowDeck and give agentic coding a clean workspace.</h2>
+        </div>
+        <div class="download-actions">
+          <a class="primary-action" href="https://github.com/zjy4fun/FlowDeck/releases/latest">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 3v11m0 0 4-4m-4 4-4-4M5 21h14" />
+            </svg>
+            GitHub Releases
+          </a>
+          <a class="secondary-link" href="https://github.com/zjy4fun/FlowDeck">
+            View source
+          </a>
+        </div>
+      </section>
+    </main>
+
+    <script src="./script.js"></script>
+  </body>
+</html>
