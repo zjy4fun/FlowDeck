@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.4.29
+
+- Restore the Settings gear button in the tab bar directly to the right of the rendered add-tab button
+- Keep the dynamic add-tab control visible while hiding only the legacy static fallback button
+- Add a regression test to protect the add-tab and Settings button placement
+
 ## v0.4.28
 
 - Add Developer Mode as a persistent setting in the gear-triggered floating Settings panel
