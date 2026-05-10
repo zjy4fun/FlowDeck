@@ -211,4 +211,5 @@ export interface FlowDeckBridge {
   restartForUpdate: () => Promise<void>;
   closeUpdateWindow: () => Promise<void>;
   runUpdateAction: (action: UpdateWindowAction) => Promise<void>;
+  toggleMaximizeWindow: () => Promise<void>;
 }

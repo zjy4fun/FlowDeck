@@ -63,6 +63,18 @@ function registerSettingsHandlers(): void {
   ipcMain.handle('flowdeck:developer-context', (_event, payload) => getDeveloperContext(payload));
 }
 
+function registerWindowHandlers(): void {
+  ipcMain.handle('flowdeck:window-toggle-maximize', (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (!win) return;
+    if (win.isMaximized()) {
+      win.unmaximize();
+    } else {
+      win.maximize();
+    }
+  });
+}
+
 function registerTerminalContextMenuHandler(): void {
   ipcMain.handle('flowdeck:terminal-context-menu', (event, payload) => {
     const request = sanitizeTerminalContextMenuRequest(payload);
@@ -374,6 +386,7 @@ app.whenReady().then(() => {
   ensurePtyHelper();
   registerPtyHandlers();
   registerSettingsHandlers();
+  registerWindowHandlers();
   registerTerminalContextMenuHandler();
   registerUpdaterIpcHandlers();
   configureAboutPanel();

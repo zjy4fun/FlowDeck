@@ -98,4 +98,7 @@ contextBridge.exposeInMainWorld('flowdeck', {
     ipcRenderer.invoke('flowdeck:update-close-window') as Promise<void>,
   runUpdateAction: (action: string) =>
     ipcRenderer.invoke('flowdeck:update-run-action', action) as Promise<void>,
+
+  toggleMaximizeWindow: () =>
+    ipcRenderer.invoke('flowdeck:window-toggle-maximize') as Promise<void>,
 });

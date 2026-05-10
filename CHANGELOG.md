@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.4.36
+
+- Add double-click header to maximize/restore window functionality
+- Enhance single-tab header mode with full window drag support
+
 ## v0.4.35
 
 - Add "Search" to terminal right-click menu, opening a Google search for the selected text in the default browser

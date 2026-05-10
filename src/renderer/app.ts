@@ -204,6 +204,26 @@ export async function startApp(): Promise<void> {
     }
   };
   document.addEventListener('visibilitychange', handleVisibilityChange);
+
+  // Add double-click handler for header to toggle maximize/restore window
+  const header = document.querySelector('.tabs-panel');
+  if (header) {
+    header.addEventListener('dblclick', (e) => {
+      // Only trigger on the header itself, not on buttons or inputs
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName !== 'BUTTON' &&
+        target.tagName !== 'INPUT' &&
+        target.tagName !== 'SELECT' &&
+        !target.closest('button') &&
+        !target.closest('input') &&
+        !target.closest('select')
+      ) {
+        void bridge.toggleMaximizeWindow();
+      }
+    });
+  }
+
   window.addEventListener('beforeunload', () => {
     reactivationController.dispose();
     window.removeEventListener('focus', handleWindowFocus);

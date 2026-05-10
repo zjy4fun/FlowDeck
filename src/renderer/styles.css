@@ -156,6 +156,7 @@ body {
   border-bottom: 1px solid var(--tabs-border);
   -webkit-app-region: drag;
   background: var(--tabs-bg);
+  cursor: default;
 }
 
 .tabs-list {
