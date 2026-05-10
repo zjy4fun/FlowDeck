@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.4.37
+
+- Fix TypeScript compilation errors for window maximize/restore functionality
+- Fix update window layout to prevent content overlap between progress bar and buttons
+
 ## v0.4.36
 
 - Add double-click header to maximize/restore window functionality
