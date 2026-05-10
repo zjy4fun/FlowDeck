@@ -98,6 +98,7 @@ export interface AppSettings {
   defaultOpenDirectory: string;
   maxSessions: number;
   themeMode: ThemeMode;
+  headerMode: HeaderMode;
   developerModeEnabled: boolean;
 }
 
@@ -124,6 +125,7 @@ export interface DeveloperContext {
 
 export type ThemeMode = 'system' | 'light' | 'dark';
 export type ResolvedTheme = 'light' | 'dark';
+export type HeaderMode = 'multi-tab' | 'single-tab';
 
 export type UpdateWindowAction =
   | 'cancel'

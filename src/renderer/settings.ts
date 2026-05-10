@@ -62,7 +62,11 @@ export function applySettingsToDom(): void {
   dom.paneOpacityInput.value = settings.paneOpacity.toFixed(2);
   dom.paneOpacityValue.textContent = settings.paneOpacity.toFixed(2);
   dom.themeModeSelect.value = settings.themeMode;
+  dom.headerModeSelect.value = settings.headerMode;
   dom.developerModeInput.checked = settings.developerModeEnabled;
+
+  const header = dom.tabsList.closest('.tabs-panel');
+  if (header) header.classList.toggle('header-single-tab', settings.headerMode === 'single-tab');
 }
 
 /* ── Load persisted settings from main process ── */
@@ -166,6 +170,15 @@ function updateThemeMode(value: string): void {
   persistSettings();
 }
 
+function updateHeaderMode(value: string, render: (refit: boolean) => void): void {
+  const next = value === 'single-tab' ? 'single-tab' : 'multi-tab';
+  if (state.settings.headerMode === next) return;
+  state.settings.headerMode = next;
+  applySettingsToDom();
+  persistSettings();
+  render(false);
+}
+
 /* ── Wire up settings panel event listeners ── */
 
 export function initSettingsListeners(
@@ -205,6 +218,10 @@ export function initSettingsListeners(
 
   dom.themeModeSelect.addEventListener('change', () => {
     updateThemeMode(dom.themeModeSelect.value);
+  });
+
+  dom.headerModeSelect.addEventListener('change', () => {
+    updateHeaderMode(dom.headerModeSelect.value, render);
   });
 
   dom.developerModeInput.addEventListener('change', () => {

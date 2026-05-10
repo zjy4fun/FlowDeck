@@ -9,6 +9,7 @@ export interface PersistedSettings {
   defaultOpenDirectory: string;
   maxSessions: number;
   themeMode: 'system' | 'light' | 'dark';
+  headerMode: 'multi-tab' | 'single-tab';
   developerModeEnabled: boolean;
 }
 
@@ -21,6 +22,7 @@ const DEFAULTS: PersistedSettings = {
   defaultOpenDirectory: app.getPath('home'),
   maxSessions: 8,
   themeMode: 'system',
+  headerMode: 'multi-tab',
   developerModeEnabled: false,
 };
 
@@ -96,6 +98,7 @@ function sanitizePersistedSettings(parsed: unknown): PersistedSettings {
       source.themeMode === 'light' || source.themeMode === 'dark'
         ? source.themeMode
         : 'system',
+    headerMode: source.headerMode === 'single-tab' ? 'single-tab' : 'multi-tab',
     developerModeEnabled: source.developerModeEnabled === true,
   };
 }

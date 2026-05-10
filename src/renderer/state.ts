@@ -6,6 +6,7 @@ import type {
   PaneResizeState,
   AppSettings,
   ResolvedTheme,
+  HeaderMode,
 } from './types';
 import { bridge } from './bridge';
 
@@ -31,6 +32,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   defaultOpenDirectory: bridge.defaultCwd,
   maxSessions: 8,
   themeMode: 'system',
+  headerMode: 'multi-tab',
   developerModeEnabled: false,
 };
 
@@ -95,6 +97,7 @@ export let dom = {
   paneOpacityInput: null! as HTMLInputElement,
   paneOpacityValue: null! as HTMLElement,
   themeModeSelect: null! as HTMLSelectElement,
+  headerModeSelect: null! as HTMLSelectElement,
   developerModeInput: null! as HTMLInputElement,
 };
 
@@ -116,6 +119,7 @@ export function initDom(): void {
     paneOpacityInput: document.getElementById('pane-opacity-input') as HTMLInputElement,
     paneOpacityValue: document.getElementById('pane-opacity-value')!,
     themeModeSelect: document.getElementById('theme-mode-input') as HTMLSelectElement,
+    headerModeSelect: document.getElementById('header-mode-input') as HTMLSelectElement,
     developerModeInput: document.getElementById('developer-mode-input') as HTMLInputElement,
   };
 }

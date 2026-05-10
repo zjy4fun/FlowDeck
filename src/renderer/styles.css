@@ -258,6 +258,14 @@ body {
   display: none;
 }
 
+.tabs-panel.header-single-tab .tab-main {
+  -webkit-app-region: drag;
+}
+
+.tabs-panel.header-single-tab .tab-shortcut {
+  display: none;
+}
+
 .tab-swatch {
   display: none;
 }

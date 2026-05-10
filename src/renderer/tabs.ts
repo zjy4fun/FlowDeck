@@ -383,27 +383,31 @@ function createAddPaneButton(): HTMLButtonElement {
 export function renderTabs(): void {
   const focusedIndex = getFocusedIndex();
   const draggedId = state.dragState?.paneId ?? null;
+  const isSingleTab = state.settings.headerMode === 'single-tab';
   let slot = 0;
 
-  const tabElements = state.panes.map((pane, index) => {
-    const isDragging =
-      pane.id === draggedId && (state.dragState?.hasMoved ?? false);
-    const insertBefore =
-      !isDragging &&
-      (state.dragState?.hasMoved ?? false) &&
-      state.dragState?.dropIndex === slot;
+  const tabElements = state.panes
+    .filter((_, index) => !isSingleTab || index === focusedIndex)
+    .map((pane, index) => {
+      const realIndex = state.panes.indexOf(pane);
+      const isDragging =
+        pane.id === draggedId && (state.dragState?.hasMoved ?? false);
+      const insertBefore =
+        !isDragging &&
+        (state.dragState?.hasMoved ?? false) &&
+        state.dragState?.dropIndex === slot;
 
-    const meta: DragMeta = {
-      isDragging,
-      insertBefore: Boolean(insertBefore),
-      offsetX: isDragging
-        ? state.dragState!.currentX - state.dragState!.startX
-        : 0,
-    };
+      const meta: DragMeta = {
+        isDragging,
+        insertBefore: Boolean(insertBefore),
+        offsetX: isDragging
+          ? state.dragState!.currentX - state.dragState!.startX
+          : 0,
+      };
 
-    if (!isDragging) slot += 1;
-    return createTabElement(pane, index, focusedIndex, meta);
-  });
+      if (!isDragging) slot += 1;
+      return createTabElement(pane, realIndex, focusedIndex, meta);
+    });
 
   tabElements.push(createAddPaneButton());
   dom.tabsList.replaceChildren(...tabElements);
