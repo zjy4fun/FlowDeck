@@ -202,6 +202,15 @@ export function createPaneNode(
     if (trimmed) onTitleChange(pane.id, trimmed);
   });
 
+  terminalHost.addEventListener('contextmenu', (event) => {
+    event.preventDefault();
+    node.terminal.focus();
+    void bridge.showTerminalContextMenu({
+      paneId: node.paneId,
+      selectedText: node.terminal.getSelection(),
+    });
+  });
+
   return node;
 }
 

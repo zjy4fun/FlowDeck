@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.4.32
+
+- Add a terminal right-click menu with Copy and Paste actions
+- Add Translate Selection for selected terminal text, opening Google Translate to Chinese
+- Route paste through the existing renderer-to-PTY bridge and add context-menu helper tests
+
 ## v0.4.31
 
 - Keep Developer Mode script controls interactive by handling toolbar clicks before pane focus rerenders

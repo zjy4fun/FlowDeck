@@ -17,6 +17,8 @@ contextBridge.exposeInMainWorld('flowdeck', {
     ipcRenderer.invoke('flowdeck:terminal-resize', payload),
   destroyTerminal: (payload: unknown) =>
     ipcRenderer.invoke('flowdeck:terminal-destroy', payload),
+  showTerminalContextMenu: (payload: unknown) =>
+    ipcRenderer.invoke('flowdeck:terminal-context-menu', payload),
 
   loadSettings: () => ipcRenderer.invoke('flowdeck:settings-load'),
   saveSettings: (settings: unknown) =>
@@ -44,6 +46,18 @@ contextBridge.exposeInMainWorld('flowdeck', {
     ) => handler(payload);
     ipcRenderer.on('flowdeck:terminal-exit', listener);
     return () => ipcRenderer.removeListener('flowdeck:terminal-exit', listener);
+  },
+
+  onTerminalContextMenuAction: (
+    handler: (payload: { type: string; paneId: string; text?: string }) => void,
+  ) => {
+    const listener = (
+      _event: IpcRendererEvent,
+      payload: { type: string; paneId: string; text?: string },
+    ) => handler(payload);
+    ipcRenderer.on('flowdeck:terminal-context-menu-action', listener);
+    return () =>
+      ipcRenderer.removeListener('flowdeck:terminal-context-menu-action', listener);
   },
 
   onMenuNewTab: (handler: () => void) => {

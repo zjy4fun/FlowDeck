@@ -292,6 +292,17 @@ export function initLifecycle(deps: LifecycleDeps): CleanupFn {
   });
   cleanups.push(removeExitListener);
 
+  const removeTerminalContextMenuAction = bridge.onTerminalContextMenuAction(
+    ({ type, paneId, text }) => {
+      if (type !== 'paste' || !text) return;
+      const node = paneNodeMap.get(paneId);
+      if (!node?.sessionReady) return;
+      bridge.writeTerminal({ paneId, data: text });
+      node.terminal.focus();
+    },
+  );
+  cleanups.push(removeTerminalContextMenuAction);
+
   const handleAddPaneClick = (): void => {
     try {
       deps.addPane();

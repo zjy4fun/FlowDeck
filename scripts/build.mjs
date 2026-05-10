@@ -69,6 +69,14 @@ await Promise.all([
     external: ['electron'],
     format: 'cjs',
   }),
+  esbuild.build({
+    ...shared,
+    entryPoints: ['src/main/terminal-context-menu.ts'],
+    platform: 'node',
+    target: 'node20',
+    outfile: 'dist/test-support/terminal-context-menu.cjs',
+    format: 'cjs',
+  }),
 
   // Preload script
   esbuild.build({

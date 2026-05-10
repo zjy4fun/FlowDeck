@@ -1,9 +1,11 @@
 import {
   app,
   BrowserWindow,
+  clipboard,
   dialog,
   ipcMain,
   Menu,
+  shell,
   type OpenDialogOptions,
 } from 'electron';
 import * as fs from 'fs';
@@ -20,6 +22,10 @@ import {
 } from './updater';
 import { createAboutDialogOptions } from './about-dialog';
 import { getWindowIconPath, shouldToggleFullScreenForInput } from './window-options';
+import {
+  createTranslateUrl,
+  sanitizeTerminalContextMenuRequest,
+} from './terminal-context-menu';
 
 const isCaptureMode = process.env.FLOWDECK_CAPTURE === '1';
 
@@ -54,6 +60,46 @@ function registerSettingsHandlers(): void {
     }
   });
   ipcMain.handle('flowdeck:developer-context', (_event, payload) => getDeveloperContext(payload));
+}
+
+function registerTerminalContextMenuHandler(): void {
+  ipcMain.handle('flowdeck:terminal-context-menu', (event, payload) => {
+    const request = sanitizeTerminalContextMenuRequest(payload);
+    if (!request) return;
+
+    const win = BrowserWindow.fromWebContents(event.sender);
+    const hasSelection = request.selectedText.length > 0;
+    const pasteText = clipboard.readText();
+
+    const menu = Menu.buildFromTemplate([
+      {
+        label: 'Copy',
+        enabled: hasSelection,
+        click: () => clipboard.writeText(request.selectedText),
+      },
+      {
+        label: 'Paste',
+        enabled: pasteText.length > 0,
+        click: () => {
+          event.sender.send('flowdeck:terminal-context-menu-action', {
+            type: 'paste',
+            paneId: request.paneId,
+            text: pasteText,
+          });
+        },
+      },
+      { type: 'separator' },
+      {
+        label: 'Translate Selection',
+        enabled: hasSelection,
+        click: () => {
+          void shell.openExternal(createTranslateUrl(request.selectedText));
+        },
+      },
+    ]);
+
+    menu.popup(win ? { window: win } : undefined);
+  });
 }
 
 function configureAboutPanel(): void {
@@ -320,6 +366,7 @@ app.whenReady().then(() => {
   ensurePtyHelper();
   registerPtyHandlers();
   registerSettingsHandlers();
+  registerTerminalContextMenuHandler();
   registerUpdaterIpcHandlers();
   configureAboutPanel();
   buildAppMenu();

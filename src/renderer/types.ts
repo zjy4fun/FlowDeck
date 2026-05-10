@@ -166,6 +166,10 @@ export interface FlowDeckBridge {
   }) => Promise<{ paneId: string }>;
 
   writeTerminal: (payload: { paneId: string; data: string }) => Promise<void>;
+  showTerminalContextMenu: (payload: {
+    paneId: string;
+    selectedText: string;
+  }) => Promise<void>;
 
   resizeTerminal: (payload: {
     paneId: string;
@@ -188,6 +192,10 @@ export interface FlowDeckBridge {
 
   onTerminalExit: (
     handler: (payload: { paneId: string; exitCode: number }) => void,
+  ) => () => void;
+
+  onTerminalContextMenuAction: (
+    handler: (payload: { type: 'paste'; paneId: string; text: string }) => void,
   ) => () => void;
 
   onMenuNewTab: (handler: () => void) => () => void;
