@@ -19,6 +19,7 @@ import {
 import { createPaneActionsController } from './controllers/pane-actions';
 import { createNavigationController } from './controllers/navigation';
 import { initLifecycle } from './controllers/lifecycle';
+import { bridge } from './bridge';
 import type { RenderFn } from './types';
 
 /* ── Status bar ── */

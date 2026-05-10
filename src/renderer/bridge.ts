@@ -33,6 +33,7 @@ function createUnavailableBridge(): FlowDeckBridge {
     restartForUpdate: () => Promise.resolve(),
     closeUpdateWindow: () => Promise.resolve(),
     runUpdateAction: () => Promise.resolve(),
+    toggleMaximizeWindow: () => Promise.resolve(),
   };
 }
 
