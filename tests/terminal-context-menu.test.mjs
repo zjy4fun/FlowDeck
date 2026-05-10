@@ -4,6 +4,7 @@ import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
 const {
+  createSearchUrl,
   createTranslateUrl,
   sanitizeTerminalContextMenuRequest,
 } = require('../dist/test-support/terminal-context-menu.cjs');
@@ -26,6 +27,12 @@ test('terminal context menu request sanitizer rejects invalid payloads', () => {
   assert.equal(sanitizeTerminalContextMenuRequest(null), null);
   assert.equal(sanitizeTerminalContextMenuRequest({ paneId: '' }), null);
   assert.equal(sanitizeTerminalContextMenuRequest({ paneId: 1 }), null);
+});
+
+test('search URL targets Google and encodes selected text', () => {
+  const url = new URL(createSearchUrl('hello 世界'));
+  assert.equal(url.origin, 'https://www.google.com');
+  assert.equal(url.searchParams.get('q'), 'hello 世界');
 });
 
 test('translate URL targets Chinese and encodes selected text', () => {

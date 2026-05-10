@@ -32,3 +32,7 @@ export function createTranslateUrl(selectedText: string): string {
   });
   return `https://translate.google.com/?${params.toString()}`;
 }
+
+export function createSearchUrl(selectedText: string): string {
+  return `https://www.google.com/search?q=${encodeURIComponent(selectedText)}`;
+}

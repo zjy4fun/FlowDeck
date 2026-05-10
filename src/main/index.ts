@@ -23,6 +23,7 @@ import {
 import { createAboutDialogOptions } from './about-dialog';
 import { getWindowIconPath, shouldToggleFullScreenForInput } from './window-options';
 import {
+  createSearchUrl,
   createTranslateUrl,
   sanitizeTerminalContextMenuRequest,
 } from './terminal-context-menu';
@@ -89,6 +90,13 @@ function registerTerminalContextMenuHandler(): void {
         },
       },
       { type: 'separator' },
+      {
+        label: 'Search',
+        enabled: hasSelection,
+        click: () => {
+          void shell.openExternal(createSearchUrl(request.selectedText));
+        },
+      },
       {
         label: 'Translate Selection',
         enabled: hasSelection,
