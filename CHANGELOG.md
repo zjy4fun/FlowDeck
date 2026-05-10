@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.4.35
+
+- 终端右键菜单新增「Search」选项，选中文本后可直接用浏览器打开 Google 搜索
+
+## v0.4.34
+
+- 新增单标签页头部模式（single-tab header mode），仅显示当前聚焦的标签页，整个标题栏区域可拖拽窗口
+
 ## v0.4.33
 
 - Re-release the terminal context menu feature with the missing helper and regression test files included
