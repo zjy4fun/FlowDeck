@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.4.33
+
+- Re-release the terminal context menu feature with the missing helper and regression test files included
+- Keep the right-click Copy, Paste, and Translate Selection behavior from v0.4.32
+
 ## v0.4.32
 
 - Add a terminal right-click menu with Copy and Paste actions
