@@ -2,11 +2,11 @@
 
 ## v0.4.35
 
-- 终端右键菜单新增「Search」选项，选中文本后可直接用浏览器打开 Google 搜索
+- Add "Search" to terminal right-click menu, opening a Google search for the selected text in the default browser
 
 ## v0.4.34
 
-- 新增单标签页头部模式（single-tab header mode），仅显示当前聚焦的标签页，整个标题栏区域可拖拽窗口
+- Add single-tab header mode that shows only the focused tab and makes the entire header area a window drag handle
 
 ## v0.4.33
 
