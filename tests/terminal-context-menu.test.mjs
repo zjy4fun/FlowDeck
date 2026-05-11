@@ -6,6 +6,7 @@ const require = createRequire(import.meta.url);
 const {
   createSearchUrl,
   createTranslateUrl,
+  sanitizeExternalUrl,
   sanitizeTerminalContextMenuRequest,
 } = require('../dist/test-support/terminal-context-menu.cjs');
 
@@ -42,4 +43,12 @@ test('translate URL targets Chinese and encodes selected text', () => {
   assert.equal(url.searchParams.get('tl'), 'zh-CN');
   assert.equal(url.searchParams.get('text'), 'hello 世界');
   assert.equal(url.searchParams.get('op'), 'translate');
+});
+
+test('external URL sanitizer only accepts http and https URLs', () => {
+  assert.equal(sanitizeExternalUrl({ url: 'https://example.com/a?b=1' }), 'https://example.com/a?b=1');
+  assert.equal(sanitizeExternalUrl({ url: 'http://example.com/' }), 'http://example.com/');
+  assert.equal(sanitizeExternalUrl({ url: 'file:///etc/passwd' }), null);
+  assert.equal(sanitizeExternalUrl({ url: 'javascript:alert(1)' }), null);
+  assert.equal(sanitizeExternalUrl({ url: 1 }), null);
 });

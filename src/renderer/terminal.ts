@@ -1,4 +1,5 @@
 import { Terminal } from '@xterm/xterm';
+import type { IBufferLine, ILink, ILinkProvider } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { WebglAddon } from '@xterm/addon-webgl';
 import type { PaneData, PaneNode, ResolvedTheme } from './types';
@@ -72,6 +73,8 @@ const LIGHT_PALETTE = {
 };
 
 const TERMINAL_SCROLLBAR_WIDTH = 6;
+const URL_PATTERN = /https?:\/\/[^\s<>'"`]+/gi;
+const URL_TRAILING_PUNCTUATION = /[),.;:!?]+$/;
 
 export function getTerminalBackground(mode?: ResolvedTheme): string {
   const resolved = mode ?? getResolvedTheme();
@@ -100,6 +103,82 @@ function tryAttachWebgl(terminal: Terminal): WebglAddon | null {
   } catch {
     return null;
   }
+}
+
+function getCellColumnByStringIndex(line: IBufferLine, targetIndex: number): number | null {
+  let stringIndex = 0;
+  const limit = Math.min(line.length, Number.MAX_SAFE_INTEGER);
+
+  for (let cellIndex = 0; cellIndex < limit; cellIndex += 1) {
+    const cell = line.getCell(cellIndex);
+    if (!cell || cell.getWidth() === 0) continue;
+
+    const chars = cell.getChars() || ' ';
+    if (targetIndex < stringIndex + chars.length) {
+      return cellIndex + 1;
+    }
+    stringIndex += chars.length;
+  }
+
+  return null;
+}
+
+function stripTrailingUrlPunctuation(url: string): string {
+  return url.replace(URL_TRAILING_PUNCTUATION, '');
+}
+
+function createTerminalLinkProvider(
+  terminal: Terminal,
+  onHover: (url: string) => void,
+  onLeave: (url: string) => void,
+): ILinkProvider {
+  return {
+    provideLinks(bufferLineNumber, callback) {
+      const line = terminal.buffer.active.getLine(bufferLineNumber - 1);
+      if (!line) {
+        callback(undefined);
+        return;
+      }
+
+      const text = line.translateToString(true);
+      const links: ILink[] = [];
+      for (const match of text.matchAll(URL_PATTERN)) {
+        const rawUrl = match[0];
+        const url = stripTrailingUrlPunctuation(rawUrl);
+        if (!url) continue;
+
+        const startIndex = match.index ?? 0;
+        const endIndex = startIndex + url.length - 1;
+        const startColumn = getCellColumnByStringIndex(line, startIndex) ?? startIndex + 1;
+        const endColumn = getCellColumnByStringIndex(line, endIndex) ?? startColumn + url.length - 1;
+
+        links.push({
+          range: {
+            start: { x: startColumn, y: bufferLineNumber },
+            end: { x: endColumn, y: bufferLineNumber },
+          },
+          text: url,
+          decorations: {
+            pointerCursor: true,
+            underline: true,
+          },
+          activate(event, nextUrl) {
+            if (event.metaKey || event.ctrlKey) {
+              void bridge.openExternalUrl({ url: nextUrl });
+            }
+          },
+          hover(_event, nextUrl) {
+            onHover(nextUrl);
+          },
+          leave(_event, nextUrl) {
+            onLeave(nextUrl);
+          },
+        });
+      }
+
+      callback(links.length > 0 ? links : undefined);
+    },
+  };
 }
 
 /* ── Node creation ── */
@@ -170,6 +249,19 @@ export function createPaneNode(
   terminal.open(terminalHost);
 
   const webglAddon = tryAttachWebgl(terminal);
+  let hoveredUrl: string | null = null;
+
+  terminal.registerLinkProvider(
+    createTerminalLinkProvider(
+      terminal,
+      (nextUrl) => {
+        hoveredUrl = nextUrl;
+      },
+      (nextUrl) => {
+        if (hoveredUrl === nextUrl) hoveredUrl = null;
+      },
+    ),
+  );
 
   const node: PaneNode = {
     paneId: pane.id,

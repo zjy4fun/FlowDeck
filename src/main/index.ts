@@ -25,6 +25,7 @@ import { getWindowIconPath, shouldToggleFullScreenForInput } from './window-opti
 import {
   createSearchUrl,
   createTranslateUrl,
+  sanitizeExternalUrl,
   sanitizeTerminalContextMenuRequest,
 } from './terminal-context-menu';
 
@@ -119,6 +120,13 @@ function registerTerminalContextMenuHandler(): void {
     ]);
 
     menu.popup(win ? { window: win } : undefined);
+  });
+
+  ipcMain.handle('flowdeck:open-external-url', async (_event, payload) => {
+    const url = sanitizeExternalUrl(payload);
+    if (!url) return false;
+    await shell.openExternal(url);
+    return true;
   });
 }
 

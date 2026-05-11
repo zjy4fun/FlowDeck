@@ -36,3 +36,20 @@ export function createTranslateUrl(selectedText: string): string {
 export function createSearchUrl(selectedText: string): string {
   return `https://www.google.com/search?q=${encodeURIComponent(selectedText)}`;
 }
+
+export function sanitizeExternalUrl(payload: unknown): string | null {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    return null;
+  }
+
+  const source = payload as Record<string, unknown>;
+  if (typeof source.url !== 'string') return null;
+
+  try {
+    const url = new URL(source.url.trim());
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
+    return url.toString();
+  } catch {
+    return null;
+  }
+}

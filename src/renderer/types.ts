@@ -172,6 +172,7 @@ export interface FlowDeckBridge {
     paneId: string;
     selectedText: string;
   }) => Promise<void>;
+  openExternalUrl: (payload: { url: string }) => Promise<boolean>;
 
   resizeTerminal: (payload: {
     paneId: string;

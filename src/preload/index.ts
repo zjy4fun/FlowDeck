@@ -19,6 +19,8 @@ contextBridge.exposeInMainWorld('flowdeck', {
     ipcRenderer.invoke('flowdeck:terminal-destroy', payload),
   showTerminalContextMenu: (payload: unknown) =>
     ipcRenderer.invoke('flowdeck:terminal-context-menu', payload),
+  openExternalUrl: (payload: unknown) =>
+    ipcRenderer.invoke('flowdeck:open-external-url', payload),
 
   loadSettings: () => ipcRenderer.invoke('flowdeck:settings-load'),
   saveSettings: (settings: unknown) =>

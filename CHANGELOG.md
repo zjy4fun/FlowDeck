@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.4.38
+
+- Add Command/Ctrl-click URL opening in terminal panes for hovered HTTP(S) links
+- Validate external URL open requests so only HTTP(S) links can be launched
+
 ## v0.4.37
 
 - Fix TypeScript compilation errors for window maximize/restore functionality

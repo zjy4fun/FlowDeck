@@ -14,6 +14,7 @@ function createUnavailableBridge(): FlowDeckBridge {
     createTerminal: fail,
     writeTerminal: fail,
     showTerminalContextMenu: fail,
+    openExternalUrl: fail,
     resizeTerminal: fail,
     destroyTerminal: fail,
     getFilePath: () => '',
