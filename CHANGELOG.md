@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.4.39
+
+- Fix macOS update window layout so traffic-light controls no longer overlap the app icon
+- Increase macOS update window height so restart and action buttons remain visible
+
 ## v0.4.38
 
 - Add Command/Ctrl-click URL opening in terminal panes for hovered HTTP(S) links

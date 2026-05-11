@@ -88,6 +88,10 @@
         user-select: none;
       }
 
+      html[data-platform='darwin'] body {
+        padding-top: 66px;
+      }
+
       body.is-compact {
         display: grid;
         align-content: center;
@@ -371,6 +375,7 @@
       if (!bridge) {
         throw new Error('flowdeck bridge not available');
       }
+      document.documentElement.dataset.platform = bridge.platform || '';
 
       const ACTION_CANCEL = 'cancel';
       const ACTION_RESTART = 'restart';

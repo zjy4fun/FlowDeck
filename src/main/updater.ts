@@ -726,7 +726,12 @@ function getUpdateWindowSize(state: UpdateWindowState | null): {
   width: number;
   height: number;
 } {
-  return state?.notes ? RELEASE_NOTES_WINDOW_SIZE : COMPACT_UPDATE_WINDOW_SIZE;
+  const baseSize = state?.notes ? RELEASE_NOTES_WINDOW_SIZE : COMPACT_UPDATE_WINDOW_SIZE;
+  const macTitlebarInset = process.platform === 'darwin' ? 44 : 0;
+  return {
+    width: baseSize.width,
+    height: baseSize.height + macTitlebarInset,
+  };
 }
 
 function updateWindowButtonsForState(state: UpdateWindowState | null): Set<UpdateWindowAction> {
