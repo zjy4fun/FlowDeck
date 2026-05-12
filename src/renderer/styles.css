@@ -2,6 +2,7 @@
 
 :root {
   --app-font-size: 13px;
+  --mono-font-family: "SF Mono", SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "DejaVu Sans Mono", "Symbols Nerd Font Mono", "Noto Sans Mono CJK SC", "Noto Sans Mono CJK TC", "Noto Sans Mono CJK JP", "Noto Sans CJK SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei UI", "Noto Sans Symbols 2", "Segoe UI Symbol", "Apple Symbols", "Noto Color Emoji", "Apple Color Emoji", monospace;
   --pane-opacity: 0.75;
   --pane-tone-opacity: 0.14;
   --pane-width: 720px;
@@ -129,7 +130,7 @@ body {
   min-height: 100%;
   background: var(--bg-gradient);
   color: var(--text);
-  font-family: Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-family: var(--mono-font-family);
   font-size: var(--app-font-size);
 }
 
@@ -822,6 +823,7 @@ body.is-resizing-pane {
   height: 100%;
   background-color: var(--terminal-bg) !important;
   color: var(--terminal-fg);
+  font-family: var(--mono-font-family);
 }
 
 .terminal-host .xterm-viewport {

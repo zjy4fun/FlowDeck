@@ -1,7 +1,6 @@
 import { Terminal } from '@xterm/xterm';
 import type { IBufferLine, ILink, ILinkProvider } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
-import { WebglAddon } from '@xterm/addon-webgl';
 import type { PaneData, PaneNode, ResolvedTheme } from './types';
 import { state, getResolvedTheme } from './state';
 import { bridge } from './bridge';
@@ -73,6 +72,29 @@ const LIGHT_PALETTE = {
 };
 
 const TERMINAL_SCROLLBAR_WIDTH = 6;
+export const TERMINAL_FONT_FAMILY = [
+  '"SF Mono"',
+  'SFMono-Regular',
+  'Menlo',
+  'Monaco',
+  'Consolas',
+  '"Liberation Mono"',
+  '"DejaVu Sans Mono"',
+  '"Symbols Nerd Font Mono"',
+  '"Noto Sans Mono CJK SC"',
+  '"Noto Sans Mono CJK TC"',
+  '"Noto Sans Mono CJK JP"',
+  '"Noto Sans CJK SC"',
+  '"PingFang SC"',
+  '"Hiragino Sans GB"',
+  '"Microsoft YaHei UI"',
+  '"Noto Sans Symbols 2"',
+  '"Segoe UI Symbol"',
+  '"Apple Symbols"',
+  '"Noto Color Emoji"',
+  '"Apple Color Emoji"',
+  'monospace',
+].join(', ');
 const URL_PATTERN = /https?:\/\/[^\s<>'"`]+/gi;
 const URL_TRAILING_PUNCTUATION = /[),.;:!?]+$/;
 
@@ -90,19 +112,6 @@ export function createTerminalTheme(accent: string, mode?: ResolvedTheme) {
     cursorAccent: getCursorAccentColor(accent, resolved),
     overviewRulerBorder: palette.background,
   };
-}
-
-/* ── WebGL addon (graceful fallback) ── */
-
-function tryAttachWebgl(terminal: Terminal): WebglAddon | null {
-  try {
-    const addon = new WebglAddon();
-    addon.onContextLoss(() => addon.dispose());
-    terminal.loadAddon(addon);
-    return addon;
-  } catch {
-    return null;
-  }
 }
 
 function getCellColumnByStringIndex(line: IBufferLine, targetIndex: number): number | null {
@@ -236,7 +245,7 @@ export function createPaneNode(
     cursorBlink: true,
     disableStdin: false,
     drawBoldTextInBrightColors: true,
-    fontFamily: 'Menlo, Monaco, Consolas, "Liberation Mono", monospace',
+    fontFamily: TERMINAL_FONT_FAMILY,
     fontSize: state.settings.fontSize,
     lineHeight: 1.2,
     overviewRuler: { width: TERMINAL_SCROLLBAR_WIDTH },
@@ -248,7 +257,10 @@ export function createPaneNode(
   terminal.loadAddon(fitAddon);
   terminal.open(terminalHost);
 
-  const webglAddon = tryAttachWebgl(terminal);
+  // Keep xterm on its built-in browser renderer. The WebGL glyph atlas is fast,
+  // but it does not reliably use platform font fallback for CJK, box-drawing,
+  // emoji, and private-use symbols, which shows up as tofu boxes or mojibake.
+  const webglAddon = null;
   let hoveredUrl: string | null = null;
 
   terminal.registerLinkProvider(

@@ -24,6 +24,10 @@ const terminalDataBatcher = createTerminalDataBatcher({
   },
 });
 
+function isUtf8Locale(value: string | undefined): boolean {
+  return Boolean(value && /utf-?8/i.test(value));
+}
+
 function buildSpawnEnv(extraEnv: Record<string, string>): Record<string, string> {
   const env: Record<string, string> = {};
   for (const [key, value] of Object.entries(process.env)) {
@@ -33,12 +37,21 @@ function buildSpawnEnv(extraEnv: Record<string, string>): Record<string, string>
     if (key.startsWith('CODEX_')) continue;
     env[key] = value;
   }
-  return {
+  const nextEnv = {
     ...env,
     COLORTERM: 'truecolor',
     TERM: 'xterm-256color',
     ...extraEnv,
   };
+
+  // GUI-launched Electron apps can inherit a sparse/non-UTF locale. Make the
+  // PTY advertise UTF-8 so shell tools emit Unicode instead of lossy fallback.
+  if (!isUtf8Locale(nextEnv.LANG)) nextEnv.LANG = 'en_US.UTF-8';
+  if (!isUtf8Locale(nextEnv.LC_ALL) && !isUtf8Locale(nextEnv.LC_CTYPE)) {
+    nextEnv.LC_CTYPE = 'en_US.UTF-8';
+  }
+
+  return nextEnv;
 }
 
 function buildRestrictedHostNotice(): string | null {

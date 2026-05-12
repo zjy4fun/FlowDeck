@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.4.40
+
+- Fix terminal Unicode rendering for CJK, box-drawing, special symbols, emoji, and Nerd Font glyphs by using a broader fallback font stack
+- Disable the xterm WebGL glyph atlas so browser/platform font fallback can render missing glyphs correctly
+- Default PTY sessions to a UTF-8 locale when launched from sparse GUI environments
+
 ## v0.4.39
 
 - Fix macOS update window layout so traffic-light controls no longer overlap the app icon
