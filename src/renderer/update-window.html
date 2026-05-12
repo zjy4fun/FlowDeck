@@ -99,10 +99,10 @@
 
       .panel {
         display: grid;
-        grid-template-rows: auto auto;
+        grid-template-rows: minmax(0, 1fr) auto;
         gap: 18px;
         min-height: 100%;
-        align-content: start;
+        align-content: stretch;
       }
 
       .card {
@@ -254,6 +254,7 @@
         align-items: center;
         gap: 8px;
         flex-wrap: wrap;
+        min-height: 47px;
         padding-top: 14px;
         border-top: 1px solid var(--notes-divider);
         -webkit-app-region: no-drag;

@@ -17,7 +17,7 @@ const REPO = 'zjy4fun/FlowDeck';
 const ASAR_ASSET_NAME = 'app.asar';
 const UPDATE_WINDOW_CHANNEL = 'flowdeck:update-state';
 const SKIPPED_UPDATE_FILE = 'skipped-update.json';
-const COMPACT_UPDATE_WINDOW_SIZE = { width: 480, height: 188 };
+const COMPACT_UPDATE_WINDOW_SIZE = { width: 480, height: 240 };
 const RELEASE_NOTES_WINDOW_SIZE = { width: 680, height: 560 };
 
 interface UpdateWindowState {

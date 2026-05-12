@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.4.41
+
+- Fix the compact macOS update window so bottom action buttons remain fully visible during downloads
+- Reserve explicit layout space for update actions to prevent clipping in the hidden-titlebar window
+
 ## v0.4.40
 
 - Fix terminal Unicode rendering for CJK, box-drawing, special symbols, emoji, and Nerd Font glyphs by using a broader fallback font stack
