@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.4.43
+
+- Fix AI Mode prompt input losing focus while typing, especially with Chinese IME composition
+- Avoid replacing the prompt input DOM node on every keystroke so voice dictation does not duplicate text
+- Keep Generate and Run button state in sync without rerendering the active input field
+
 ## v0.4.42
 
 - Add AI Mode as a persistent setting that shows a natural-language command generator above every session

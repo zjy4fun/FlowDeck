@@ -1,6 +1,6 @@
 {
   "name": "flowdeck",
-  "version": "0.4.42",
+  "version": "0.4.43",
   "private": true,
   "packageManager": "pnpm@10.33.0",
   "license": "MIT",

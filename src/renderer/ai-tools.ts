@@ -44,6 +44,38 @@ function shellRunData(command: string): string {
   return `\x03${command}\r`;
 }
 
+function getAiStatus(aiState: PaneAiState): { text: string; title: string } {
+  const command = aiState.command.trim();
+  const text = aiState.loading
+    ? 'Codex generating…'
+    : aiState.error
+      ? aiState.error
+      : command
+        ? 'Ready to run'
+        : 'Describe a shell command';
+  return { text: command || text, title: command || text };
+}
+
+function updateAiToolbarControls(node: PaneNode, aiState: PaneAiState): void {
+  const command = aiState.command.trim();
+  const generateButton = node.aiToolbar.querySelector<HTMLButtonElement>('.aibar-generate');
+  const runButton = node.aiToolbar.querySelector<HTMLButtonElement>('.aibar-run');
+  const result = node.aiToolbar.querySelector<HTMLElement>('.aibar-result');
+  const status = getAiStatus(aiState);
+
+  if (generateButton) {
+    generateButton.disabled = aiState.prompt.trim().length === 0 || aiState.loading;
+    generateButton.textContent = aiState.loading ? 'Generating' : 'Generate';
+  }
+  if (runButton) {
+    runButton.disabled = !command || aiState.loading;
+  }
+  if (result) {
+    result.textContent = status.text;
+    result.title = status.title;
+  }
+}
+
 function writeToPane(paneId: string, data: string): void {
   const node = paneNodeMap.get(paneId);
   if (!node?.sessionReady) return;
@@ -56,20 +88,14 @@ function renderAiToolbar(node: PaneNode, pane: PaneData): void {
   const aiState = getPaneState(pane.id);
   const canGenerate = aiState.prompt.trim().length > 0 && !aiState.loading;
   const command = aiState.command.trim();
-  const status = aiState.loading
-    ? 'Codex generating…'
-    : aiState.error
-      ? aiState.error
-      : command
-        ? 'Ready to run'
-        : 'Describe a shell command';
+  const status = getAiStatus(aiState);
 
   node.aiToolbar.innerHTML = `
     <div class="aibar-badge">AI</div>
     <input class="aibar-input" data-ai-action="prompt" value="${escapeHtml(aiState.prompt)}" placeholder="Describe what you want to do in this session…" spellcheck="false" />
     <button class="aibar-generate" data-ai-action="generate" type="button" ${canGenerate ? '' : 'disabled'}>${aiState.loading ? 'Generating' : 'Generate'}</button>
     <button class="aibar-run" data-ai-action="run" type="button" ${command && !aiState.loading ? '' : 'disabled'}>Run</button>
-    <div class="aibar-result" title="${escapeHtml(command || status)}">${escapeHtml(command || status)}</div>
+    <div class="aibar-result" title="${escapeHtml(status.title)}">${escapeHtml(status.text)}</div>
   `;
 }
 
@@ -106,7 +132,7 @@ async function generateCommand(paneId: string): Promise<void> {
   aiState.loading = true;
   aiState.error = null;
   aiState.command = '';
-  renderAiToolbar(node, pane);
+  updateAiToolbarControls(node, aiState);
 
   try {
     const result = await bridge.generateAiCommand({ cwd: pane.cwd, description });
@@ -118,7 +144,7 @@ async function generateCommand(paneId: string): Promise<void> {
   } finally {
     if (aiState.requestId !== requestId) return;
     aiState.loading = false;
-    renderAiToolbarForPane(paneId);
+    updateAiToolbarControls(node, aiState);
   }
 }
 
@@ -136,23 +162,21 @@ export function handleAiToolbarEvent(event: Event): void {
 
   if (action === 'prompt' && actionTarget instanceof HTMLInputElement) {
     event.stopPropagation();
-    aiState.prompt = actionTarget.value;
-    if (event.type === 'input') {
-      aiState.command = '';
-      aiState.error = null;
-    }
+
     if (event.type === 'keydown') {
-      if ((event as KeyboardEvent).key === 'Enter') {
+      if ((event as KeyboardEvent).key === 'Enter' && !(event as KeyboardEvent).isComposing) {
         event.preventDefault();
         void generateCommand(paneId);
       }
       return;
     }
+
     if (event.type === 'input') {
-      renderAiToolbarForPane(paneId);
-      const input = paneNodeMap.get(paneId)?.aiToolbar.querySelector<HTMLInputElement>('.aibar-input');
-      input?.focus();
-      input?.setSelectionRange(aiState.prompt.length, aiState.prompt.length);
+      aiState.prompt = actionTarget.value;
+      aiState.command = '';
+      aiState.error = null;
+      const node = paneNodeMap.get(paneId);
+      if (node) updateAiToolbarControls(node, aiState);
     }
     return;
   }
