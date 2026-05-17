@@ -95,7 +95,7 @@ export async function generateAiShellCommand(payload: unknown): Promise<AiComman
     '--skip-git-repo-check',
     '--sandbox',
     'read-only',
-    '--ask-for-approval',
+    '--color',
     'never',
     '--output-last-message',
     outputPath,

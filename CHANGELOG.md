@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.4.44
+
+- Fix AI Mode command generation with newer Codex CLI versions by removing the deprecated approval flag
+- Keep Codex command generation in read-only sandbox mode while writing the final command to a temporary output file
+
 ## v0.4.43
 
 - Fix AI Mode prompt input losing focus while typing, especially with Chinese IME composition
