@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.4.45
+
+- Fix AI Mode command generation in GUI-launched macOS apps by invoking Codex with the bundled local Node binary instead of relying on PATH
+- Prepend the local Node directory to the Codex child process PATH so the Codex shim works outside a login shell
+- Show the underlying AI generation error instead of only Electron's remote-method wrapper message
+
 ## v0.4.44
 
 - Fix AI Mode command generation with newer Codex CLI versions by removing the deprecated approval flag

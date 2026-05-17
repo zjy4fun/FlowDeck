@@ -76,6 +76,11 @@ function updateAiToolbarControls(node: PaneNode, aiState: PaneAiState): void {
   }
 }
 
+function getErrorMessage(err: unknown): string {
+  if (!(err instanceof Error)) return 'Failed to generate command';
+  return err.message.replace(/^Error invoking remote method '[^']+':\s*/i, '').trim() || err.message;
+}
+
 function writeToPane(paneId: string, data: string): void {
   const node = paneNodeMap.get(paneId);
   if (!node?.sessionReady) return;
@@ -140,7 +145,7 @@ async function generateCommand(paneId: string): Promise<void> {
     aiState.command = result.command;
   } catch (err) {
     if (aiState.requestId !== requestId) return;
-    aiState.error = err instanceof Error ? err.message : 'Failed to generate command';
+    aiState.error = getErrorMessage(err);
   } finally {
     if (aiState.requestId !== requestId) return;
     aiState.loading = false;

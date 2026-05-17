@@ -49,20 +49,31 @@ function normalizeCommand(raw: string): string {
   return command.slice(0, MAX_COMMAND_LENGTH);
 }
 
-function findCodexExecutable(): string {
+const NODE_BIN_DIR = '/Users/z/.nvm/versions/node/v24.14.1/bin';
+const NODE_BIN = path.join(NODE_BIN_DIR, 'node');
+const CODEX_JS = '/Users/z/.nvm/versions/node/v24.14.1/lib/node_modules/@openai/codex/bin/codex.js';
+
+function findCodexCommand(): { command: string; prefixArgs: string[] } {
+  // GUI-launched Electron apps often have a sparse PATH. The Codex shim uses
+  // `#!/usr/bin/env node`, which fails when `node` is not on PATH, so prefer
+  // invoking the Codex JS entrypoint with the known local Node binary.
+  if (fs.existsSync(NODE_BIN) && fs.existsSync(CODEX_JS)) {
+    return { command: NODE_BIN, prefixArgs: [CODEX_JS] };
+  }
+
   const candidates = [
     process.env.CODEX_PATH,
-    '/Users/z/.nvm/versions/node/v24.14.1/bin/codex',
+    path.join(NODE_BIN_DIR, 'codex'),
     '/opt/homebrew/bin/codex',
     '/usr/local/bin/codex',
     'codex',
   ].filter(Boolean) as string[];
 
   for (const candidate of candidates) {
-    if (candidate === 'codex') return candidate;
-    if (fs.existsSync(candidate)) return candidate;
+    if (candidate === 'codex') return { command: candidate, prefixArgs: [] };
+    if (fs.existsSync(candidate)) return { command: candidate, prefixArgs: [] };
   }
-  return 'codex';
+  return { command: 'codex', prefixArgs: [] };
 }
 
 function createPrompt(description: string, cwd: string): string {
@@ -88,9 +99,10 @@ export async function generateAiShellCommand(payload: unknown): Promise<AiComman
     `flowdeck-codex-command-${process.pid}-${Date.now()}.txt`,
   );
   const prompt = createPrompt(request.description, request.cwd);
-  const codex = findCodexExecutable();
+  const codex = findCodexCommand();
 
   const args = [
+    ...codex.prefixArgs,
     'exec',
     '--skip-git-repo-check',
     '--sandbox',
@@ -103,10 +115,17 @@ export async function generateAiShellCommand(payload: unknown): Promise<AiComman
   ];
 
   await new Promise<void>((resolve, reject) => {
-    const child = spawn(codex, args, {
+    const child = spawn(codex.command, args, {
       cwd: fs.existsSync(request.cwd) ? request.cwd : app.getPath('home'),
       stdio: ['pipe', 'ignore', 'pipe'],
-      env: { ...process.env, NO_COLOR: '1' },
+      env: {
+        ...process.env,
+        HOME: process.env.HOME || app.getPath('home'),
+        PATH: [NODE_BIN_DIR, '/opt/homebrew/bin', '/usr/local/bin', process.env.PATH]
+          .filter(Boolean)
+          .join(':'),
+        NO_COLOR: '1',
+      },
     });
 
     let stderr = '';
