@@ -56,6 +56,12 @@ function getAiStatus(aiState: PaneAiState): { text: string; title: string } {
   return { text: command || text, title: command || text };
 }
 
+function setResultContent(result: HTMLElement, text: string, title: string): void {
+  result.textContent = text;
+  result.title = title;
+  result.dataset.fullCommand = title;
+}
+
 function updateAiToolbarControls(node: PaneNode, aiState: PaneAiState): void {
   const command = aiState.command.trim();
   const generateButton = node.aiToolbar.querySelector<HTMLButtonElement>('.aibar-generate');
@@ -71,14 +77,22 @@ function updateAiToolbarControls(node: PaneNode, aiState: PaneAiState): void {
     runButton.disabled = !command || aiState.loading;
   }
   if (result) {
-    result.textContent = status.text;
-    result.title = status.title;
+    setResultContent(result, status.text, status.title);
   }
 }
 
 function getErrorMessage(err: unknown): string {
   if (!(err instanceof Error)) return 'Failed to generate command';
   return err.message.replace(/^Error invoking remote method '[^']+':\s*/i, '').trim() || err.message;
+}
+
+function pasteToPane(paneId: string, command: string): void {
+  const node = paneNodeMap.get(paneId);
+  if (!node?.sessionReady) return;
+  bridge.writeTerminal({ paneId, data: command }).catch((err) => {
+    console.error('Failed to paste AI command:', err);
+  });
+  node.terminal.focus();
 }
 
 function writeToPane(paneId: string, data: string): void {
@@ -100,7 +114,7 @@ function renderAiToolbar(node: PaneNode, pane: PaneData): void {
     <input class="aibar-input" data-ai-action="prompt" value="${escapeHtml(aiState.prompt)}" placeholder="Describe what you want to do in this session…" spellcheck="false" />
     <button class="aibar-generate" data-ai-action="generate" type="button" ${canGenerate ? '' : 'disabled'}>${aiState.loading ? 'Generating' : 'Generate'}</button>
     <button class="aibar-run" data-ai-action="run" type="button" ${command && !aiState.loading ? '' : 'disabled'}>Run</button>
-    <div class="aibar-result" title="${escapeHtml(status.title)}">${escapeHtml(status.text)}</div>
+    <div class="aibar-result" data-ai-action="paste" data-full-command="${escapeHtml(status.title)}" title="${escapeHtml(status.title)}">${escapeHtml(status.text)}</div>
   `;
 }
 
@@ -194,5 +208,8 @@ export function handleAiToolbarEvent(event: Event): void {
   } else if (action === 'run') {
     const command = aiState.command.trim();
     if (command) writeToPane(paneId, shellRunData(command));
+  } else if (action === 'paste') {
+    const command = aiState.command.trim();
+    if (command) pasteToPane(paneId, command);
   }
 }

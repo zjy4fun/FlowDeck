@@ -629,6 +629,7 @@ html.is-dev-mode .pane.has-devbar .developer-toolbar {
 
 /* ── AI mode toolbar ── */
 .ai-toolbar {
+  position: relative;
   display: none;
   grid-template-columns: auto minmax(180px, 1fr) auto auto minmax(140px, 0.72fr);
   gap: 7px;
@@ -712,15 +713,37 @@ html.is-ai-mode .pane.has-aibar .ai-toolbar {
   padding: 5px 8px;
   border-radius: 8px;
   color: color-mix(in srgb, var(--terminal-fg) 76%, transparent);
+  cursor: pointer;
+}
+
+.aibar-result:hover {
+  border-color: color-mix(in srgb, #c77dff 48%, var(--pane-accent));
+  color: var(--text-strong);
+}
+
+.aibar-result:hover::after {
+  content: attr(data-full-command);
+  position: absolute;
+  left: 7px;
+  right: 7px;
+  top: calc(100% + 6px);
+  z-index: 30;
+  max-height: 168px;
+  overflow: auto;
+  padding: 9px 10px;
+  border: 1px solid color-mix(in srgb, #c77dff 46%, var(--pane-accent));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--terminal-bg) 92%, #1b1230);
+  box-shadow: 0 12px 32px color-mix(in srgb, black 42%, transparent);
+  color: var(--text-strong);
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.35;
 }
 
 @media (max-width: 1180px) {
   .ai-toolbar {
-    grid-template-columns: auto minmax(140px, 1fr) auto auto;
-  }
-
-  .aibar-result {
-    display: none;
+    grid-template-columns: auto minmax(140px, 1fr) auto auto minmax(96px, 0.58fr);
   }
 }
 

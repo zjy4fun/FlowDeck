@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.4.46
+
+- Show the full generated AI command in an expanded hover preview over the result field
+- Paste the generated command into the current terminal session when clicking the AI result field without executing it
+- Keep the AI result visible on narrower layouts so hover preview and paste remain available
+
 ## v0.4.45
 
 - Fix AI Mode command generation in GUI-launched macOS apps by invoking Codex with the bundled local Node binary instead of relying on PATH
