@@ -2,6 +2,7 @@ import { bridge } from '../bridge';
 import { state, dom, paneNodeMap, getFocusedIndex } from '../state';
 import type { CleanupFn, LifecycleDeps } from '../types';
 import { handleDeveloperToolbarEvent } from '../developer-tools';
+import { handleAiToolbarEvent } from '../ai-tools';
 import {
   setPaneWorkingIndicator,
   clearPaneWorkingIndicator,
@@ -317,15 +318,26 @@ export function initLifecycle(deps: LifecycleDeps): CleanupFn {
 
   const handleDeveloperToolbarClick = (event: MouseEvent): void => {
     handleDeveloperToolbarEvent(event);
+    handleAiToolbarEvent(event);
   };
   const handleDeveloperToolbarChange = (event: Event): void => {
     handleDeveloperToolbarEvent(event);
   };
+  const handleAiToolbarInput = (event: Event): void => {
+    handleAiToolbarEvent(event);
+  };
+  const handleAiToolbarKeydown = (event: KeyboardEvent): void => {
+    handleAiToolbarEvent(event);
+  };
   dom.stage.addEventListener('click', handleDeveloperToolbarClick, true);
   dom.stage.addEventListener('change', handleDeveloperToolbarChange);
+  dom.stage.addEventListener('input', handleAiToolbarInput);
+  dom.stage.addEventListener('keydown', handleAiToolbarKeydown, true);
   cleanups.push(() => {
     dom.stage.removeEventListener('click', handleDeveloperToolbarClick, true);
     dom.stage.removeEventListener('change', handleDeveloperToolbarChange);
+    dom.stage.removeEventListener('input', handleAiToolbarInput);
+    dom.stage.removeEventListener('keydown', handleAiToolbarKeydown, true);
   });
 
   // Menu-driven new/close tab

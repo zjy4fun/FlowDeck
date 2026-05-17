@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.4.42
+
+- Add AI Mode as a persistent setting that shows a natural-language command generator above every session
+- Use local Codex from the Electron main process to turn user descriptions into shell commands
+- Let generated commands be reviewed in the toolbar and run directly in the active terminal session
+- Fix PTY environment typing so TypeScript validation passes
+
 ## v0.4.41
 
 - Fix the compact macOS update window so bottom action buttons remain fully visible during downloads

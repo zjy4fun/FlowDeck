@@ -14,6 +14,7 @@ import { registerPtyHandlers, destroyAllSessions } from './pty-manager';
 import { handleWindowAllClosed } from './window-lifecycle';
 import { loadSettings, saveSettings } from './settings-store';
 import { getDeveloperContext } from './developer-context';
+import { generateAiShellCommand } from './ai-command-generator';
 import {
   applyPendingUpdate,
   initAutoUpdater,
@@ -62,6 +63,9 @@ function registerSettingsHandlers(): void {
     }
   });
   ipcMain.handle('flowdeck:developer-context', (_event, payload) => getDeveloperContext(payload));
+  ipcMain.handle('flowdeck:ai-generate-command', (_event, payload) =>
+    generateAiShellCommand(payload),
+  );
 }
 
 function registerWindowHandlers(): void {

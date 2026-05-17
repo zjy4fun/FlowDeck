@@ -208,6 +208,10 @@ export function createPaneNode(
   developerToolbar.className = 'developer-toolbar';
   developerToolbar.dataset.paneId = pane.id;
 
+  const aiToolbar = document.createElement('div');
+  aiToolbar.className = 'ai-toolbar';
+  aiToolbar.dataset.paneId = pane.id;
+
   const body = document.createElement('div');
   body.className = 'pane-body';
 
@@ -235,6 +239,7 @@ export function createPaneNode(
   body.append(leftResizeHandle);
   body.append(rightResizeHandle);
   shell.append(developerToolbar);
+  shell.append(aiToolbar);
   shell.append(body);
   paneEl.append(shell);
 
@@ -280,6 +285,7 @@ export function createPaneNode(
     cwd: pane.cwd,
     root: paneEl,
     developerToolbar,
+    aiToolbar,
     terminalHost,
     occlusionShield,
     leftResizeHandle,

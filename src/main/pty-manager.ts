@@ -37,7 +37,7 @@ function buildSpawnEnv(extraEnv: Record<string, string>): Record<string, string>
     if (key.startsWith('CODEX_')) continue;
     env[key] = value;
   }
-  const nextEnv = {
+  const nextEnv: Record<string, string> = {
     ...env,
     COLORTERM: 'truecolor',
     TERM: 'xterm-256color',

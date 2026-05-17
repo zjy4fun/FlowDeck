@@ -34,6 +34,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   themeMode: 'system',
   headerMode: 'multi-tab',
   developerModeEnabled: false,
+  aiModeEnabled: false,
 };
 
 export function getDirectoryLabel(cwd: string): string {
@@ -99,6 +100,7 @@ export let dom = {
   themeModeSelect: null! as HTMLSelectElement,
   headerModeSelect: null! as HTMLSelectElement,
   developerModeInput: null! as HTMLInputElement,
+  aiModeInput: null! as HTMLInputElement,
 };
 
 export function initDom(): void {
@@ -121,6 +123,7 @@ export function initDom(): void {
     themeModeSelect: document.getElementById('theme-mode-input') as HTMLSelectElement,
     headerModeSelect: document.getElementById('header-mode-input') as HTMLSelectElement,
     developerModeInput: document.getElementById('developer-mode-input') as HTMLInputElement,
+    aiModeInput: document.getElementById('ai-mode-input') as HTMLInputElement,
   };
 }
 

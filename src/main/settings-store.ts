@@ -11,6 +11,7 @@ export interface PersistedSettings {
   themeMode: 'system' | 'light' | 'dark';
   headerMode: 'multi-tab' | 'single-tab';
   developerModeEnabled: boolean;
+  aiModeEnabled: boolean;
 }
 
 const SETTINGS_FILE = 'settings.json';
@@ -24,6 +25,7 @@ const DEFAULTS: PersistedSettings = {
   themeMode: 'system',
   headerMode: 'multi-tab',
   developerModeEnabled: false,
+  aiModeEnabled: false,
 };
 
 const LIMITS = {
@@ -100,6 +102,7 @@ function sanitizePersistedSettings(parsed: unknown): PersistedSettings {
         : 'system',
     headerMode: source.headerMode === 'single-tab' ? 'single-tab' : 'multi-tab',
     developerModeEnabled: source.developerModeEnabled === true,
+    aiModeEnabled: source.aiModeEnabled === true,
   };
 }
 

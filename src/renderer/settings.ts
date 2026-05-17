@@ -2,6 +2,7 @@ import { state, dom, getResolvedTheme, paneNodeMap } from './state';
 import { bridge } from './bridge';
 import { createTerminalTheme, getTerminalBackground } from './terminal';
 import { refreshAllDeveloperContexts } from './developer-tools';
+import { refreshAllAiToolbars } from './ai-tools';
 
 /* ── Debounced persistence ── */
 
@@ -51,6 +52,7 @@ export function applySettingsToDom(): void {
   );
   root.style.setProperty('--pane-width', `${paneWidthPx}px`);
   root.classList.toggle('is-dev-mode', settings.developerModeEnabled);
+  root.classList.toggle('is-ai-mode', settings.aiModeEnabled);
 
   dom.fontSizeInput.value = String(settings.fontSize);
   dom.defaultDirectoryInput.value = settings.defaultOpenDirectory;
@@ -64,6 +66,7 @@ export function applySettingsToDom(): void {
   dom.themeModeSelect.value = settings.themeMode;
   dom.headerModeSelect.value = settings.headerMode;
   dom.developerModeInput.checked = settings.developerModeEnabled;
+  dom.aiModeInput.checked = settings.aiModeEnabled;
 
   const header = dom.tabsList.closest('.tabs-panel');
   if (header) header.classList.toggle('header-single-tab', settings.headerMode === 'single-tab');
@@ -159,6 +162,15 @@ function updateDeveloperMode(enabled: boolean, render: (refit: boolean) => void)
   refreshAllDeveloperContexts();
 }
 
+function updateAiMode(enabled: boolean, render: (refit: boolean) => void): void {
+  if (state.settings.aiModeEnabled === enabled) return;
+  state.settings.aiModeEnabled = enabled;
+  applySettingsToDom();
+  persistSettings();
+  render(true);
+  refreshAllAiToolbars();
+}
+
 function updateThemeMode(value: string): void {
   const next =
     value === 'light' || value === 'dark' || value === 'system'
@@ -226,6 +238,10 @@ export function initSettingsListeners(
 
   dom.developerModeInput.addEventListener('change', () => {
     updateDeveloperMode(dom.developerModeInput.checked, render);
+  });
+
+  dom.aiModeInput.addEventListener('change', () => {
+    updateAiMode(dom.aiModeInput.checked, render);
   });
 
   if (window.matchMedia) {

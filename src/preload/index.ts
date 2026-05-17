@@ -27,6 +27,8 @@ contextBridge.exposeInMainWorld('flowdeck', {
     ipcRenderer.invoke('flowdeck:settings-save', settings),
   getDeveloperContext: (payload: unknown) =>
     ipcRenderer.invoke('flowdeck:developer-context', payload),
+  generateAiCommand: (payload: unknown) =>
+    ipcRenderer.invoke('flowdeck:ai-generate-command', payload),
 
   onTerminalData: (
     handler: (payload: { paneId: string; data: string }) => void,

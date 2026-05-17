@@ -14,6 +14,7 @@ import {
 } from './terminal';
 import { bridge } from './bridge';
 import { refreshDeveloperContextForPane, removeDeveloperState } from './developer-tools';
+import { renderAiToolbarForPane, removeAiState } from './ai-tools';
 
 /* ── Callbacks provided by the app layer ── */
 
@@ -169,6 +170,7 @@ function ensurePaneNodes(): void {
       node.root.remove();
       paneNodeMap.delete(paneId);
       removeDeveloperState(paneId);
+      removeAiState(paneId);
     }
   }
 
@@ -281,6 +283,7 @@ export function renderPanes(refit = false): void {
     }
 
     refreshDeveloperContextForPane(pane);
+    renderAiToolbarForPane(pane.id);
 
     if (refit || node.needsFit) {
       fitTerminal(node, true);

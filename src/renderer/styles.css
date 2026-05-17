@@ -627,6 +627,104 @@ html.is-dev-mode .pane.has-devbar .developer-toolbar {
   }
 }
 
+/* ── AI mode toolbar ── */
+.ai-toolbar {
+  display: none;
+  grid-template-columns: auto minmax(180px, 1fr) auto auto minmax(140px, 0.72fr);
+  gap: 7px;
+  align-items: center;
+  min-height: 36px;
+  padding: 5px 7px;
+  border-bottom: 1px solid color-mix(in srgb, #9b5de5 34%, var(--pane-accent));
+  background:
+    radial-gradient(circle at 0% 50%, color-mix(in srgb, #9b5de5 18%, transparent), transparent 46%),
+    color-mix(in srgb, var(--terminal-bg) 82%, #9b5de5);
+  color: var(--terminal-fg);
+  font-size: 11px;
+}
+
+html.is-ai-mode .pane.has-aibar .ai-toolbar {
+  display: grid;
+}
+
+.aibar-badge {
+  padding: 3px 8px;
+  border: 1px solid color-mix(in srgb, #c77dff 52%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, #9b5de5 24%, transparent);
+  color: var(--text-strong);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.aibar-input,
+.aibar-result,
+.aibar-generate,
+.aibar-run {
+  height: 24px;
+  border: 1px solid color-mix(in srgb, #9b5de5 24%, var(--settings-input-border));
+  background: color-mix(in srgb, var(--terminal-bg) 78%, black);
+  color: var(--terminal-fg);
+  font: inherit;
+}
+
+.aibar-input {
+  min-width: 0;
+  width: 100%;
+  padding: 0 8px;
+  border-radius: 8px;
+  outline: none;
+}
+
+.aibar-input:focus {
+  border-color: color-mix(in srgb, #c77dff 58%, var(--pane-accent));
+  box-shadow: 0 0 0 1px color-mix(in srgb, #c77dff 22%, transparent);
+}
+
+.aibar-generate,
+.aibar-run {
+  padding: 0 10px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.aibar-generate:not(:disabled) {
+  border-color: color-mix(in srgb, #c77dff 62%, var(--pane-accent));
+  background: color-mix(in srgb, #9b5de5 34%, var(--terminal-bg));
+  color: var(--text-strong);
+}
+
+.aibar-run:not(:disabled) {
+  border-color: color-mix(in srgb, #49b675 62%, var(--pane-accent));
+}
+
+.aibar-generate:disabled,
+.aibar-run:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.aibar-result {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 5px 8px;
+  border-radius: 8px;
+  color: color-mix(in srgb, var(--terminal-fg) 76%, transparent);
+}
+
+@media (max-width: 1180px) {
+  .ai-toolbar {
+    grid-template-columns: auto minmax(140px, 1fr) auto auto;
+  }
+
+  .aibar-result {
+    display: none;
+  }
+}
+
+
 /* ── Stage / panes ── */
 
 .stage-wrap {

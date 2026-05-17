@@ -19,6 +19,7 @@ export interface PaneNode {
   cwd: string;
   root: HTMLElement;
   developerToolbar: HTMLElement;
+  aiToolbar: HTMLElement;
   terminalHost: HTMLElement;
   occlusionShield: HTMLElement;
   leftResizeHandle: HTMLElement;
@@ -100,6 +101,12 @@ export interface AppSettings {
   themeMode: ThemeMode;
   headerMode: HeaderMode;
   developerModeEnabled: boolean;
+  aiModeEnabled: boolean;
+}
+
+export interface AiCommandResult {
+  command: string;
+  provider: 'codex';
 }
 
 
@@ -188,6 +195,10 @@ export interface FlowDeckBridge {
   loadSettings: () => Promise<AppSettings | null>;
   saveSettings: (settings: AppSettings) => Promise<void>;
   getDeveloperContext: (payload: { cwd: string }) => Promise<DeveloperContext>;
+  generateAiCommand: (payload: {
+    cwd: string;
+    description: string;
+  }) => Promise<AiCommandResult>;
 
   onTerminalData: (
     handler: (payload: { paneId: string; data: string }) => void,

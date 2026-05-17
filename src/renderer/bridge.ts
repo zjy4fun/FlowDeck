@@ -22,6 +22,7 @@ function createUnavailableBridge(): FlowDeckBridge {
     loadSettings: fail,
     saveSettings: fail,
     getDeveloperContext: fail,
+    generateAiCommand: fail,
     onTerminalData: () => () => {},
     onTerminalExit: () => () => {},
     onTerminalContextMenuAction: () => () => {},
