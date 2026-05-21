@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.4.47
+
+- Fix terminal line wrapping so right-edge characters remain visible instead of being clipped by the pane gutter
+- Keep the terminal gutter aligned with xterm's fit calculations to prevent long CJK lines from wrapping too late
+- Add a regression test for the terminal gutter and viewport layout
+
 ## v0.4.46
 
 - Show the full generated AI command in an expanded hover preview over the result field

@@ -927,9 +927,10 @@ body.is-resizing-pane {
 /* ── Terminal host ── */
 
 .terminal-host {
+  --terminal-inline-gutter: 6px;
   width: 100%;
   height: 100%;
-  padding: 0 6px;
+  padding: 0;
   background: var(--terminal-bg);
   color: var(--terminal-fg);
 }
@@ -941,13 +942,17 @@ body.is-resizing-pane {
 }
 
 .terminal-host .xterm {
+  width: 100%;
   height: 100%;
+  padding: 0 var(--terminal-inline-gutter);
   background-color: var(--terminal-bg) !important;
   color: var(--terminal-fg);
   font-family: var(--mono-font-family);
 }
 
 .terminal-host .xterm-viewport {
+  left: var(--terminal-inline-gutter) !important;
+  right: var(--terminal-inline-gutter) !important;
   overflow-x: hidden !important;
   overflow-y: auto !important;
   background-color: var(--terminal-bg) !important;
