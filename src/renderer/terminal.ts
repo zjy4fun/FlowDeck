@@ -72,6 +72,9 @@ const LIGHT_PALETTE = {
 };
 
 const TERMINAL_SCROLLBAR_WIDTH = 6;
+const TERMINAL_MIN_COLS = 20;
+const TERMINAL_MIN_ROWS = 8;
+const TERMINAL_TRAILING_SAFE_COLUMNS = 1;
 export const TERMINAL_FONT_FAMILY = [
   '"SF Mono"',
   'SFMono-Regular',
@@ -328,10 +331,27 @@ export function createPaneNode(
 
 export function fitTerminal(node: PaneNode, force = false): void {
   node.terminal.options.fontSize = state.settings.fontSize;
-  node.fitAddon.fit();
+  const proposedDimensions = node.fitAddon.proposeDimensions();
 
-  const cols = Math.max(20, node.terminal.cols || 80);
-  const rows = Math.max(8, node.terminal.rows || 24);
+  if (
+    proposedDimensions &&
+    !isNaN(proposedDimensions.cols) &&
+    !isNaN(proposedDimensions.rows)
+  ) {
+    const cols = Math.max(
+      TERMINAL_MIN_COLS,
+      proposedDimensions.cols - TERMINAL_TRAILING_SAFE_COLUMNS,
+    );
+    const rows = Math.max(TERMINAL_MIN_ROWS, proposedDimensions.rows);
+    if (node.terminal.cols !== cols || node.terminal.rows !== rows) {
+      node.terminal.resize(cols, rows);
+    }
+  } else {
+    node.fitAddon.fit();
+  }
+
+  const cols = Math.max(TERMINAL_MIN_COLS, node.terminal.cols || 80);
+  const rows = Math.max(TERMINAL_MIN_ROWS, node.terminal.rows || 24);
   const nextSizeKey = `${cols}x${rows}`;
 
   if (node.sessionReady && (force || nextSizeKey !== node.sizeKey)) {

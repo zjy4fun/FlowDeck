@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.4.48
+
+- Fit overlapped terminal panes to their visible width so text no longer renders under the pane to the right
+- Leave a trailing terminal safety column to prevent right-edge glyphs from being clipped by rounding or font metrics
+- Add regression coverage for occluded pane fit and terminal right-edge safety
+
 ## v0.4.47
 
 - Fix terminal line wrapping so right-edge characters remain visible instead of being clipped by the pane gutter

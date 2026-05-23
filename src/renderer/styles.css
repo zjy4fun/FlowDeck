@@ -928,7 +928,7 @@ body.is-resizing-pane {
 
 .terminal-host {
   --terminal-inline-gutter: 6px;
-  width: 100%;
+  width: calc(100% - var(--pane-occluded-width));
   height: 100%;
   padding: 0;
   background: var(--terminal-bg);

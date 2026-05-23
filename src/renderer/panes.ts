@@ -245,6 +245,13 @@ export function renderPanes(refit = false): void {
         : pane.accent;
     const rightBorderColor =
       index === state.panes.length - 1 ? pane.accent : 'transparent';
+    const occludedWidth = layout.isFocused
+      ? 0
+      : getOccludedWidthFromRightEdge(layouts, index);
+    const nextOccludedWidth = `${occludedWidth}px`;
+    const hasOcclusionChange =
+      node.root.style.getPropertyValue('--pane-occluded-width') !==
+      nextOccludedWidth;
 
     node.root.classList.toggle('is-focused', layout.isFocused);
     node.root.classList.toggle(
@@ -271,10 +278,10 @@ export function renderPanes(refit = false): void {
       node.needsFit = true;
     }
 
-    const occludedWidth = layout.isFocused
-      ? 0
-      : getOccludedWidthFromRightEdge(layouts, index);
-    node.root.style.setProperty('--pane-occluded-width', `${occludedWidth}px`);
+    if (hasOcclusionChange) {
+      node.needsFit = true;
+    }
+    node.root.style.setProperty('--pane-occluded-width', nextOccludedWidth);
 
     // Sync accent color if changed
     if (node.accent !== pane.accent) {
