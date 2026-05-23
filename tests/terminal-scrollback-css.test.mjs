@@ -37,8 +37,8 @@ test('terminal panes fit to their visible width', () => {
   assert.match(panesSource, /node\.needsFit = true;/);
 });
 
-test('terminal fit leaves a trailing safety column', () => {
-  assert.match(terminalSource, /TERMINAL_TRAILING_SAFE_COLUMNS = 1;/);
+test('terminal fit leaves trailing safety columns', () => {
+  assert.match(terminalSource, /TERMINAL_TRAILING_SAFE_COLUMNS = 2;/);
   assert.match(terminalSource, /node\.fitAddon\.proposeDimensions\(\)/);
   assert.match(
     terminalSource,

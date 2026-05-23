@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.4.49
+
+- Increase terminal right-edge safety spacing so long CJK and mixed-language lines wrap before glyphs are clipped
+- Update terminal layout regression coverage for the wider safety margin
+
 ## v0.4.48
 
 - Fit overlapped terminal panes to their visible width so text no longer renders under the pane to the right
