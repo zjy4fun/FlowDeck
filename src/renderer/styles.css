@@ -959,5 +959,9 @@ body.is-resizing-pane {
 }
 
 .terminal-host .xterm-screen {
-  overflow: hidden !important;
+  overflow: visible !important;
+}
+
+.terminal-host .xterm-rows > div {
+  overflow: visible !important;
 }

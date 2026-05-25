@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.4.50
+
+- Fix remaining Chinese/CJK terminal glyph clipping by allowing xterm DOM rows to show fallback font overhang
+- Add regression coverage for CJK DOM renderer overflow handling
+
 ## v0.4.49
 
 - Increase terminal right-edge safety spacing so long CJK and mixed-language lines wrap before glyphs are clipped
