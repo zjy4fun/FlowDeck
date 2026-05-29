@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.4.51
+
+- Prevent terminal row content from visually overlapping the next row when scrolling scrollback during streaming output
+- Keep horizontal CJK fallback glyph overhang while clipping vertical row spill
+
 ## v0.4.50
 
 - Fix remaining Chinese/CJK terminal glyph clipping by allowing xterm DOM rows to show fallback font overhang

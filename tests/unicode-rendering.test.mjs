@@ -22,14 +22,16 @@ test('terminal renderer avoids WebGL glyph atlas so browser font fallback works'
   assert.match(terminalSource, /const webglAddon = null;/);
 });
 
-test('terminal DOM renderer does not clip CJK fallback glyph overhang', () => {
+test('terminal DOM renderer allows horizontal CJK overhang while clipping vertical row spill', () => {
   const screenRule = styles.match(/\.terminal-host \.xterm-screen \{(?<body>[^}]+)\}/);
   const rowRule = styles.match(/\.terminal-host \.xterm-rows > div \{(?<body>[^}]+)\}/);
 
   assert.ok(screenRule, 'expected a terminal screen CSS rule');
   assert.ok(rowRule, 'expected a terminal row CSS rule');
-  assert.match(screenRule.groups.body, /overflow:\s*visible\s*!important;/);
-  assert.match(rowRule.groups.body, /overflow:\s*visible\s*!important;/);
+  assert.match(screenRule.groups.body, /overflow-x:\s*visible\s*!important;/);
+  assert.match(screenRule.groups.body, /overflow-y:\s*clip\s*!important;/);
+  assert.match(rowRule.groups.body, /overflow-x:\s*visible\s*!important;/);
+  assert.match(rowRule.groups.body, /overflow-y:\s*clip\s*!important;/);
 });
 
 test('pty sessions default to a UTF-8 locale for Unicode output', () => {
