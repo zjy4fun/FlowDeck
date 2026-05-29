@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.4.52
+
+- Fix unreadable light-theme terminal text by remapping the washed-out ANSI white/bright-white greys (~1.5:1 contrast) to darker Latte tones, so code blocks, dim labels, and prompts stay legible
+- Lift the dark-theme dim/"bright black" tone so comments and de-emphasized text clear ~2.9:1 instead of ~2.2:1
+- Add a terminal theme contrast regression test
+
 ## v0.4.51
 
 - Prevent terminal row content from visually overlapping the next row when scrolling scrollback during streaming output

@@ -37,7 +37,9 @@ const DARK_PALETTE = {
   magenta: '#f4b8e4',
   cyan: '#81c8be',
   white: '#a5adce',
-  brightBlack: '#626880',
+  // Lift the dim/"bright black" tone from Surface2 to Overlay0 so comments and
+  // de-emphasized text clear ~2.9:1 instead of the barely-legible ~2.2:1.
+  brightBlack: '#737994',
   brightRed: '#e78284',
   brightGreen: '#a6d189',
   brightYellow: '#e5c890',
@@ -53,14 +55,20 @@ const LIGHT_PALETTE = {
   foreground: '#4c4f69',
   selectionBackground: '#c9c3b5',
   selectionForeground: '#4c4f69',
-  black: '#5c5f77',
+  black: '#4c4f69',
   red: '#d20f39',
   green: '#40a02b',
   yellow: '#df8e1d',
   blue: '#1e66f5',
   magenta: '#ea76cb',
   cyan: '#179299',
-  white: '#acb0be',
+  // On a light background the Catppuccin "white" greys (Surface1/2) sit at
+  // ~1.5:1 contrast, so any app that paints text in ANSI white/bright-white
+  // (code blocks, dim labels, prompts) becomes nearly invisible. Remap the
+  // grey ramp to the darker Latte text tones so that text stays legible while
+  // keeping a sensible dark→light ordering (black < brightWhite < brightBlack
+  // < white).
+  white: '#7c7f93',
   brightBlack: '#6c6f85',
   brightRed: '#d20f39',
   brightGreen: '#40a02b',
@@ -68,7 +76,7 @@ const LIGHT_PALETTE = {
   brightBlue: '#1e66f5',
   brightMagenta: '#ea76cb',
   brightCyan: '#179299',
-  brightWhite: '#bcc0cc',
+  brightWhite: '#5c5f77',
 };
 
 const TERMINAL_SCROLLBAR_WIDTH = 6;
