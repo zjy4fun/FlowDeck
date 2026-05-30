@@ -317,6 +317,32 @@ export function createPaneNode(
     }
   });
 
+  // Reflow the terminal whenever its host element changes size. A pane growing
+  // from narrow to wide on focus, a window resize, or a split-handle drag all
+  // change the host width without necessarily flowing through an explicit fit
+  // call, which left output wrapped at the old, narrower column count. Observe
+  // the host directly and refit (which also resizes the PTY) on any size change.
+  let pendingFit = 0;
+  let wasConnected = false;
+  const resizeObserver = new ResizeObserver(() => {
+    if (pendingFit) return;
+    pendingFit = requestAnimationFrame(() => {
+      pendingFit = 0;
+      if (node.root.isConnected) {
+        wasConnected = true;
+        // A hidden or not-yet-laid-out host has no usable size; fitting it
+        // produces garbage dimensions, so wait until it is actually visible.
+        if (node.terminalHost.offsetWidth > 0 && node.terminalHost.offsetHeight > 0) {
+          fitTerminal(node);
+        }
+      } else if (wasConnected) {
+        // The pane was removed from the DOM (closed); stop observing.
+        resizeObserver.disconnect();
+      }
+    });
+  });
+  resizeObserver.observe(terminalHost);
+
   // Bubble shell title changes up to the app
   terminal.onTitleChange((nextTitle) => {
     const trimmed = nextTitle.trim();

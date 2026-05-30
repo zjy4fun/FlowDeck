@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.4.53
+
+- Reflow terminal output when a session pane grows from narrow to wide (e.g. on focus), so text rewraps to the full width instead of staying wrapped at the old, narrower column count. Each pane now observes its own size and refits the terminal (and the backing PTY) after the layout settles, covering focus changes, window resizes, and split-handle drags.
+
 ## v0.4.52
 
 - Fix unreadable light-theme terminal text by remapping the washed-out ANSI white/bright-white greys (~1.5:1 contrast) to darker Latte tones, so code blocks, dim labels, and prompts stay legible
