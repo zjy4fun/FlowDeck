@@ -36,6 +36,8 @@ interface PaneLayout {
   isFocused: boolean;
 }
 
+let pendingPaneResizeFrame = 0;
+
 function getBasePaneWidth(stageWidth: number): number {
   return Math.max(1, Math.round(stageWidth * state.settings.paneWidthRatio));
 }
@@ -84,12 +86,28 @@ function getMaxFocusedWidth(): number {
   );
 }
 
+function flushPendingPaneResizeRender(): void {
+  if (pendingPaneResizeFrame) {
+    cancelAnimationFrame(pendingPaneResizeFrame);
+    pendingPaneResizeFrame = 0;
+  }
+  renderPanes(true);
+}
+
+function schedulePaneResizeRender(): void {
+  if (pendingPaneResizeFrame) return;
+  pendingPaneResizeFrame = requestAnimationFrame(() => {
+    pendingPaneResizeFrame = 0;
+    renderPanes(true);
+  });
+}
+
 function updateFocusedPaneWidth(width: number): void {
   state.transientPaneWidth = Math.max(
     MIN_FOCUSED_WIDTH,
     Math.min(getMaxFocusedWidth(), Math.round(width)),
   );
-  renderPanes(true);
+  schedulePaneResizeRender();
 }
 
 function setResizeHandleActive(
@@ -119,6 +137,7 @@ function endPaneResize(): void {
   window.removeEventListener('pointermove', handlePaneResizeMove);
   window.removeEventListener('pointerup', handlePaneResizeEnd);
   window.removeEventListener('pointercancel', handlePaneResizeEnd);
+  flushPendingPaneResizeRender();
 }
 
 function handlePaneResizeMove(event: PointerEvent): void {
@@ -192,9 +211,18 @@ function ensurePaneNodes(): void {
       paneNodeMap.set(pane.id, node);
       dom.stage.append(node.root);
 
-      requestAnimationFrame(() => {
-        initializePaneTerminal(node);
-      });
+      const delayFrames = pane.id === state.focusedPaneId ? 1 : 2;
+      const initializeAfterFrame = (remainingFrames: number): void => {
+        requestAnimationFrame(() => {
+          if (!paneNodeMap.has(pane.id)) return;
+          if (remainingFrames > 1) {
+            initializeAfterFrame(remainingFrames - 1);
+            return;
+          }
+          void initializePaneTerminal(node);
+        });
+      };
+      initializeAfterFrame(delayFrames);
     }
   }
 }
@@ -211,6 +239,7 @@ export function renderPanes(refit = false): void {
   const focusedIndex = getFocusedIndex();
   const focusedAccent =
     focusedIndex >= 0 ? (state.panes[focusedIndex]?.accent ?? null) : null;
+  const nodesToFit: PaneNode[] = [];
 
   ensurePaneNodes();
 
@@ -263,13 +292,13 @@ export function renderPanes(refit = false): void {
     node.root.style.setProperty('--pane-border-bottom', pane.accent);
     node.root.style.setProperty('--pane-border-left', leftBorderColor);
     node.root.style.setProperty('--pane-border-right', rightBorderColor);
-    const nextLeft = `${layout.left}px`;
+    const nextTransform = `translateX(${layout.left}px)`;
     const nextWidth = `${layout.width}px`;
     const nextHeight = `${stageHeight}px`;
     const hasSizeChange =
       node.root.style.width !== nextWidth || node.root.style.height !== nextHeight;
 
-    node.root.style.left = nextLeft;
+    node.root.style.transform = nextTransform;
     node.root.style.width = nextWidth;
     node.root.style.zIndex = String(index + 1);
     node.root.style.height = nextHeight;
@@ -293,9 +322,13 @@ export function renderPanes(refit = false): void {
     renderAiToolbarForPane(pane.id);
 
     if (refit || node.needsFit) {
-      fitTerminal(node, true);
+      nodesToFit.push(node);
     }
   });
+
+  for (const node of nodesToFit) {
+    fitTerminal(node, true);
+  }
 }
 
 function getOccludedWidthFromRightEdge(

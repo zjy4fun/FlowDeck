@@ -9,6 +9,7 @@ interface PaneDeveloperState {
   runningCommand: string | null;
   loading: boolean;
   requestId: number;
+  renderKey: string;
 }
 
 const paneDeveloperState = new Map<string, PaneDeveloperState>();
@@ -24,6 +25,7 @@ function getPaneState(pane: PaneData): PaneDeveloperState {
       runningCommand: null,
       loading: false,
       requestId: 0,
+      renderKey: '',
     };
     paneDeveloperState.set(pane.id, devState);
   }
@@ -96,6 +98,18 @@ function renderDeveloperToolbar(node: PaneNode, pane: PaneData): void {
   const projectRoot = context?.projectRoot ?? pane.cwd;
   const projectLabel = getDisplayPath(projectRoot);
   const hasScripts = scripts.length > 0;
+  const renderKey = JSON.stringify({
+    loading: devState.loading,
+    selectedCommand,
+    running,
+    repoChip,
+    repoTitle,
+    projectType,
+    projectLabel,
+    scripts: scripts.map((script) => `${script.label}\u0000${script.command}`),
+  });
+  if (devState.renderKey === renderKey) return;
+  devState.renderKey = renderKey;
 
   node.developerToolbar.innerHTML = `
     <div class="devbar-meta" title="${escapeHtml(projectLabel)}">

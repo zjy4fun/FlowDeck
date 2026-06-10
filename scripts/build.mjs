@@ -1,11 +1,21 @@
 import * as esbuild from 'esbuild';
 import { cpSync, mkdirSync } from 'fs';
 
+const isDevBuild = process.argv.includes('--dev') || process.env.FLOWDECK_DEV_BUILD === '1';
+const nodeTarget = 'node22';
+const browserTarget = 'chrome136';
+const shared = {
+  bundle: true,
+  sourcemap: isDevBuild,
+  minify: !isDevBuild,
+  drop: isDevBuild ? [] : ['debugger'],
+  legalComments: 'none',
+  logLevel: 'info',
+};
+
 mkdirSync('dist/main', { recursive: true });
 mkdirSync('dist/preload', { recursive: true });
 mkdirSync('dist/renderer', { recursive: true });
-
-const shared = { bundle: true, sourcemap: true, logLevel: 'info' };
 
 await Promise.all([
   // Main process
@@ -13,7 +23,7 @@ await Promise.all([
     ...shared,
     entryPoints: ['src/main/index.ts'],
     platform: 'node',
-    target: 'node20',
+    target: nodeTarget,
     outfile: 'dist/main/index.js',
     external: ['electron', 'node-pty', 'original-fs'],
     format: 'cjs',
@@ -24,7 +34,7 @@ await Promise.all([
     ...shared,
     entryPoints: ['src/main/updater-logic.ts'],
     platform: 'node',
-    target: 'node20',
+    target: nodeTarget,
     outfile: 'dist/test-support/updater-logic.cjs',
     format: 'cjs',
   }),
@@ -32,7 +42,7 @@ await Promise.all([
     ...shared,
     entryPoints: ['src/main/terminal-data-batcher.ts'],
     platform: 'node',
-    target: 'node20',
+    target: nodeTarget,
     outfile: 'dist/test-support/terminal-data-batcher.cjs',
     format: 'cjs',
   }),
@@ -40,7 +50,7 @@ await Promise.all([
     ...shared,
     entryPoints: ['src/renderer/reactivation-controller.ts'],
     platform: 'node',
-    target: 'node20',
+    target: nodeTarget,
     outfile: 'dist/test-support/reactivation-controller.cjs',
     format: 'cjs',
   }),
@@ -48,7 +58,7 @@ await Promise.all([
     ...shared,
     entryPoints: ['src/main/window-lifecycle.ts'],
     platform: 'node',
-    target: 'node20',
+    target: nodeTarget,
     outfile: 'dist/test-support/window-lifecycle.cjs',
     format: 'cjs',
   }),
@@ -56,7 +66,7 @@ await Promise.all([
     ...shared,
     entryPoints: ['src/main/window-options.ts'],
     platform: 'node',
-    target: 'node20',
+    target: nodeTarget,
     outfile: 'dist/test-support/window-options.cjs',
     format: 'cjs',
   }),
@@ -64,7 +74,7 @@ await Promise.all([
     ...shared,
     entryPoints: ['src/main/about-dialog.ts'],
     platform: 'node',
-    target: 'node20',
+    target: nodeTarget,
     outfile: 'dist/test-support/about-dialog.cjs',
     external: ['electron'],
     format: 'cjs',
@@ -73,7 +83,7 @@ await Promise.all([
     ...shared,
     entryPoints: ['src/main/terminal-context-menu.ts'],
     platform: 'node',
-    target: 'node20',
+    target: nodeTarget,
     outfile: 'dist/test-support/terminal-context-menu.cjs',
     format: 'cjs',
   }),
@@ -83,7 +93,7 @@ await Promise.all([
     ...shared,
     entryPoints: ['src/preload/index.ts'],
     platform: 'node',
-    target: 'node20',
+    target: nodeTarget,
     outfile: 'dist/preload/index.js',
     external: ['electron'],
     format: 'cjs',
@@ -94,7 +104,7 @@ await Promise.all([
     ...shared,
     entryPoints: ['src/renderer/index.ts'],
     platform: 'browser',
-    target: 'chrome120',
+    target: browserTarget,
     outfile: 'dist/renderer/renderer.js',
     format: 'esm',
   }),

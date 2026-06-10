@@ -1,6 +1,5 @@
 import type { Terminal } from '@xterm/xterm';
 import type { FitAddon } from '@xterm/addon-fit';
-import type { WebglAddon } from '@xterm/addon-webgl';
 
 /* ── Pane data (serializable state) ── */
 
@@ -26,9 +25,9 @@ export interface PaneNode {
   rightResizeHandle: HTMLElement;
   terminal: Terminal;
   fitAddon: FitAddon;
-  webglAddon: WebglAddon | null;
   sessionReady: boolean;
   sizeKey: string;
+  fitHostKey: string;
   needsFit: boolean;
   accent: string;
 }
@@ -175,6 +174,7 @@ export interface FlowDeckBridge {
   }) => Promise<{ paneId: string }>;
 
   writeTerminal: (payload: { paneId: string; data: string }) => Promise<void>;
+  ackTerminalData: (payload: { paneId: string; bytes: number }) => void;
   showTerminalContextMenu: (payload: {
     paneId: string;
     selectedText: string;

@@ -31,3 +31,6 @@ jobs:
 
       - name: Type-check
         run: pnpm exec tsc --noEmit
+
+      - name: Test
+        run: node --test tests/*.test.mjs

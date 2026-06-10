@@ -108,6 +108,7 @@ export const TERMINAL_FONT_FAMILY = [
 ].join(', ');
 const URL_PATTERN = /https?:\/\/[^\s<>'"`]+/gi;
 const URL_TRAILING_PUNCTUATION = /[),.;:!?]+$/;
+let recycledLinkCell: ReturnType<IBufferLine['getCell']>;
 
 export function getTerminalBackground(mode?: ResolvedTheme): string {
   const resolved = mode ?? getResolvedTheme();
@@ -127,10 +128,12 @@ export function createTerminalTheme(accent: string, mode?: ResolvedTheme) {
 
 function getCellColumnByStringIndex(line: IBufferLine, targetIndex: number): number | null {
   let stringIndex = 0;
-  const limit = Math.min(line.length, Number.MAX_SAFE_INTEGER);
+  recycledLinkCell = recycledLinkCell ?? line.getCell(0);
 
-  for (let cellIndex = 0; cellIndex < limit; cellIndex += 1) {
-    const cell = line.getCell(cellIndex);
+  for (let cellIndex = 0; cellIndex < line.length; cellIndex += 1) {
+    const cell = recycledLinkCell
+      ? line.getCell(cellIndex, recycledLinkCell)
+      : line.getCell(cellIndex);
     if (!cell || cell.getWidth() === 0) continue;
 
     const chars = cell.getChars() || ' ';
@@ -276,7 +279,6 @@ export function createPaneNode(
   // Keep xterm on its built-in browser renderer. The WebGL glyph atlas is fast,
   // but it does not reliably use platform font fallback for CJK, box-drawing,
   // emoji, and private-use symbols, which shows up as tofu boxes or mojibake.
-  const webglAddon = null;
   let hoveredUrl: string | null = null;
 
   terminal.registerLinkProvider(
@@ -303,9 +305,9 @@ export function createPaneNode(
     rightResizeHandle,
     terminal,
     fitAddon,
-    webglAddon,
     sessionReady: false,
     sizeKey: '',
+    fitHostKey: '',
     needsFit: true,
     accent: pane.accent,
   };
@@ -364,7 +366,15 @@ export function createPaneNode(
 /* ── Fit / resize ── */
 
 export function fitTerminal(node: PaneNode, force = false): void {
-  node.terminal.options.fontSize = state.settings.fontSize;
+  const fontSize = state.settings.fontSize;
+  const hostWidth = node.terminalHost.offsetWidth;
+  const hostHeight = node.terminalHost.offsetHeight;
+  const nextFitHostKey = `${hostWidth}x${hostHeight}:${fontSize}`;
+  if (!node.needsFit && node.fitHostKey === nextFitHostKey) {
+    return;
+  }
+
+  node.terminal.options.fontSize = fontSize;
   const proposedDimensions = node.fitAddon.proposeDimensions();
 
   if (
@@ -388,11 +398,12 @@ export function fitTerminal(node: PaneNode, force = false): void {
   const rows = Math.max(TERMINAL_MIN_ROWS, node.terminal.rows || 24);
   const nextSizeKey = `${cols}x${rows}`;
 
-  if (node.sessionReady && (force || nextSizeKey !== node.sizeKey)) {
+  if (node.sessionReady && nextSizeKey !== node.sizeKey) {
     bridge.resizeTerminal({ paneId: node.paneId, cols, rows });
   }
 
   node.sizeKey = nextSizeKey;
+  node.fitHostKey = nextFitHostKey;
   node.needsFit = false;
 }
 

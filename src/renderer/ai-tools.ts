@@ -8,6 +8,7 @@ interface PaneAiState {
   loading: boolean;
   error: string | null;
   requestId: number;
+  renderKey: string;
 }
 
 const paneAiState = new Map<string, PaneAiState>();
@@ -22,6 +23,7 @@ function getPaneState(paneId: string): PaneAiState {
       loading: false,
       error: null,
       requestId: 0,
+      renderKey: '',
     };
     paneAiState.set(paneId, aiState);
   }
@@ -62,6 +64,18 @@ function setResultContent(result: HTMLElement, text: string, title: string): voi
   result.dataset.fullCommand = title;
 }
 
+function getAiToolbarRenderKey(aiState: PaneAiState): string {
+  const status = getAiStatus(aiState);
+  return JSON.stringify({
+    prompt: aiState.prompt,
+    command: aiState.command,
+    loading: aiState.loading,
+    error: aiState.error,
+    statusText: status.text,
+    statusTitle: status.title,
+  });
+}
+
 function updateAiToolbarControls(node: PaneNode, aiState: PaneAiState): void {
   const command = aiState.command.trim();
   const generateButton = node.aiToolbar.querySelector<HTMLButtonElement>('.aibar-generate');
@@ -78,6 +92,9 @@ function updateAiToolbarControls(node: PaneNode, aiState: PaneAiState): void {
   }
   if (result) {
     setResultContent(result, status.text, status.title);
+  }
+  if (generateButton && runButton && result) {
+    aiState.renderKey = getAiToolbarRenderKey(aiState);
   }
 }
 
@@ -108,6 +125,11 @@ function renderAiToolbar(node: PaneNode, pane: PaneData): void {
   const canGenerate = aiState.prompt.trim().length > 0 && !aiState.loading;
   const command = aiState.command.trim();
   const status = getAiStatus(aiState);
+  const renderKey = getAiToolbarRenderKey(aiState);
+  if (aiState.renderKey === renderKey && node.aiToolbar.childElementCount > 0) {
+    return;
+  }
+  aiState.renderKey = renderKey;
 
   node.aiToolbar.innerHTML = `
     <div class="aibar-badge">AI</div>

@@ -37,12 +37,21 @@ function startUnicodeWorkLoop(): void {
     }
 
     unicodeWorkFrameIndex = (unicodeWorkFrameIndex + 1) % UNICODE_WORK_FRAMES.length;
-    renderTabs();
+    updateWorkingIndicators();
   }, UNICODE_WORK_FRAME_INTERVAL_MS);
 }
 
 function getUnicodeWorkFrame(): string {
   return UNICODE_WORK_FRAMES[unicodeWorkFrameIndex] ?? UNICODE_WORK_FRAMES[0];
+}
+
+function updateWorkingIndicators(): void {
+  const frame = getUnicodeWorkFrame();
+  for (const indicator of dom.tabsList.querySelectorAll<HTMLElement>('.tab-busy-indicator')) {
+    const paneId = indicator.closest<HTMLElement>('.tab')?.dataset.paneId;
+    if (!paneId || !workingPaneIds.has(paneId)) continue;
+    indicator.textContent = frame;
+  }
 }
 
 export function setPaneWorkingIndicator(paneId: string, isWorking: boolean): void {

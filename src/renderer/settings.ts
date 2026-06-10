@@ -3,6 +3,7 @@ import { bridge } from './bridge';
 import { createTerminalTheme, getTerminalBackground } from './terminal';
 import { refreshAllDeveloperContexts } from './developer-tools';
 import { refreshAllAiToolbars } from './ai-tools';
+import type { AppSettings } from './types';
 
 /* ── Debounced persistence ── */
 
@@ -74,9 +75,11 @@ export function applySettingsToDom(): void {
 
 /* ── Load persisted settings from main process ── */
 
-export async function loadPersistedSettings(): Promise<void> {
+export async function loadPersistedSettings(
+  settingsPromise?: Promise<AppSettings | null>,
+): Promise<void> {
   try {
-    const saved = await bridge.loadSettings();
+    const saved = await (settingsPromise ?? bridge.loadSettings());
     if (saved) {
       state.settings = { ...state.settings, ...saved };
     }
@@ -103,10 +106,12 @@ function updateFontSize(
   render(true);
 }
 
-function updateDefaultOpenDirectory(value: string): void {
+function updateDefaultOpenDirectory(value: string, syncInput = false): void {
   const next = value.trim() || bridge.defaultCwd;
   state.settings.defaultOpenDirectory = next;
-  applySettingsToDom();
+  if (syncInput) {
+    dom.defaultDirectoryInput.value = state.settings.defaultOpenDirectory;
+  }
   persistSettings();
 }
 
@@ -201,7 +206,7 @@ export function initSettingsListeners(
   });
 
   dom.defaultDirectoryInput.addEventListener('change', () => {
-    updateDefaultOpenDirectory(dom.defaultDirectoryInput.value);
+    updateDefaultOpenDirectory(dom.defaultDirectoryInput.value, true);
   });
 
   dom.defaultDirectoryInput.addEventListener('input', () => {

@@ -35,6 +35,9 @@ const LIMITS = {
   maxSessions: { min: 1, max: 9 },
 } as const;
 const LEGACY_PANE_WIDTH_BASE = 1600;
+let settingsDirectoryEnsured = false;
+let pendingSave = Promise.resolve();
+let latestSettingsForFlush: PersistedSettings | null = null;
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
@@ -120,12 +123,40 @@ export function loadSettings(): PersistedSettings {
   }
 }
 
-export function saveSettings(settings: PersistedSettings): void {
+async function ensureSettingsDirectory(filePath: string): Promise<void> {
+  if (settingsDirectoryEnsured) return;
+  await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
+  settingsDirectoryEnsured = true;
+}
+
+async function writeSettingsFile(settings: PersistedSettings): Promise<void> {
+  const filePath = getSettingsPath();
+  const tempPath = `${filePath}.${process.pid}.tmp`;
+  await ensureSettingsDirectory(filePath);
+  await fs.promises.writeFile(tempPath, JSON.stringify(settings, null, 2));
+  await fs.promises.rename(tempPath, filePath);
+}
+
+export function saveSettings(settings: PersistedSettings): Promise<void> {
+  const sanitized = sanitizePersistedSettings(settings);
+  latestSettingsForFlush = sanitized;
+  pendingSave = pendingSave
+    .then(() => writeSettingsFile(sanitized))
+    .catch((err) => {
+      console.error('Failed to save settings:', err);
+    });
+  return pendingSave;
+}
+
+export function flushSettingsSync(): void {
+  if (!latestSettingsForFlush) return;
   try {
     const filePath = getSettingsPath();
-    const sanitized = sanitizePersistedSettings(settings);
     fs.mkdirSync(path.dirname(filePath), { recursive: true });
-    fs.writeFileSync(filePath, JSON.stringify(sanitized, null, 2));
+    settingsDirectoryEnsured = true;
+    const tempPath = `${filePath}.${process.pid}.tmp`;
+    fs.writeFileSync(tempPath, JSON.stringify(latestSettingsForFlush, null, 2));
+    fs.renameSync(tempPath, filePath);
   } catch (err) {
     console.error('Failed to save settings:', err);
   }

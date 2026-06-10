@@ -10,6 +10,8 @@ directories:
 # (needed for the node-pty native addon).
 files:
   - dist/**/*
+  - '!dist/**/*.map'
+  - '!dist/test-support/**'
   - package.json
 
 extraResources:

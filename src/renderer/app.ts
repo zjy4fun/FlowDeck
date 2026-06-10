@@ -12,7 +12,6 @@ import { renderPanes, initPanes } from './panes';
 import { refocusTerminal } from './terminal';
 import { createReactivationController } from './reactivation-controller';
 import {
-  applySettingsToDom,
   loadPersistedSettings,
   initSettingsListeners,
 } from './settings';
@@ -25,6 +24,7 @@ import type { RenderFn } from './types';
 /* ── Status bar ── */
 
 const WINDOW_REACTIVATE_DEBOUNCE_MS = 250;
+const persistedSettingsPromise = bridge.loadSettings();
 
 function compactPathLabel(displayPath: string, maxLength = 52): string {
   if (displayPath.length <= maxLength) return displayPath;
@@ -167,7 +167,7 @@ export async function startApp(): Promise<void> {
   });
 
   // Load persisted settings, then apply to DOM
-  await loadPersistedSettings();
+  await loadPersistedSettings(persistedSettingsPromise);
   state.panes = state.panes.slice(0, state.settings.maxSessions).map((pane) => ({
     ...pane,
     cwd: state.settings.defaultOpenDirectory,
@@ -175,7 +175,6 @@ export async function startApp(): Promise<void> {
   }));
   state.focusedPaneId = state.panes[0]?.id ?? null;
   state.nextPaneNumber = state.panes.length + 1;
-  applySettingsToDom();
 
   initSettingsListeners((refit) => render(refit));
 

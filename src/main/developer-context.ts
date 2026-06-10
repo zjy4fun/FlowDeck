@@ -26,6 +26,14 @@ export interface DeveloperContext {
 }
 
 const SCRIPT_PRIORITY = ['dev', 'start', 'serve', 'preview', 'build', 'test', 'lint'];
+const PROJECT_MARKERS = [
+  'package.json',
+  'Cargo.toml',
+  'pyproject.toml',
+  'Makefile',
+  'makefile',
+] as const;
+type ProjectMarker = typeof PROJECT_MARKERS[number];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value);
@@ -36,15 +44,35 @@ function safeCwd(cwd: unknown): string {
   return path.resolve(cwd);
 }
 
-function findUp(start: string, fileName: string): string | null {
-  let current = fs.existsSync(start) && fs.statSync(start).isDirectory()
-    ? start
-    : path.dirname(start);
+async function getStartDirectory(start: string): Promise<string> {
+  try {
+    const stats = await fs.promises.stat(start);
+    return stats.isDirectory() ? start : path.dirname(start);
+  } catch {
+    return path.dirname(start);
+  }
+}
+
+async function findProjectMarkers(start: string): Promise<Map<ProjectMarker, string>> {
+  const found = new Map<ProjectMarker, string>();
+  let current = await getStartDirectory(start);
+
   while (true) {
-    const candidate = path.join(current, fileName);
-    if (fs.existsSync(candidate)) return candidate;
+    await Promise.all(
+      PROJECT_MARKERS.map(async (marker) => {
+        if (found.has(marker)) return;
+        const candidate = path.join(current, marker);
+        try {
+          await fs.promises.access(candidate, fs.constants.F_OK);
+          found.set(marker, candidate);
+        } catch {
+          /* marker absent at this level */
+        }
+      }),
+    );
+
     const parent = path.dirname(current);
-    if (parent === current) return null;
+    if (parent === current) return found;
     current = parent;
   }
 }
@@ -78,10 +106,7 @@ function sortScriptNames(names: string[]): string[] {
   });
 }
 
-function detectPackageJson(start: string): DeveloperContext | null {
-  const pkgPath = findUp(start, 'package.json');
-  if (!pkgPath) return null;
-
+function detectPackageJson(pkgPath: string): DeveloperContext | null {
   try {
     const projectRoot = path.dirname(pkgPath);
     const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8')) as unknown;
@@ -108,9 +133,7 @@ function detectPackageJson(start: string): DeveloperContext | null {
   }
 }
 
-function detectMakefile(start: string): DeveloperContext | null {
-  const makefilePath = findUp(start, 'Makefile') ?? findUp(start, 'makefile');
-  if (!makefilePath) return null;
+function detectMakefile(makefilePath: string): DeveloperContext | null {
   const projectRoot = path.dirname(makefilePath);
   const content = fs.readFileSync(makefilePath, 'utf8');
   const targets = Array.from(content.matchAll(/^([A-Za-z0-9_.-]+):(?!=)/gm))
@@ -129,9 +152,7 @@ function detectMakefile(start: string): DeveloperContext | null {
   };
 }
 
-function detectCargo(start: string): DeveloperContext | null {
-  const cargoPath = findUp(start, 'Cargo.toml');
-  if (!cargoPath) return null;
+function detectCargo(cargoPath: string): DeveloperContext | null {
   const projectRoot = path.dirname(cargoPath);
   return {
     projectType: 'Rust',
@@ -146,9 +167,7 @@ function detectCargo(start: string): DeveloperContext | null {
   };
 }
 
-function detectPython(start: string): DeveloperContext | null {
-  const pyprojectPath = findUp(start, 'pyproject.toml');
-  if (!pyprojectPath) return null;
+function detectPython(pyprojectPath: string): DeveloperContext | null {
   const projectRoot = path.dirname(pyprojectPath);
   return {
     projectType: 'Python',
@@ -194,10 +213,18 @@ async function getGitSummary(start: string): Promise<GitRepoSummary | null> {
 
 export async function getDeveloperContext(payload: unknown): Promise<DeveloperContext> {
   const cwd = safeCwd(isRecord(payload) ? payload.cwd : payload);
-  const detected = detectPackageJson(cwd)
-    ?? detectCargo(cwd)
-    ?? detectPython(cwd)
-    ?? detectMakefile(cwd)
+  const markers = await findProjectMarkers(cwd);
+  const makefilePath = markers.get('Makefile') ?? markers.get('makefile');
+  const detected = (markers.get('package.json')
+    ? detectPackageJson(markers.get('package.json') as string)
+    : null)
+    ?? (markers.get('Cargo.toml')
+      ? detectCargo(markers.get('Cargo.toml') as string)
+      : null)
+    ?? (markers.get('pyproject.toml')
+      ? detectPython(markers.get('pyproject.toml') as string)
+      : null)
+    ?? (makefilePath ? detectMakefile(makefilePath) : null)
     ?? {
       projectType: 'Shell',
       projectRoot: cwd,

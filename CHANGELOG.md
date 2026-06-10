@@ -1,5 +1,30 @@
 # Changelog
 
+## v0.4.54
+
+### Performance
+
+- Add terminal data backpressure between the renderer and PTY sessions, pausing high-volume output until xterm has written enough data and acknowledging completed writes in byte batches.
+- Cap terminal IPC batches by byte size and switch batching to leading-plus-trailing throttling so interactive echo is sent immediately while burst output remains coalesced.
+- Send terminal write and resize IPC messages fire-and-forget to avoid per-keystroke invoke/reply overhead.
+- Avoid blocking the main process during quit confirmation by using the asynchronous message box API with a single pending confirmation.
+- Detect developer project context with one asynchronous upward marker scan instead of repeated synchronous filesystem traversals.
+- Reduce startup work by showing the main window after ready-to-show, lazily loading node-pty on first terminal creation, overlapping settings load with renderer setup, and staggering initial terminal session startup.
+- Reduce renderer hot-path work for terminal data, pane resize, tab busy indicators, toolbar renders, link detection, settings input, and terminal refits.
+- Stream update downloads to disk with throttled progress updates instead of buffering the entire asset in memory.
+
+### Packaging
+
+- Minify production bundles, disable packaged source maps, target Electron 36 runtimes, and exclude test support and map files from app.asar.
+- Remove unused xterm WebGL addon packaging and keep xterm browser-renderer dependencies out of production node_modules.
+- Add a test script and run the test suite in CI after build and type-check.
+
+### Fixed
+
+- Scope PTY sessions by window and destroy them when their owning webContents is destroyed or reloaded, preventing leaked shell processes and pane ID collisions across windows.
+- Serialize settings writes through temp-file renames and flush the latest settings synchronously during quit.
+- Avoid stale update-window action resolvers and redundant native resize calls in the updater.
+
 ## v0.4.53
 
 - Reflow terminal output when a session pane grows from narrow to wide (e.g. on focus), so text rewraps to the full width instead of staying wrapped at the old, narrower column count. Each pane now observes its own size and refits the terminal (and the backing PTY) after the layout settles, covering focus changes, window resizes, and split-handle drags.

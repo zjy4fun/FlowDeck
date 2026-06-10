@@ -19,7 +19,8 @@ test('terminal font stack includes platform fallbacks for CJK and symbols', () =
 
 test('terminal renderer avoids WebGL glyph atlas so browser font fallback works', () => {
   assert.doesNotMatch(terminalSource, /@xterm\/addon-webgl/);
-  assert.match(terminalSource, /const webglAddon = null;/);
+  assert.doesNotMatch(terminalSource, /loadAddon\(.*Webgl/s);
+  assert.match(terminalSource, /Keep xterm on its built-in browser renderer/);
 });
 
 test('terminal DOM renderer allows horizontal CJK overhang while clipping vertical row spill', () => {

@@ -19,6 +19,8 @@ const UPDATE_WINDOW_CHANNEL = 'flowdeck:update-state';
 const SKIPPED_UPDATE_FILE = 'skipped-update.json';
 const COMPACT_UPDATE_WINDOW_SIZE = { width: 480, height: 240 };
 const RELEASE_NOTES_WINDOW_SIZE = { width: 680, height: 560 };
+const DOWNLOAD_PROGRESS_PUSH_INTERVAL_MS = 100;
+const DOWNLOAD_PROGRESS_PUSH_DELTA = 0.01;
 
 interface UpdateWindowState {
   title: string;
@@ -57,6 +59,7 @@ class UpdateCancelledError extends Error {
 
 let updateWindow: BrowserWindow | null = null;
 let updateWindowState: UpdateWindowState | null = null;
+let updateWindowSizeKey = '';
 let cancelActiveDownload: (() => void) | null = null;
 let pendingUpdateActionResolver: ((action: UpdateWindowAction) => void) | null = null;
 let pendingUpdateActionButtons = new Set<UpdateWindowAction>();
@@ -508,15 +511,38 @@ async function fetchLatestReleaseTagFromPage(): Promise<string> {
 
     let body = '';
     let redirectTag: string | null = null;
+    let settled = false;
+
+    const finish = (error: unknown, tag?: string): void => {
+      if (settled) return;
+      settled = true;
+      if (error) {
+        reject(error);
+        return;
+      }
+      if (tag) {
+        resolve(tag);
+        return;
+      }
+      reject(new Error('Could not resolve latest release tag from GitHub.'));
+    };
 
     request.on('redirect', (_statusCode, _method, redirectUrl) => {
-      if (redirectTag) return;
+      if (settled || redirectTag) return;
       redirectTag = parseReleaseTagFromUrl(redirectUrl);
+      if (!redirectTag) return;
+      try {
+        request.abort();
+      } catch {
+        /* ignore abort failures */
+      }
+      finish(null, redirectTag);
     });
 
     request.on('response', (response) => {
+      if (settled) return;
       if ((response.statusCode ?? 0) >= 400) {
-        reject(
+        finish(
           new Error(`GitHub releases page returned ${response.statusCode}`),
         );
         return;
@@ -536,21 +562,23 @@ async function fetchLatestReleaseTagFromPage(): Promise<string> {
 
       response.on('end', () => {
         if (redirectTag) {
-          resolve(redirectTag);
+          finish(null, redirectTag);
           return;
         }
 
         const htmlTag = parseReleaseTagFromHtml(body);
         if (htmlTag) {
-          resolve(htmlTag);
+          finish(null, htmlTag);
           return;
         }
 
-        reject(new Error('Could not resolve latest release tag from GitHub.'));
+        finish(new Error('Could not resolve latest release tag from GitHub.'));
       });
     });
 
-    request.on('error', reject);
+    request.on('error', (error) => {
+      if (!settled) finish(error);
+    });
     request.end();
   });
 }
@@ -632,6 +660,7 @@ function createManualUpdatePromptState(
 function promptForManualUpdateAction(
   state: UpdateWindowState,
 ): Promise<UpdateWindowAction> {
+  resolvePendingUpdateAction('close');
   return new Promise((resolve) => {
     pendingUpdateActionResolver = resolve;
     pushUpdateWindowState(state);
@@ -754,6 +783,9 @@ function resolvePendingUpdateAction(action: UpdateWindowAction): void {
 function resizeUpdateWindowForState(state: UpdateWindowState | null): void {
   if (!updateWindow || updateWindow.isDestroyed()) return;
   const size = getUpdateWindowSize(state);
+  const nextSizeKey = `${size.width}x${size.height}`;
+  if (updateWindowSizeKey === nextSizeKey) return;
+  updateWindowSizeKey = nextSizeKey;
   updateWindow.setContentSize(size.width, size.height);
 }
 
@@ -807,6 +839,8 @@ function createUpdateWindow(): BrowserWindow {
 
   win.on('closed', () => {
     updateWindow = null;
+    updateWindowState = null;
+    updateWindowSizeKey = '';
     if (cancelActiveDownload) {
       const cancel = cancelActiveDownload;
       cancelActiveDownload = null;
@@ -889,12 +923,18 @@ async function downloadAsset(
   options: DownloadAssetOptions,
 ): Promise<void> {
   const dir = path.dirname(dest);
+  const partialDest = `${dest}.partial`;
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
 
   try {
     originalFs.unlinkSync(dest);
+  } catch {
+    /* ignore */
+  }
+  try {
+    originalFs.unlinkSync(partialDest);
   } catch {
     /* ignore */
   }
@@ -905,11 +945,27 @@ async function downloadAsset(
     request.setHeader('Accept', 'application/octet-stream');
 
     let settled = false;
+    let writeStream: fs.WriteStream | null = null;
+    let finalBytes = 0;
+
+    const unlinkPartial = (): void => {
+      try {
+        originalFs.unlinkSync(partialDest);
+      } catch {
+        /* ignore */
+      }
+    };
+
     const finish = (error?: unknown): void => {
       if (settled) return;
       settled = true;
       options.onCancelableChange(null);
       if (error) {
+        if (writeStream) {
+          writeStream.destroy();
+          writeStream = null;
+        }
+        unlinkPartial();
         reject(error);
         return;
       }
@@ -922,6 +978,10 @@ async function downloadAsset(
         request.abort();
       } catch {
         /* ignore */
+      }
+      if (writeStream) {
+        writeStream.destroy();
+        writeStream = null;
       }
       finish(new UpdateCancelledError());
     };
@@ -942,16 +1002,41 @@ async function downloadAsset(
       const fallbackTotalBytes = normalizeByteCount(options.expectedBytes);
       const totalBytes = reportedTotalBytes || fallbackTotalBytes;
 
-      const chunks: Buffer[] = [];
+      writeStream = originalFs.createWriteStream(partialDest);
+      writeStream.on('error', (err) => {
+        finish(err);
+      });
+      writeStream.on('finish', () => {
+        if (settled) return;
+        try {
+          originalFs.renameSync(partialDest, dest);
+          const completedBytes = finalBytes || downloadedBytes || totalBytes;
+          options.onProgress(completedBytes, completedBytes);
+          finish();
+        } catch (error) {
+          finish(error);
+        }
+      });
+
       let downloadedBytes = 0;
       options.onProgress(0, totalBytes);
 
       response.on('data', (chunk) => {
         if (settled) return;
         const nextChunk = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
-        chunks.push(nextChunk);
         downloadedBytes += nextChunk.length;
+        finalBytes = totalBytes || downloadedBytes;
         options.onProgress(downloadedBytes, totalBytes);
+        if (writeStream && !writeStream.write(nextChunk)) {
+          const streamResponse = response as unknown as {
+            pause: () => void;
+            resume: () => void;
+          };
+          streamResponse.pause();
+          writeStream.once('drain', () => {
+            if (!settled) streamResponse.resume();
+          });
+        }
       });
 
       response.on('aborted', () => {
@@ -964,15 +1049,8 @@ async function downloadAsset(
 
       response.on('end', () => {
         if (settled) return;
-        try {
-          // Use original-fs to write .asar file without Electron interception
-          originalFs.writeFileSync(dest, Buffer.concat(chunks));
-          const finalBytes = totalBytes || downloadedBytes;
-          options.onProgress(finalBytes, finalBytes);
-          finish();
-        } catch (e) {
-          finish(e);
-        }
+        finalBytes = totalBytes || downloadedBytes;
+        writeStream?.end();
       });
     });
 
@@ -1041,11 +1119,37 @@ async function checkAndDownload(manual: boolean): Promise<void> {
 
   const staged = getStagedAsarPath();
   const shouldShowProgressWindow = true;
+  let lastProgressPushAt = 0;
+  let lastProgressValue = -1;
+
+  const pushDownloadProgress = (
+    downloadedBytes: number,
+    totalBytes: number,
+    force = false,
+  ): void => {
+    if (!shouldShowProgressWindow) return;
+    const nextState = createDownloadingState(
+      remoteVersion,
+      downloadedBytes,
+      totalBytes || asarAsset.size,
+    );
+    const now = Date.now();
+    const progressDelta = Math.abs(nextState.progress - lastProgressValue);
+    if (
+      !force &&
+      nextState.progress < 1 &&
+      now - lastProgressPushAt < DOWNLOAD_PROGRESS_PUSH_INTERVAL_MS &&
+      progressDelta < DOWNLOAD_PROGRESS_PUSH_DELTA
+    ) {
+      return;
+    }
+    lastProgressPushAt = now;
+    lastProgressValue = nextState.progress;
+    pushUpdateWindowState(nextState);
+  };
 
   if (shouldShowProgressWindow) {
-    pushUpdateWindowState(
-      createDownloadingState(remoteVersion, 0, asarAsset.size),
-    );
+    pushDownloadProgress(0, asarAsset.size, true);
   }
 
   try {
@@ -1055,13 +1159,10 @@ async function checkAndDownload(manual: boolean): Promise<void> {
         cancelActiveDownload = cancel;
       },
       onProgress: (downloadedBytes, totalBytes) => {
-        if (!shouldShowProgressWindow) return;
-        pushUpdateWindowState(
-          createDownloadingState(
-            remoteVersion,
-            downloadedBytes,
-            totalBytes || asarAsset.size,
-          ),
+        pushDownloadProgress(
+          downloadedBytes,
+          totalBytes || asarAsset.size,
+          downloadedBytes >= (totalBytes || asarAsset.size),
         );
       },
     });

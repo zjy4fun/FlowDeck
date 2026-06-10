@@ -11,10 +11,17 @@ contextBridge.exposeInMainWorld('flowdeck', {
 
   createTerminal: (payload: unknown) =>
     ipcRenderer.invoke('flowdeck:terminal-create', payload),
-  writeTerminal: (payload: unknown) =>
-    ipcRenderer.invoke('flowdeck:terminal-write', payload),
-  resizeTerminal: (payload: unknown) =>
-    ipcRenderer.invoke('flowdeck:terminal-resize', payload),
+  writeTerminal: (payload: unknown) => {
+    ipcRenderer.send('flowdeck:terminal-write', payload);
+    return Promise.resolve();
+  },
+  resizeTerminal: (payload: unknown) => {
+    ipcRenderer.send('flowdeck:terminal-resize', payload);
+    return Promise.resolve();
+  },
+  ackTerminalData: (payload: unknown) => {
+    ipcRenderer.send('flowdeck:terminal-data-ack', payload);
+  },
   destroyTerminal: (payload: unknown) =>
     ipcRenderer.invoke('flowdeck:terminal-destroy', payload),
   showTerminalContextMenu: (payload: unknown) =>

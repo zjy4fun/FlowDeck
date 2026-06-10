@@ -1,6 +1,6 @@
 {
   "name": "flowdeck",
-  "version": "0.4.53",
+  "version": "0.4.54",
   "private": true,
   "packageManager": "pnpm@10.33.0",
   "license": "MIT",
@@ -14,7 +14,8 @@
   "main": "dist/main/index.js",
   "scripts": {
     "build": "node scripts/build.mjs",
-    "start": "node scripts/build.mjs && electron .",
+    "start": "node scripts/build.mjs --dev && electron .",
+    "test": "node scripts/build.mjs && node --test tests/*.test.mjs",
     "pack": "node scripts/build.mjs && electron-builder --dir",
     "dist": "node scripts/build.mjs && electron-builder",
     "release": "bumpp --all --commit --tag --push",
@@ -26,12 +27,11 @@
     "electron": "^36.0.0",
     "electron-builder": "^26.0.0",
     "esbuild": "^0.25.0",
+    "@xterm/addon-fit": "^0.11.0",
+    "@xterm/xterm": "^6.0.0",
     "typescript": "^5.8.0"
   },
   "dependencies": {
-    "@xterm/addon-fit": "^0.11.0",
-    "@xterm/addon-webgl": "^0.19.0",
-    "@xterm/xterm": "^6.0.0",
     "node-pty": "^1.2.0-beta.12"
   }
 }

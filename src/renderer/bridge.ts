@@ -13,6 +13,7 @@ function createUnavailableBridge(): FlowDeckBridge {
     defaultTabTitle: '.',
     createTerminal: fail,
     writeTerminal: fail,
+    ackTerminalData: () => {},
     showTerminalContextMenu: fail,
     openExternalUrl: fail,
     resizeTerminal: fail,

@@ -5,6 +5,7 @@ import {
   dialog,
   ipcMain,
   Menu,
+  nativeTheme,
   shell,
   type OpenDialogOptions,
 } from 'electron';
@@ -12,7 +13,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { registerPtyHandlers, destroyAllSessions } from './pty-manager';
 import { handleWindowAllClosed } from './window-lifecycle';
-import { loadSettings, saveSettings } from './settings-store';
+import { flushSettingsSync, loadSettings, saveSettings } from './settings-store';
 import { getDeveloperContext } from './developer-context';
 import { generateAiShellCommand } from './ai-command-generator';
 import {
@@ -31,29 +32,12 @@ import {
 } from './terminal-context-menu';
 
 const isCaptureMode = process.env.FLOWDECK_CAPTURE === '1';
-
-function ensurePtyHelper(): void {
-  if (process.platform !== 'darwin') return;
-
-  const helperPath = path.join(
-    path.dirname(require.resolve('node-pty/package.json')),
-    'prebuilds',
-    process.arch === 'arm64' ? 'darwin-arm64' : 'darwin-x64',
-    'spawn-helper',
-  );
-
-  try {
-    fs.chmodSync(helperPath, 0o755);
-  } catch {
-    /* helper may not exist on this arch */
-  }
-}
-
+let pendingConfirmQuit: Promise<boolean> | null = null;
 
 function registerSettingsHandlers(): void {
   ipcMain.handle('flowdeck:settings-load', () => loadSettings());
   ipcMain.handle('flowdeck:settings-save', (event, settings) => {
-    saveSettings(settings);
+    const savePromise = saveSettings(settings);
     // Notify all other windows that settings changed
     const senderWebContents = event.sender;
     for (const win of BrowserWindow.getAllWindows()) {
@@ -61,6 +45,7 @@ function registerSettingsHandlers(): void {
         win.webContents.send('flowdeck:settings-changed');
       }
     }
+    return savePromise;
   });
   ipcMain.handle('flowdeck:developer-context', (_event, payload) => getDeveloperContext(payload));
   ipcMain.handle('flowdeck:ai-generate-command', (_event, payload) =>
@@ -183,6 +168,8 @@ function platformWindowChromeOptions(): Electron.BrowserWindowConstructorOptions
 }
 
 function registerFullScreenShortcuts(win: BrowserWindow): void {
+  if (process.platform === 'darwin') return;
+
   win.webContents.on('before-input-event', (event, input) => {
     if (
       !shouldToggleFullScreenForInput({
@@ -204,7 +191,9 @@ function registerFullScreenShortcuts(win: BrowserWindow): void {
   });
 }
 
-function confirmQuit(win?: BrowserWindow | null): boolean {
+async function confirmQuit(win?: BrowserWindow | null): Promise<boolean> {
+  if (pendingConfirmQuit) return pendingConfirmQuit;
+
   const dialogOptions = {
     type: 'question' as const,
     buttons: ['Cancel', 'Quit'],
@@ -213,11 +202,20 @@ function confirmQuit(win?: BrowserWindow | null): boolean {
     title: 'Quit FlowDeck',
     message: 'Are you sure you want to quit? All sessions will be closed.',
   };
-  const choice =
-    win && !win.isDestroyed()
-      ? dialog.showMessageBoxSync(win, dialogOptions)
-      : dialog.showMessageBoxSync(dialogOptions);
-  return choice === 1;
+
+  pendingConfirmQuit = (async () => {
+    const result =
+      win && !win.isDestroyed()
+        ? await dialog.showMessageBox(win, dialogOptions)
+        : await dialog.showMessageBox(dialogOptions);
+    return result.response === 1;
+  })();
+
+  try {
+    return await pendingConfirmQuit;
+  } finally {
+    pendingConfirmQuit = null;
+  }
 }
 
 function buildAppMenu(): void {
@@ -244,9 +242,9 @@ function buildAppMenu(): void {
                 label: 'Quit FlowDeck',
                 accelerator: 'Cmd+Q',
                 click: () => {
-                  if (confirmQuit(BrowserWindow.getFocusedWindow())) {
-                    app.quit();
-                  }
+                  void confirmQuit(BrowserWindow.getFocusedWindow()).then((confirmed) => {
+                    if (confirmed) app.quit();
+                  });
                 },
               },
             ],
@@ -343,11 +341,11 @@ function createWindow(): void {
     height: 920,
     minWidth: 960,
     minHeight: 640,
-    backgroundColor: '#111111',
+    backgroundColor: nativeTheme.shouldUseDarkColors ? '#282a36' : '#e9e6dc',
     ...platformWindowChromeOptions(),
     ...(icon ? { icon } : {}),
     autoHideMenuBar: false,
-    show: !isCaptureMode,
+    show: false,
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
@@ -356,9 +354,17 @@ function createWindow(): void {
     },
   });
 
-  win.webContents.on('console-message', (_e, level, msg, line, src) => {
-    console.log(`renderer[${level}] ${src}:${line} ${msg}`);
+  win.once('ready-to-show', () => {
+    if (!isCaptureMode && !win.isDestroyed()) {
+      win.show();
+    }
   });
+
+  if (!app.isPackaged) {
+    win.webContents.on('console-message', (_e, level, msg, line, src) => {
+      console.log(`renderer[${level}] ${src}:${line} ${msg}`);
+    });
+  }
 
   win.webContents.on('preload-error', (_e, preloadPath, err) => {
     console.error(`preload-error ${preloadPath}`, err);
@@ -395,7 +401,6 @@ app.whenReady().then(() => {
   // Apply staged asar update before anything else (will relaunch if found)
   if (applyPendingUpdate()) return;
 
-  ensurePtyHelper();
   registerPtyHandlers();
   registerSettingsHandlers();
   registerWindowHandlers();
@@ -414,6 +419,7 @@ app.whenReady().then(() => {
 });
 
 app.on('before-quit', () => {
+  flushSettingsSync();
   destroyAllSessions();
 });
 

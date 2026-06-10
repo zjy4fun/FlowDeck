@@ -14,6 +14,8 @@ import {
 
 const OSC_MAX_BUFFER = 1024;
 const CODEX_WORK_HOLD_MS = 1200;
+const TERMINAL_DATA_ACK_BYTES = 128 * 1024;
+const TERMINAL_DATA_ACK_FLUSH_MS = 32;
 const OSC_7_REGEX = /\u001b]7;([^\u0007\u001b]*)(?:\u0007|\u001b\\)/g;
 const OSC_1337_REGEX = /\u001b]1337;CurrentDir=([^\u0007\u001b]*)(?:\u0007|\u001b\\)/g;
 const OSC_633_REGEX = /\u001b]633;P;Cwd=([^\u0007\u001b]*)(?:\u0007|\u001b\\)/g;
@@ -31,6 +33,7 @@ const CONFIRMATION_PROMPT_REGEXES = [
   /\((?:y|Y)\/(?:n|N)\)/,
   /\bpress (?:enter|return) to (?:continue|confirm|proceed)\b/i,
 ];
+const terminalDataEncoder = new TextEncoder();
 
 interface PaneSignalState {
   sawWorkSinceLastIdle: boolean;
@@ -117,11 +120,31 @@ function hasConfirmationPrompt(text: string): boolean {
   return CONFIRMATION_PROMPT_REGEXES.some((regex) => regex.test(text));
 }
 
+function couldContainConfirmationPrompt(data: string): boolean {
+  if (!data) return false;
+  const text = data.toLowerCase();
+  return (
+    text.includes('do you want') ||
+    text.includes('would you like') ||
+    text.includes('are you sure') ||
+    text.includes('awaiting') ||
+    text.includes('please confirm') ||
+    text.includes('approval') ||
+    text.includes('[y/') ||
+    text.includes('(y/') ||
+    text.includes('press enter') ||
+    text.includes('press return')
+  );
+}
+
 export function initLifecycle(deps: LifecycleDeps): CleanupFn {
   const cleanups: CleanupFn[] = [];
   const oscTailByPaneId = new Map<string, string>();
   const codexWorkTimeoutByPaneId = new Map<string, number>();
   const paneSignalStateByPaneId = new Map<string, PaneSignalState>();
+  const pendingAckBytesByPaneId = new Map<string, number>();
+  const pendingAckTimerByPaneId = new Map<string, number>();
+  let pendingWindowResizeFrame = 0;
   let disposed = false;
 
   const getPaneSignalState = (paneId: string): PaneSignalState => {
@@ -187,6 +210,40 @@ export function initLifecycle(deps: LifecycleDeps): CleanupFn {
     clearPaneWorkingIndicator(paneId);
   };
 
+  const flushTerminalDataAck = (paneId: string): void => {
+    const timerId = pendingAckTimerByPaneId.get(paneId);
+    if (timerId !== undefined) {
+      window.clearTimeout(timerId);
+      pendingAckTimerByPaneId.delete(paneId);
+    }
+
+    const bytes = pendingAckBytesByPaneId.get(paneId) ?? 0;
+    if (bytes <= 0) return;
+    pendingAckBytesByPaneId.delete(paneId);
+    bridge.ackTerminalData({ paneId, bytes });
+  };
+
+  const queueTerminalDataAck = (paneId: string, bytes: number): void => {
+    if (bytes <= 0) return;
+    const nextBytes = (pendingAckBytesByPaneId.get(paneId) ?? 0) + bytes;
+    pendingAckBytesByPaneId.set(paneId, nextBytes);
+
+    if (nextBytes >= TERMINAL_DATA_ACK_BYTES) {
+      flushTerminalDataAck(paneId);
+      return;
+    }
+
+    if (pendingAckTimerByPaneId.has(paneId)) return;
+    const timerId = window.setTimeout(() => {
+      flushTerminalDataAck(paneId);
+    }, TERMINAL_DATA_ACK_FLUSH_MS);
+    pendingAckTimerByPaneId.set(paneId, timerId);
+  };
+
+  const getTerminalDataByteLength = (data: string): number => {
+    return terminalDataEncoder.encode(data).byteLength;
+  };
+
   const hasCodexWorkFrame = (data: string): boolean => {
     // Codex CLI emits Unicode spinner frames repeatedly while generating/outputting.
     return CODEX_SPINNER_REGEX.test(data);
@@ -197,6 +254,17 @@ export function initLifecycle(deps: LifecycleDeps): CleanupFn {
     disposed = true;
     for (const timeoutId of codexWorkTimeoutByPaneId.values()) {
       window.clearTimeout(timeoutId);
+    }
+    for (const paneId of Array.from(pendingAckBytesByPaneId.keys())) {
+      flushTerminalDataAck(paneId);
+    }
+    for (const timerId of pendingAckTimerByPaneId.values()) {
+      window.clearTimeout(timerId);
+    }
+    pendingAckTimerByPaneId.clear();
+    if (pendingWindowResizeFrame) {
+      window.cancelAnimationFrame(pendingWindowResizeFrame);
+      pendingWindowResizeFrame = 0;
     }
     codexWorkTimeoutByPaneId.clear();
     paneSignalStateByPaneId.clear();
@@ -261,25 +329,43 @@ export function initLifecycle(deps: LifecycleDeps): CleanupFn {
   cleanups.push(() => document.removeEventListener('drop', handleDrop));
 
   const removeDataListener = bridge.onTerminalData(({ paneId, data }) => {
-    paneNodeMap.get(paneId)?.terminal.write(data);
-    const signalText = normalizeTerminalDataForSignals(data);
+    const byteLength = getTerminalDataByteLength(data);
+    const node = paneNodeMap.get(paneId);
+    if (node) {
+      node.terminal.write(data, () => {
+        queueTerminalDataAck(paneId, byteLength);
+      });
+    } else {
+      queueTerminalDataAck(paneId, byteLength);
+    }
     if (hasCodexWorkFrame(data)) {
       markPaneWorking(paneId);
     }
-    if (hasConfirmationPrompt(signalText)) {
+    if (
+      couldContainConfirmationPrompt(data) &&
+      hasConfirmationPrompt(normalizeTerminalDataForSignals(data))
+    ) {
       markPaneAwaitingConfirmation(paneId);
     }
 
-    const nextBuffer = `${oscTailByPaneId.get(paneId) ?? ''}${data}`;
-    const cwd = extractCwdFromOscBuffer(nextBuffer);
-    if (cwd) {
-      deps.handleCwdChange(paneId, cwd);
+    if (data.includes('\u001b]') || oscTailByPaneId.has(paneId)) {
+      const nextBuffer = `${oscTailByPaneId.get(paneId) ?? ''}${data}`;
+      const cwd = extractCwdFromOscBuffer(nextBuffer);
+      if (cwd) {
+        deps.handleCwdChange(paneId, cwd);
+      }
+      const nextTail = getOscTail(nextBuffer);
+      if (nextTail) {
+        oscTailByPaneId.set(paneId, nextTail);
+      } else {
+        oscTailByPaneId.delete(paneId);
+      }
     }
-    oscTailByPaneId.set(paneId, getOscTail(nextBuffer));
   });
   cleanups.push(removeDataListener);
 
   const removeExitListener = bridge.onTerminalExit(({ paneId, exitCode }) => {
+    flushTerminalDataAck(paneId);
     oscTailByPaneId.delete(paneId);
     clearPaneSignals(paneId);
     const node = paneNodeMap.get(paneId);
@@ -375,11 +461,15 @@ export function initLifecycle(deps: LifecycleDeps): CleanupFn {
   });
 
   const handleResize = (): void => {
-    try {
-      deps.render(true);
-    } catch (error) {
-      deps.reportError(error);
-    }
+    if (pendingWindowResizeFrame) return;
+    pendingWindowResizeFrame = window.requestAnimationFrame(() => {
+      pendingWindowResizeFrame = 0;
+      try {
+        deps.render(true);
+      } catch (error) {
+        deps.reportError(error);
+      }
+    });
   };
   window.addEventListener('resize', handleResize);
   cleanups.push(() => {
