@@ -19,6 +19,7 @@ extraResources:
     to: build/icon.png
 
 asar: true
+npmRebuild: false
 
 # node-pty contains native binaries that cannot be loaded from asar.
 asarUnpack:

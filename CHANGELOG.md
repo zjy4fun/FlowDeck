@@ -17,6 +17,7 @@
 
 - Minify production bundles, disable packaged source maps, target Electron 36 runtimes, and exclude test support and map files from app.asar.
 - Remove unused xterm WebGL addon packaging and keep xterm browser-renderer dependencies out of production node_modules.
+- Use node-pty's bundled prebuilds during packaging instead of rebuilding native modules on release runners.
 - Add a test script and run the test suite in CI after build and type-check.
 
 ### Fixed
