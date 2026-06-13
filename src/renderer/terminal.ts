@@ -150,6 +150,58 @@ function stripTrailingUrlPunctuation(url: string): string {
   return url.replace(URL_TRAILING_PUNCTUATION, '');
 }
 
+interface WrappedRow {
+  line: IBufferLine;
+  // Buffer line number (1-based) of this row.
+  bufferLineNumber: number;
+  // Offset into the concatenated logical-line string where this row begins.
+  stringOffset: number;
+}
+
+// xterm calls provideLinks once per buffer row, but a URL can wrap across
+// several rows. We rebuild the full logical line (the starting row plus every
+// following row whose `isWrapped` flag is set) so the regex sees the complete
+// URL, then map matched string offsets back to per-row cell positions.
+function collectLogicalLine(terminal: Terminal, bufferLineNumber: number): WrappedRow[] {
+  const buffer = terminal.buffer.active;
+
+  // Walk back to the first row of the logical line. `isWrapped` means the row
+  // is a continuation of the one above it.
+  let startRow = bufferLineNumber - 1;
+  while (startRow > 0 && buffer.getLine(startRow)?.isWrapped) {
+    startRow -= 1;
+  }
+
+  const rows: WrappedRow[] = [];
+  let stringOffset = 0;
+  for (let row = startRow; ; row += 1) {
+    const line = buffer.getLine(row);
+    if (!line) break;
+    rows.push({ line, bufferLineNumber: row + 1, stringOffset });
+    // Use the untrimmed string so per-row string offsets line up with cells.
+    stringOffset += line.translateToString(false).length;
+
+    const next = buffer.getLine(row + 1);
+    if (!next?.isWrapped) break;
+  }
+
+  return rows;
+}
+
+function mapStringIndexToPosition(
+  rows: WrappedRow[],
+  globalIndex: number,
+): { x: number; y: number } | null {
+  for (let i = rows.length - 1; i >= 0; i -= 1) {
+    const row = rows[i];
+    if (globalIndex < row.stringOffset) continue;
+    const localIndex = globalIndex - row.stringOffset;
+    const column = getCellColumnByStringIndex(row.line, localIndex) ?? localIndex + 1;
+    return { x: column, y: row.bufferLineNumber };
+  }
+  return null;
+}
+
 function createTerminalLinkProvider(
   terminal: Terminal,
   onHover: (url: string) => void,
@@ -157,13 +209,13 @@ function createTerminalLinkProvider(
 ): ILinkProvider {
   return {
     provideLinks(bufferLineNumber, callback) {
-      const line = terminal.buffer.active.getLine(bufferLineNumber - 1);
-      if (!line) {
+      const rows = collectLogicalLine(terminal, bufferLineNumber);
+      if (rows.length === 0) {
         callback(undefined);
         return;
       }
 
-      const text = line.translateToString(true);
+      const text = rows.map((row) => row.line.translateToString(false)).join('');
       const links: ILink[] = [];
       for (const match of text.matchAll(URL_PATTERN)) {
         const rawUrl = match[0];
@@ -172,14 +224,12 @@ function createTerminalLinkProvider(
 
         const startIndex = match.index ?? 0;
         const endIndex = startIndex + url.length - 1;
-        const startColumn = getCellColumnByStringIndex(line, startIndex) ?? startIndex + 1;
-        const endColumn = getCellColumnByStringIndex(line, endIndex) ?? startColumn + url.length - 1;
+        const start = mapStringIndexToPosition(rows, startIndex);
+        const end = mapStringIndexToPosition(rows, endIndex);
+        if (!start || !end) continue;
 
         links.push({
-          range: {
-            start: { x: startColumn, y: bufferLineNumber },
-            end: { x: endColumn, y: bufferLineNumber },
-          },
+          range: { start, end },
           text: url,
           decorations: {
             pointerCursor: true,

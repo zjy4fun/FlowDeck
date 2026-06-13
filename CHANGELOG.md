@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.4.55
+
+### Fixed
+
+- Open the complete URL when Command/Ctrl-clicking a terminal link that wraps across multiple rows. The link provider now rebuilds the full logical line from its wrapped continuation rows before matching URLs, so links spanning a line break are detected and activated in full instead of being truncated at the wrap point.
+
 ## v0.4.54
 
 ### Performance
