@@ -145,6 +145,7 @@ export function initLifecycle(deps: LifecycleDeps): CleanupFn {
   const pendingAckBytesByPaneId = new Map<string, number>();
   const pendingAckTimerByPaneId = new Map<string, number>();
   let pendingWindowResizeFrame = 0;
+  let windowResizeSettleTimer = 0;
   let disposed = false;
 
   const getPaneSignalState = (paneId: string): PaneSignalState => {
@@ -461,6 +462,15 @@ export function initLifecycle(deps: LifecycleDeps): CleanupFn {
   });
 
   const handleResize = (): void => {
+    // Suppress the pane layout transition while the OS window is being dragged
+    // so panes track the new size instantly instead of trailing the cursor. The
+    // class is cleared once resizing settles.
+    document.body.classList.add('is-window-resizing');
+    window.clearTimeout(windowResizeSettleTimer);
+    windowResizeSettleTimer = window.setTimeout(() => {
+      document.body.classList.remove('is-window-resizing');
+    }, 140);
+
     if (pendingWindowResizeFrame) return;
     pendingWindowResizeFrame = window.requestAnimationFrame(() => {
       pendingWindowResizeFrame = 0;
@@ -474,6 +484,8 @@ export function initLifecycle(deps: LifecycleDeps): CleanupFn {
   window.addEventListener('resize', handleResize);
   cleanups.push(() => {
     window.removeEventListener('resize', handleResize);
+    window.clearTimeout(windowResizeSettleTimer);
+    document.body.classList.remove('is-window-resizing');
   });
 
   const handleWindowError = (event: ErrorEvent): void => {

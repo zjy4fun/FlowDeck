@@ -178,18 +178,66 @@ function beginPaneResize(
 
 /* ── Pane node lifecycle ── */
 
+// Duration ceilings used as a fallback when `animationend` does not fire (e.g.
+// the element is detached early, or animations are disabled). Kept just above
+// the CSS animation durations.
+const PANE_ENTER_FALLBACK_MS = 300;
+const PANE_LEAVE_FALLBACK_MS = 280;
+
+function prefersReducedMotion(): boolean {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+function startPaneEnterAnimation(node: PaneNode): void {
+  if (prefersReducedMotion()) return;
+  node.root.classList.add('is-entering');
+  const shell = node.root.querySelector('.pane-shell');
+  let done = false;
+  const clear = (): void => {
+    if (done) return;
+    done = true;
+    node.root.classList.remove('is-entering');
+  };
+  shell?.addEventListener('animationend', clear, { once: true });
+  window.setTimeout(clear, PANE_ENTER_FALLBACK_MS);
+}
+
+function finalizePaneRemoval(paneId: string, node: PaneNode): void {
+  bridge.destroyTerminal({ paneId });
+  node.terminal.dispose();
+  node.root.remove();
+}
+
+// Fade the pane out before tearing it down so closing a pane is not abrupt. The
+// node is already detached from `paneNodeMap`, so renderPanes ignores it while
+// it animates and the surrounding panes flow into the gap.
+function closePaneNode(paneId: string, node: PaneNode): void {
+  if (prefersReducedMotion()) {
+    finalizePaneRemoval(paneId, node);
+    return;
+  }
+  node.root.classList.add('is-closing');
+  const shell = node.root.querySelector('.pane-shell');
+  let done = false;
+  const finish = (): void => {
+    if (done) return;
+    done = true;
+    finalizePaneRemoval(paneId, node);
+  };
+  shell?.addEventListener('animationend', finish, { once: true });
+  window.setTimeout(finish, PANE_LEAVE_FALLBACK_MS);
+}
+
 function ensurePaneNodes(): void {
   const activeIds = new Set(state.panes.map((p) => p.id));
 
   // Remove stale nodes
   for (const [paneId, node] of paneNodeMap.entries()) {
     if (!activeIds.has(paneId)) {
-      bridge.destroyTerminal({ paneId });
-      node.terminal.dispose();
-      node.root.remove();
       paneNodeMap.delete(paneId);
       removeDeveloperState(paneId);
       removeAiState(paneId);
+      closePaneNode(paneId, node);
     }
   }
 
@@ -210,6 +258,7 @@ function ensurePaneNodes(): void {
 
       paneNodeMap.set(pane.id, node);
       dom.stage.append(node.root);
+      startPaneEnterAnimation(node);
 
       const delayFrames = pane.id === state.focusedPaneId ? 1 : 2;
       const initializeAfterFrame = (remainingFrames: number): void => {

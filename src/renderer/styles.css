@@ -786,9 +786,67 @@ html.is-ai-mode .pane.has-aibar .ai-toolbar {
   overflow: hidden;
   cursor: pointer;
   transition:
-    transform 150ms cubic-bezier(0.2, 0.85, 0.32, 1),
+    transform 180ms cubic-bezier(0.2, 0.85, 0.32, 1),
+    width 180ms cubic-bezier(0.2, 0.85, 0.32, 1),
     box-shadow 120ms ease;
-  will-change: transform;
+  will-change: transform, width;
+}
+
+/* Track the pointer instantly while a divider is dragged or the OS window is
+   resized; the layout transition is only meant for discrete changes (new/close
+   pane, focus). */
+body.is-resizing-pane .pane,
+body.is-window-resizing .pane {
+  transition: box-shadow 120ms ease;
+}
+
+/* New pane: hold its final position (no slide-in from the left edge) and let
+   the shell fade up into place. Closing pane: fade down, then the JS removes it
+   after the animation so the surrounding panes can flow into the gap. */
+.pane.is-entering {
+  transition: box-shadow 120ms ease;
+}
+
+.pane.is-closing {
+  pointer-events: none;
+}
+
+.pane.is-entering .pane-shell {
+  animation: pane-enter 190ms cubic-bezier(0.2, 0.85, 0.32, 1) both;
+}
+
+.pane.is-closing .pane-shell {
+  animation: pane-leave 170ms ease both;
+}
+
+@keyframes pane-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes pane-leave {
+  to {
+    opacity: 0;
+    transform: translateY(8px) scale(0.985);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pane,
+  body.is-resizing-pane .pane {
+    transition: box-shadow 120ms ease;
+  }
+
+  .pane.is-entering .pane-shell,
+  .pane.is-closing .pane-shell {
+    animation: none;
+  }
 }
 
 .pane-shell {
