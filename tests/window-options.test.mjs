@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
+import { join } from 'node:path';
 
 const require = createRequire(import.meta.url);
 const {
@@ -16,7 +17,7 @@ test('Linux packaged windows use the extraResources app icon path', () => {
       appPath: '/opt/FlowDeck/resources/app.asar',
       isPackaged: true,
     }),
-    '/opt/FlowDeck/resources/build/icon.png',
+    join('/opt/FlowDeck/resources', 'build', 'icon.png'),
   );
 });
 
@@ -28,7 +29,7 @@ test('Linux development windows use the repository icon path', () => {
       appPath: '/repo/FlowDeck',
       isPackaged: false,
     }),
-    '/repo/FlowDeck/build/icon.png',
+    join('/repo/FlowDeck', 'build', 'icon.png'),
   );
 });
 
