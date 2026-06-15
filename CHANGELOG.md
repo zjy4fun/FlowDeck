@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.4.56
+
+### Fixed
+
+- Build the window icon path expectations with `path.join` in the test suite so the Windows CI job passes. The assertions previously hard-coded POSIX (`/`) separators, but `getWindowIconPath` resolves the icon path with the platform-native separator, so on `win32` it returns backslashes and the two icon-path tests failed. This surfaced only after the Test step was added to CI in v0.4.54.
+
 ## v0.4.55
 
 ### Fixed
