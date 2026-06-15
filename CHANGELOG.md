@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.4.57
+
+### Changed
+
+- Smooth out opening and closing panes. New panes fade and rise into their final position instead of appearing abruptly, closing panes fade out before being torn down so the surrounding panes can flow into the gap, and pane widths now animate when the layout redistributes. The animation is suppressed while dragging a divider or resizing the window so those stay 1:1 with the pointer, and it is disabled entirely under `prefers-reduced-motion`.
+
 ## v0.4.56
 
 ### Fixed
